@@ -7,25 +7,22 @@
  * - Dark mode toggle
  * - Cloud AI vs local AI selection
  * - History save toggle
- * - Voice interaction toggle
- * - Clear all data option
  * - Glassmorphism cards
  * - Dark mode adaptation
  */
 
 import React from 'react';
-import { StyleSheet, Text, View, Switch, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Cloud, Smartphone, Shield, Info, Moon } from 'lucide-react-native';
+import { StyleSheet, Text, View, Switch, ScrollView, useColorScheme } from 'react-native';
+import { Cloud, Shield, Info, Moon } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
-import { useColorScheme } from 'react-native';
 
 export function SettingsScreen() {
-  const { settings, updateSettings, clearAllData } = useApp();
+  const { settings, updateSettings } = useApp();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
@@ -44,49 +41,10 @@ export function SettingsScreen() {
   };
 
   /**
-   * Toggle voice interaction setting
-   */
-  const handleVoiceToggle = (value: boolean) => {
-    updateSettings({ voiceEnabled: value });
-  };
-
-  /**
    * Toggle dark mode setting
    */
   const handleDarkModeToggle = (value: boolean) => {
     updateSettings({ isDarkMode: value });
-  };
-
-  /**
-   * Handle clear all data with confirmation
-   */
-  const handleClearData = () => {
-    Alert.alert(
-      Strings.settings.data.clearAlertTitle,
-      Strings.settings.data.clearAlertMessage,
-      [
-        { text: Strings.settings.data.clearCancel, style: 'cancel' },
-        {
-          text: Strings.settings.data.clearConfirm,
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearAllData();
-              Alert.alert(
-                Strings.settings.data.clearSuccess,
-                Strings.settings.data.clearSuccessMessage
-              );
-            } catch (error) {
-              console.error('Error clearing data:', error);
-              Alert.alert(
-                Strings.settings.data.clearError,
-                Strings.settings.data.clearErrorMessage
-              );
-            }
-          },
-        },
-      ]
-    );
   };
 
   return (
@@ -203,54 +161,6 @@ export function SettingsScreen() {
           </BlurView>
         </View>
 
-        {/* Voice Interaction Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.textDark]}>
-            {Strings.settings.voice.title}
-          </Text>
-          <BlurView
-            intensity={80}
-            tint={isDarkMode ? 'dark' : 'light'}
-            style={[styles.settingCard, isDarkMode && styles.settingCardDark]}
-          >
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: Colors.success + '20' }]}>
-                  <Smartphone size={20} color={Colors.success} />
-                </View>
-                <View style={styles.settingText}>
-                  <Text style={[styles.settingTitle, isDarkMode && styles.textDark]}>
-                    {Strings.settings.voice.enableVoice}
-                  </Text>
-                  <Text style={[styles.settingDescription, isDarkMode && styles.descriptionDark]}>
-                    {settings.voiceEnabled
-                      ? Strings.settings.voice.voiceEnabled
-                      : Strings.settings.voice.voiceDisabled}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={settings.voiceEnabled}
-                onValueChange={handleVoiceToggle}
-                trackColor={{ false: Colors.border, true: Colors.success }}
-                thumbColor={Colors.white}
-              />
-            </View>
-          </BlurView>
-        </View>
-
-        {/* Data Management Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.textDark]}>
-            {Strings.settings.data.title}
-          </Text>
-          <TouchableOpacity style={styles.dangerButton} onPress={handleClearData}>
-            <Text style={styles.dangerButtonText}>
-              {Strings.settings.data.clearButton}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* App Info Section */}
         <View style={styles.infoSection}>
           <Info size={16} color={isDarkMode ? Colors.textLight : Colors.textLight} />
@@ -341,17 +251,6 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 8,
     lineHeight: 18,
-  },
-  dangerButton: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    alignItems: 'center',
-  },
-  dangerButtonText: {
-    fontSize: FontSizes.body,
-    fontWeight: FontWeights.semibold,
-    color: Colors.error,
   },
   infoSection: {
     flexDirection: 'row',

@@ -15,7 +15,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
-  const { isAuthenticated, isLoading } = useApp();
+  const { isAuthenticated, isLoading, settings } = useApp();
   const segments = useSegments();
   const router = useRouter();
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -42,8 +42,19 @@ function RootLayoutNav() {
     }
   }, [isAuthenticated, isLoading, segments]);
 
+  const isDarkMode = settings.isDarkMode;
+
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Back' }}>
+    <Stack screenOptions={{ 
+      headerBackTitle: 'Back',
+      headerStyle: {
+        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+      },
+      headerTintColor: isDarkMode ? '#FFFFFF' : '#1F2937',
+      headerTitleStyle: {
+        color: isDarkMode ? '#FFFFFF' : '#1F2937',
+      },
+    }}>
       {/* Onboarding Flow */}
       <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding-user-info" options={{ headerShown: false }} />

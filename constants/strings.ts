@@ -105,6 +105,33 @@ export const Strings = {
     },
   },
 
+  // History Screen
+  history: {
+    title: 'History',
+    tabs: {
+      outfitScores: 'Outfit Scores',
+      aiStylist: 'AI Stylist',
+    },
+    loading: 'Loading history...',
+    empty: {
+      outfitScores: {
+        title: 'No Outfit Scores Yet',
+        description: 'Score your first outfit to see your history here',
+      },
+      aiStylist: {
+        title: 'No AI Stylist Conversations',
+        description: 'Chat with the AI Stylist to see your conversation history here',
+      },
+    },
+    card: {
+      tapToView: 'Tap to view details',
+      viewConversation: 'View conversation',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      daysAgo: (days: number) => `${days} days ago`,
+    },
+  },
+
   // Settings Screen
   settings: {
     title: 'Settings',
