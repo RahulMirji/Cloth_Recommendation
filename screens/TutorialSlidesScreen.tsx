@@ -31,17 +31,17 @@ const IconContainer = ({ children, bgColor }: { children: React.ReactNode; bgCol
 
 export function TutorialSlidesScreen() {
   /**
-   * Navigate to user info form after tutorial
+   * Navigate to sign up after tutorial
    */
   const handleDone = () => {
-    router.replace('/onboarding-user-info' as any);
+    router.replace('/auth/sign-up' as any);
   };
 
   /**
-   * Skip tutorial and go straight to user info
+   * Skip tutorial and go straight to sign up
    */
   const handleSkip = () => {
-    router.replace('/onboarding-user-info' as any);
+    router.replace('/auth/sign-up' as any);
   };
 
   return (

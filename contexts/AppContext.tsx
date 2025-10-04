@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 interface AppSettings {
   useCloudAI: boolean;
@@ -50,12 +52,51 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     loadSettings();
     loadHistory();
-    loadUserProfile();
+    initializeAuth();
   }, []);
+
+  // Initialize authentication and listen for changes
+  const initializeAuth = async () => {
+    try {
+      // Check for existing session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setIsAuthenticated(!!currentSession);
+
+      if (currentSession?.user) {
+        await loadUserProfileFromSupabase(currentSession.user.id);
+      }
+
+      // Listen for auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (_event, newSession) => {
+          setSession(newSession);
+          setIsAuthenticated(!!newSession);
+
+          if (newSession?.user) {
+            await loadUserProfileFromSupabase(newSession.user.id);
+          } else {
+            // User signed out
+            setUserProfile(DEFAULT_PROFILE);
+            await AsyncStorage.removeItem('user_profile');
+          }
+        }
+      );
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -81,18 +122,36 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   };
 
-  const loadUserProfile = async () => {
+  const loadUserProfileFromSupabase = async (userId: string) => {
     try {
-      const stored = await AsyncStorage.getItem('user_profile');
-      if (stored) {
-        const profile = JSON.parse(stored);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile from Supabase:', error);
+        return;
+      }
+
+      if (data) {
+        const profile: UserProfile = {
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          age: data.age?.toString() || '',
+          gender: (data.gender as 'male' | 'female' | 'other' | '') || '',
+          bio: data.bio || '',
+          profileImage: data.profile_image || '',
+        };
         setUserProfile(profile);
-        setIsAuthenticated(!!profile.name && !!profile.email);
+        
+        // Cache profile locally
+        await AsyncStorage.setItem('user_profile', JSON.stringify(profile));
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -138,19 +197,41 @@ export const [AppProvider, useApp] = createContextHook(() => {
       const updated = { ...userProfile, ...updates };
       setUserProfile(updated);
       await AsyncStorage.setItem('user_profile', JSON.stringify(updated));
-      if (updated.name && updated.email) {
-        setIsAuthenticated(true);
+
+      // Update in Supabase if user is authenticated
+      if (session?.user) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            name: updated.name || undefined,
+            email: updated.email || undefined,
+            phone: updated.phone || undefined,
+            age: updated.age ? parseInt(updated.age) : undefined,
+            gender: updated.gender || undefined,
+            bio: updated.bio || undefined,
+            profile_image: updated.profileImage || undefined,
+          })
+          .eq('user_id', session.user.id);
+
+        if (error) {
+          console.error('Error updating profile in Supabase:', error);
+        }
       }
     } catch (error) {
       console.error('Error updating user profile:', error);
     }
-  }, [userProfile]);
+  }, [userProfile, session]);
 
   const logout = useCallback(async () => {
     try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear local data
       await AsyncStorage.removeItem('user_profile');
       setUserProfile(DEFAULT_PROFILE);
       setIsAuthenticated(false);
+      setSession(null);
     } catch (error) {
       console.error('Error logging out:', error);
     }
@@ -174,11 +255,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
     userProfile,
     isAuthenticated,
     isLoading,
+    session,
     updateSettings,
     updateUserProfile,
     addToHistory,
     clearHistory,
     clearAllData,
     logout,
-  }), [settings, history, userProfile, isAuthenticated, isLoading, updateSettings, updateUserProfile, addToHistory, clearHistory, clearAllData, logout]);
+  }), [settings, history, userProfile, isAuthenticated, isLoading, session, updateSettings, updateUserProfile, addToHistory, clearHistory, clearAllData, logout]);
 });

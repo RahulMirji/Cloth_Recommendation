@@ -8,6 +8,7 @@ import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppProvider, useApp } from '@/contexts/AppContext';
+import { useAuthStore } from '@/store/authStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,19 +18,26 @@ function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useApp();
   const segments = useSegments();
   const router = useRouter();
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+
+  // Initialize auth store on mount
+  useEffect(() => {
+    initializeAuth();
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
 
     const currentPath = segments[0] ? String(segments[0]) : '';
-    const inOnboarding = currentPath.includes('onboarding');
+    const inAuth = currentPath === 'auth';
+    const inOnboarding = currentPath === 'onboarding-tutorial';
 
-    // If not authenticated and not in onboarding flow, show tutorial
-    if (!isAuthenticated && !inOnboarding) {
+    // If not authenticated and not in auth or onboarding, show tutorial first
+    if (!isAuthenticated && !inAuth && !inOnboarding) {
       router.replace('/onboarding-tutorial' as any);
     } 
-    // If authenticated and in onboarding flow, go to home
-    else if (isAuthenticated && inOnboarding) {
+    // If authenticated and in auth or onboarding flow, go to home
+    else if (isAuthenticated && (inAuth || inOnboarding)) {
       router.replace('/(tabs)' as any);
     }
   }, [isAuthenticated, isLoading, segments]);
@@ -40,6 +48,9 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding-user-info" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      
+      {/* Authentication */}
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
       
       {/* Main App */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
