@@ -6,6 +6,17 @@ interface AppSettings {
   useCloudAI: boolean;
   saveHistory: boolean;
   voiceEnabled: boolean;
+  isDarkMode: boolean;
+}
+
+interface UserProfile {
+  name: string;
+  email: string;
+  phone?: string;
+  age?: string;
+  gender?: 'male' | 'female' | 'other' | '';
+  bio?: string;
+  profileImage?: string;
 }
 
 interface AnalysisHistory {
@@ -20,16 +31,30 @@ const DEFAULT_SETTINGS: AppSettings = {
   useCloudAI: true,
   saveHistory: true,
   voiceEnabled: true,
+  isDarkMode: false,
+};
+
+const DEFAULT_PROFILE: UserProfile = {
+  name: '',
+  email: '',
+  phone: '',
+  age: '',
+  gender: '',
+  bio: '',
+  profileImage: '',
 };
 
 export const [AppProvider, useApp] = createContextHook(() => {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [history, setHistory] = useState<AnalysisHistory[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     loadSettings();
     loadHistory();
+    loadUserProfile();
   }, []);
 
   const loadSettings = async () => {
@@ -53,6 +78,21 @@ export const [AppProvider, useApp] = createContextHook(() => {
       }
     } catch (error) {
       console.error('Error loading history:', error);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('user_profile');
+      if (stored) {
+        const profile = JSON.parse(stored);
+        setUserProfile(profile);
+        setIsAuthenticated(!!profile.name && !!profile.email);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -93,11 +133,36 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   }, []);
 
+  const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
+    try {
+      const updated = { ...userProfile, ...updates };
+      setUserProfile(updated);
+      await AsyncStorage.setItem('user_profile', JSON.stringify(updated));
+      if (updated.name && updated.email) {
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+    }
+  }, [userProfile]);
+
+  const logout = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem('user_profile');
+      setUserProfile(DEFAULT_PROFILE);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }, []);
+
   const clearAllData = useCallback(async () => {
     try {
       await AsyncStorage.clear();
       setSettings(DEFAULT_SETTINGS);
       setHistory([]);
+      setUserProfile(DEFAULT_PROFILE);
+      setIsAuthenticated(false);
     } catch (error) {
       console.error('Error clearing all data:', error);
     }
@@ -106,10 +171,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
   return useMemo(() => ({
     settings,
     history,
+    userProfile,
+    isAuthenticated,
     isLoading,
     updateSettings,
+    updateUserProfile,
     addToHistory,
     clearHistory,
     clearAllData,
-  }), [settings, history, isLoading, updateSettings, addToHistory, clearHistory, clearAllData]);
+    logout,
+  }), [settings, history, userProfile, isAuthenticated, isLoading, updateSettings, updateUserProfile, addToHistory, clearHistory, clearAllData, logout]);
 });

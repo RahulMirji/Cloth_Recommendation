@@ -18,6 +18,9 @@ export interface AudioGenerationOptions {
 
 export async function generateText(options: TextGenerationOptions): Promise<string> {
   try {
+    // Disable streaming on mobile as ReadableStream is not supported in React Native
+    const shouldStream = Platform.OS === 'web' && (options.stream ?? false);
+    
     const response = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST',
       headers: {
@@ -27,15 +30,17 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
       body: JSON.stringify({
         model: 'gemini',
         messages: options.messages,
-        stream: options.stream ?? false,
+        stream: shouldStream,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 
-    if (options.stream) {
+    if (shouldStream) {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
@@ -69,6 +74,7 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
 
       return fullText;
     } else {
+      // Non-streaming mode (used on mobile)
       const data = await response.json();
       return data.choices?.[0]?.message?.content || '';
     }
@@ -86,6 +92,9 @@ export async function generateTextWithImage(
     ? imageBase64 
     : `data:image/jpeg;base64,${imageBase64}`;
 
+  // Stream only on web, use non-streaming on mobile
+  const shouldStream = Platform.OS === 'web';
+
   return generateText({
     messages: [
       {
@@ -96,7 +105,7 @@ export async function generateTextWithImage(
         ],
       },
     ],
-    stream: true,
+    stream: shouldStream,
   });
 }
 

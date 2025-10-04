@@ -1,8 +1,8 @@
-# Welcome to your Rork app
+# AI Cloth Recommendation
 
 ## Project info
 
-This is a native cross-platform mobile app created with [Rork](https://rork.com)
+This is a native cross-platform mobile app for AI-powered clothing recommendations
 
 **Platform**: Native iOS & Android app, exportable to web
 **Framework**: Expo Router + React Native
