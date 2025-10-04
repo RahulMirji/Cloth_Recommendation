@@ -1,5 +1,5 @@
 // Auto-generated types from Supabase
-// Run: npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/supabase.ts
+// Last updated: October 5, 2025
 
 export type Json =
   | string
@@ -9,133 +9,207 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
-      profiles: {
+      activity_logs: {
         Row: {
+          action: string
+          created_at: string | null
           id: string
-          name: string
-          age: number | null
-          gender: string | null
-          style_preferences: string[] | null
-          profile_image_url: string | null
-          created_at: string
-          updated_at: string
+          metadata: Json | null
+          user_id: string | null
         }
         Insert: {
-          id: string
-          name: string
-          age?: number | null
-          gender?: string | null
-          style_preferences?: string[] | null
-          profile_image_url?: string | null
-          created_at?: string
-          updated_at?: string
+          action: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
         }
         Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      analysis_history: {
+        Row: {
+          conversation_data: Json | null
+          created_at: string | null
+          feedback: Json | null
+          id: string
+          image_url: string | null
+          result: string
+          score: number | null
+          type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_data?: Json | null
+          created_at?: string | null
+          feedback?: Json | null
+          id?: string
+          image_url?: string | null
+          result: string
+          score?: number | null
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_data?: Json | null
+          created_at?: string | null
+          feedback?: Json | null
+          id?: string
+          image_url?: string | null
+          result?: string
+          score?: number | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_dark_mode: boolean | null
+          save_history: boolean | null
+          updated_at: string | null
+          use_cloud_ai: boolean | null
+          use_voice_interaction: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_dark_mode?: boolean | null
+          save_history?: boolean | null
+          updated_at?: string | null
+          use_cloud_ai?: boolean | null
+          use_voice_interaction?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_dark_mode?: boolean | null
+          save_history?: boolean | null
+          updated_at?: string | null
+          use_cloud_ai?: boolean | null
+          use_voice_interaction?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      product_recommendations: {
+        Row: {
+          analysis_id: string
+          created_at: string | null
+          id: string
+          item_type: string
+          marketplace: string
+          missing_reason: string | null
+          price: string | null
+          priority: number | null
+          product_image_url: string
+          product_name: string
+          product_url: string
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string | null
+          id?: string
+          item_type: string
+          marketplace: string
+          missing_reason?: string | null
+          price?: string | null
+          priority?: number | null
+          product_image_url: string
+          product_name: string
+          product_url: string
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string | null
+          id?: string
+          item_type?: string
+          marketplace?: string
+          missing_reason?: string | null
+          price?: string | null
+          priority?: number | null
+          product_image_url?: string
+          product_name?: string
+          product_url?: string
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recommendations_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          age: number | null
+          bio: string | null
+          created_at: string | null
+          email: string
+          gender: string | null
+          id: string
+          name: string
+          phone: string | null
+          profile_image: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          age?: number | null
+          bio?: string | null
+          created_at?: string | null
+          email: string
+          gender?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          age?: number | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string
+          gender?: string | null
           id?: string
           name?: string
-          age?: number | null
-          gender?: string | null
-          style_preferences?: string[] | null
-          profile_image_url?: string | null
-          created_at?: string
-          updated_at?: string
+          phone?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
-      }
-      outfit_analyses: {
-        Row: {
-          id: string
-          user_id: string
-          image_url: string
-          analysis_type: 'ai_stylist' | 'outfit_scorer'
-          ai_response: string
-          score: number | null
-          metadata: Json
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          image_url: string
-          analysis_type: 'ai_stylist' | 'outfit_scorer'
-          ai_response: string
-          score?: number | null
-          metadata?: Json
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          image_url?: string
-          analysis_type?: 'ai_stylist' | 'outfit_scorer'
-          ai_response?: string
-          score?: number | null
-          metadata?: Json
-          created_at?: string
-        }
-      }
-      stylist_recommendations: {
-        Row: {
-          id: string
-          user_id: string
-          occasion: string
-          style_preference: string
-          weather: string | null
-          ai_response: string
-          bookmarked: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          occasion: string
-          style_preference: string
-          weather?: string | null
-          ai_response: string
-          bookmarked?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          occasion?: string
-          style_preference?: string
-          weather?: string | null
-          ai_response?: string
-          bookmarked?: boolean
-          created_at?: string
-        }
-      }
-      user_settings: {
-        Row: {
-          id: string
-          user_id: string
-          is_dark_mode: boolean
-          notifications_enabled: boolean
-          language: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          is_dark_mode?: boolean
-          notifications_enabled?: boolean
-          language?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          is_dark_mode?: boolean
-          notifications_enabled?: boolean
-          language?: string
-          created_at?: string
-          updated_at?: string
-        }
+        Relationships: []
       }
     }
     Views: {
@@ -147,5 +221,131 @@ export interface Database {
     Enums: {
       [_ in never]: never
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

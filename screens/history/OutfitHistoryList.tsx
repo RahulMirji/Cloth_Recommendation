@@ -20,15 +20,18 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Sparkles, Calendar, TrendingUp } from 'lucide-react-native';
+import { Sparkles, Calendar, TrendingUp, Trash2, CheckSquare, Square } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { deleteChatHistory } from '@/utils/chatHistory';
 
 interface OutfitHistoryEntry {
   id: string;
@@ -48,6 +51,9 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
   const session = useAuthStore((state) => state.session);
   const [history, setHistory] = useState<OutfitHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadHistory();
@@ -148,13 +154,108 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
   };
 
   const handleItemPress = (item: OutfitHistoryEntry) => {
-    // Navigate to outfit scorer with the history ID to load from database
-    router.push({
-      pathname: '/outfit-scorer',
-      params: {
-        historyId: item.id,
-      },
-    } as any);
+    if (selectionMode) {
+      toggleItemSelection(item.id);
+    } else {
+      // Navigate to outfit scorer with the history ID to load from database
+      router.push({
+        pathname: '/outfit-scorer',
+        params: {
+          historyId: item.id,
+        },
+      } as any);
+    }
+  };
+
+  const handleLongPress = (item: OutfitHistoryEntry) => {
+    setSelectionMode(true);
+    toggleItemSelection(item.id);
+  };
+
+  const toggleItemSelection = (id: string) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      // Exit selection mode if no items selected
+      if (newSet.size === 0) {
+        setSelectionMode(false);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedItems(new Set(history.map((item) => item.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedItems(new Set());
+    setSelectionMode(false);
+  };
+
+  const handleDelete = () => {
+    if (selectedItems.size === 0) return;
+
+    Alert.alert(
+      'Delete History',
+      `Are you sure you want to delete ${selectedItems.size} ${selectedItems.size === 1 ? 'item' : 'items'}? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: confirmDelete,
+        },
+      ]
+    );
+  };
+
+  const confirmDelete = async () => {
+    if (!session?.user) return;
+
+    setIsDeleting(true);
+    try {
+      const itemsToDelete = Array.from(selectedItems);
+      let successCount = 0;
+      let failCount = 0;
+
+      // Delete each selected item
+      for (const itemId of itemsToDelete) {
+        const success = await deleteChatHistory(itemId, session.user.id);
+        if (success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+
+      // Update local state
+      setHistory((prev) => prev.filter((item) => !selectedItems.has(item.id)));
+      setSelectedItems(new Set());
+      setSelectionMode(false);
+
+      // Show result
+      if (failCount === 0) {
+        Alert.alert('Success', `Successfully deleted ${successCount} ${successCount === 1 ? 'item' : 'items'}`);
+      } else {
+        Alert.alert(
+          'Partial Success',
+          `Deleted ${successCount} items. ${failCount} items failed to delete.`
+        );
+      }
+    } catch (error) {
+      console.error('Error during batch delete:', error);
+      Alert.alert('Error', 'Failed to delete items. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -181,55 +282,122 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
     );
   }
 
-  const renderItem = ({ item }: { item: OutfitHistoryEntry }) => (
-    <TouchableOpacity
-      style={[styles.historyCard, isDarkMode && styles.historyCardDark]}
-      onPress={() => handleItemPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.cardHeader}>
-        <View style={[styles.scoreContainer, { backgroundColor: getScoreColor(item.score) + '20' }]}>
-          <TrendingUp size={20} color={getScoreColor(item.score)} />
-          <Text style={[styles.scoreText, { color: getScoreColor(item.score) }]}>
-            {item.score}/100
-          </Text>
-        </View>
-        <View style={styles.dateContainer}>
-          <Calendar size={14} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-          <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
-            {formatDate(item.created_at)}
-          </Text>
-        </View>
-      </View>
+  const renderItem = ({ item }: { item: OutfitHistoryEntry }) => {
+    const isSelected = selectedItems.has(item.id);
 
-      <Text
-        style={[styles.resultPreview, isDarkMode && styles.resultPreviewDark]}
-        numberOfLines={2}
+    return (
+      <TouchableOpacity
+        style={[
+          styles.historyCard,
+          isDarkMode && styles.historyCardDark,
+          isSelected && styles.historyCardSelected,
+          isSelected && (isDarkMode ? styles.historyCardSelectedDark : styles.historyCardSelectedLight),
+        ]}
+        onPress={() => handleItemPress(item)}
+        onLongPress={() => handleLongPress(item)}
+        activeOpacity={0.7}
       >
-        {item.result || 'Outfit analysis'}
-      </Text>
+        {selectionMode && (
+          <View style={styles.checkboxContainer}>
+            {isSelected ? (
+              <CheckSquare size={24} color={Colors.primary} strokeWidth={2} />
+            ) : (
+              <Square size={24} color={isDarkMode ? Colors.textLight : Colors.textSecondary} strokeWidth={2} />
+            )}
+          </View>
+        )}
 
-      <View style={styles.cardFooter}>
-        <Text style={[styles.tapToView, isDarkMode && styles.tapToViewDark]}>
-          Tap to view details
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={[styles.cardContent, selectionMode && styles.cardContentWithCheckbox]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.scoreContainer, { backgroundColor: getScoreColor(item.score) + '20' }]}>
+              <TrendingUp size={20} color={getScoreColor(item.score)} />
+              <Text style={[styles.scoreText, { color: getScoreColor(item.score) }]}>
+                {item.score}/100
+              </Text>
+            </View>
+            <View style={styles.dateContainer}>
+              <Calendar size={14} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+              <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
+                {formatDate(item.created_at)}
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={[styles.resultPreview, isDarkMode && styles.resultPreviewDark]}
+            numberOfLines={2}
+          >
+            {item.result || 'Outfit analysis'}
+          </Text>
+
+          <View style={styles.cardFooter}>
+            <Text style={[styles.tapToView, isDarkMode && styles.tapToViewDark]}>
+              {selectionMode ? 'Tap to select' : 'Tap to view details'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <FlatList
-      data={history}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.listContent}
-      showsVerticalScrollIndicator={false}
-      scrollEnabled={false}
-    />
+    <View style={styles.container}>
+      {selectionMode && (
+        <View style={[styles.selectionBar, isDarkMode && styles.selectionBarDark]}>
+          <View style={styles.selectionInfo}>
+            <Text style={[styles.selectionCount, isDarkMode && styles.selectionCountDark]}>
+              {selectedItems.size} selected
+            </Text>
+            <TouchableOpacity onPress={selectAll} style={styles.selectAllButton}>
+              <Text style={styles.selectAllText}>Select All</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.selectionActions}>
+            <TouchableOpacity
+              onPress={deselectAll}
+              style={[styles.actionButton, styles.cancelButton]}
+              disabled={isDeleting}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={[
+                styles.actionButton,
+                styles.deleteButton,
+                selectedItems.size === 0 && styles.deleteButtonDisabled,
+              ]}
+              disabled={selectedItems.size === 0 || isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <>
+                  <Trash2 size={18} color={Colors.white} />
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <FlatList
+        data={history}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   centerContainer: {
     paddingVertical: 60,
     alignItems: 'center',
@@ -342,5 +510,102 @@ const styles = StyleSheet.create({
   },
   tapToViewDark: {
     color: Colors.primary,
+  },
+  // Selection mode styles
+  historyCardSelected: {
+    borderWidth: 2,
+  },
+  historyCardSelectedLight: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '08',
+  },
+  historyCardSelectedDark: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '15',
+  },
+  checkboxContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardContentWithCheckbox: {
+    paddingRight: 40,
+  },
+  selectionBar: {
+    backgroundColor: Colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 12,
+  },
+  selectionBarDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  selectionInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectionCount: {
+    fontSize: FontSizes.body,
+    fontWeight: FontWeights.bold,
+    color: Colors.text,
+  },
+  selectionCountDark: {
+    color: Colors.white,
+  },
+  selectAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  selectAllText: {
+    fontSize: FontSizes.small,
+    color: Colors.primary,
+    fontWeight: FontWeights.semibold,
+  },
+  selectionActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+    minWidth: 100,
+  },
+  cancelButton: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cancelButtonText: {
+    fontSize: FontSizes.small,
+    color: Colors.textSecondary,
+    fontWeight: FontWeights.semibold,
+  },
+  deleteButton: {
+    backgroundColor: Colors.error,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: Colors.error + '60',
+    opacity: 0.6,
+  },
+  deleteButtonText: {
+    fontSize: FontSizes.small,
+    color: Colors.white,
+    fontWeight: FontWeights.bold,
   },
 });

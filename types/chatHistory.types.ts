@@ -23,6 +23,22 @@ export interface BaseConversationData {
 }
 
 /**
+ * Product Recommendation data structure
+ */
+export interface ProductRecommendationData {
+  id: string;
+  name: string;
+  imageUrl: string;
+  marketplace: 'flipkart' | 'amazon' | 'meesho';
+  productUrl: string;
+  price?: string;
+  rating?: number;
+  itemType: string; // e.g., 'tie', 'shoes', 'blazer'
+  missingReason?: string; // Why this item was recommended
+  priority?: number;
+}
+
+/**
  * Outfit Score conversation data structure
  * Contains all information needed to reproduce the outfit scoring result
  */
@@ -56,6 +72,11 @@ export interface OutfitScoreConversationData extends BaseConversationData {
     colorSuggestions?: string[];
     styleTips?: string[];
     accessoryRecommendations?: string[];
+  };
+  
+  // Product recommendations (new field for storing product links)
+  productRecommendations?: {
+    [itemType: string]: ProductRecommendationData[];
   };
   
   // Optional metadata
