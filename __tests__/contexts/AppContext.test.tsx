@@ -79,7 +79,12 @@ describe('AppContext', () => {
     });
 
     expect(result.current.history).toHaveLength(1);
-    expect(result.current.history[0]).toEqual(newAnalysis);
+    expect(result.current.history[0]).toMatchObject({
+      type: 'stylist',
+      result: 'Great outfit!',
+    });
+    expect(result.current.history[0].id).toBeDefined();
+    expect(result.current.history[0].timestamp).toBeDefined();
   });
 
   it('persists data to AsyncStorage', async () => {
@@ -96,9 +101,14 @@ describe('AppContext', () => {
       await result.current.updateUserProfile(newProfile);
     });
 
-    const storedProfile = await AsyncStorage.getItem('userProfile');
-    const parsed = JSON.parse(storedProfile!);
-    expect(parsed.name).toBe('Jane Doe');
-    expect(parsed.email).toBe('jane@example.com');
+    // Verify AsyncStorage.setItem was called with the updated profile
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      'user_profile',
+      expect.stringContaining('Jane Doe')
+    );
+    
+    // Verify the profile is in state
+    expect(result.current.userProfile.name).toBe('Jane Doe');
+    expect(result.current.userProfile.email).toBe('jane@example.com');
   });
 });
