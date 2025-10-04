@@ -21,9 +21,16 @@ import Colors from '@/constants/colors';
 import getThemedColors from '@/constants/themedColors';
 import { convertImageToBase64, generateTextWithImage } from '@/utils/pollinationsAI';
 import { saveChatHistory, getChatHistoryById } from '@/utils/chatHistory';
-import { OutfitScoreConversationData } from '@/types/chatHistory.types';
+import { OutfitScoreConversationData, ProductRecommendationData } from '@/types/chatHistory.types';
 import { useAuthStore } from '@/store/authStore';
 import { useApp } from '@/contexts/AppContext';
+import { ProductRecommendationsSection } from '@/components/ProductRecommendations';
+import {
+  generateProductRecommendations,
+  extractMissingItems,
+  ProductRecommendation,
+  MissingItem,
+} from '@/utils/productRecommendations';
 
 interface ScoringResult {
   score: number;
@@ -31,6 +38,7 @@ interface ScoringResult {
   feedback: string;
   strengths: string[];
   improvements: string[];
+  missingItems?: string[]; // New field for missing items
 }
 
 
@@ -42,6 +50,8 @@ export default function OutfitScorerScreen() {
   const [scoreAnim] = useState(new Animated.Value(0));
   const [displayScore, setDisplayScore] = useState<number>(0);
   const [context, setContext] = useState<string>('');
+  const [recommendations, setRecommendations] = useState<Map<string, ProductRecommendation[]>>(new Map());
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false);
   
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
@@ -83,6 +93,19 @@ export default function OutfitScorerScreen() {
       };
       
       setResult(loadedResult);
+      
+      // Load product recommendations from database
+      try {
+        const { loadProductRecommendations } = await import('@/utils/productRecommendationStorage');
+        const loadedRecs = await loadProductRecommendations(historyId, session!.user.id);
+        if (loadedRecs && loadedRecs.size > 0) {
+          setRecommendations(loadedRecs);
+          console.log('Loaded product recommendations from history');
+        }
+      } catch (recError) {
+        console.error('Error loading product recommendations:', recError);
+        // Continue even if recommendations fail to load
+      }
       
       // Animate score
       scoreAnim.setValue(0);
@@ -154,13 +177,16 @@ export default function OutfitScorerScreen() {
       const contextInfo = context.trim() ? `\n\nContext: The user is going to ${context}. Consider this when evaluating the outfit's appropriateness.` : '';
       const prompt = `You are a professional fashion stylist AI. Analyze this outfit image and provide a detailed assessment.${contextInfo}
 
+IMPORTANT: Look carefully at the image and identify any MISSING or inappropriate items for the given context/occasion.
+
 Respond in the following JSON format (respond ONLY with valid JSON, no other text):
 {
   "score": <number between 0-100>,
   "category": "<Outstanding/Excellent/Good/Fair/Needs Work>",
   "feedback": "<2-3 sentences of overall feedback>",
   "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "improvements": ["<improvement 1>", "<improvement 2>"]
+  "improvements": ["<improvement 1>", "<improvement 2>"],
+  "missingItems": ["<missing item 1 (e.g., 'tie', 'shoes', 'blazer', 'necklace')>", "<missing item 2>"]
 }
 
 Consider:
@@ -169,6 +195,13 @@ Consider:
 - Style appropriateness${context.trim() ? ' for the occasion' : ''}
 - Accessory choices
 - Overall aesthetic appeal
+- MISSING ITEMS: Specifically identify missing clothing items or accessories that would complete the outfit (e.g., tie for interview, proper shoes, blazer, jewelry, bag, watch, etc.)
+
+In the "improvements" array, mention specific missing items. For example:
+- "Consider adding a tie for a more professional look"
+- "Shoes are missing - formal leather shoes would complete the outfit"
+- "A blazer would add polish to this outfit"
+- "Adding a necklace or jewelry would enhance the look"
 
 Be constructive, specific, and encouraging.`;
 
@@ -185,9 +218,46 @@ Be constructive, specific, and encouraging.`;
       setResult(parsedResult);
       setIsAnalyzing(false);
 
+      // Generate product recommendations based on missing items
+      let generatedRecommendations: Map<string, ProductRecommendation[]> = new Map();
+      
+      if (parsedResult.improvements && parsedResult.improvements.length > 0) {
+        setIsLoadingRecommendations(true);
+        try {
+          const missingItems = extractMissingItems(parsedResult.improvements, context);
+          console.log('Detected missing items:', missingItems);
+          
+          if (missingItems.length > 0) {
+            generatedRecommendations = await generateProductRecommendations(missingItems, context);
+            setRecommendations(generatedRecommendations);
+            console.log('Generated recommendations for', generatedRecommendations.size, 'item types');
+          }
+        } catch (recError) {
+          console.error('Error generating recommendations:', recError);
+          // Don't show error to user - recommendations are optional
+        } finally {
+          setIsLoadingRecommendations(false);
+        }
+      }
+
       // Save to chat history if user has enabled it
       if (session?.user && selectedImage) {
         try {
+          // Prepare product recommendations data for storage (use the newly generated ones)
+          const productRecsData: { [itemType: string]: ProductRecommendationData[] } = {};
+          generatedRecommendations.forEach((products: ProductRecommendation[], itemType: string) => {
+            productRecsData[itemType] = products.map((p: ProductRecommendation) => ({
+              id: p.id,
+              name: p.name,
+              imageUrl: p.imageUrl,
+              marketplace: p.marketplace,
+              productUrl: p.productUrl,
+              price: p.price,
+              rating: p.rating,
+              itemType: itemType,
+            }));
+          });
+
           const conversationData: OutfitScoreConversationData = {
             type: 'outfit_score',
             timestamp: new Date().toISOString(),
@@ -198,16 +268,54 @@ Be constructive, specific, and encouraging.`;
               improvements: parsedResult.improvements,
               summary: parsedResult.feedback,
             },
+            productRecommendations: Object.keys(productRecsData).length > 0 ? productRecsData : undefined,
             images: [selectedImage],
           };
 
-          await saveChatHistory({
+          const savedHistory = await saveChatHistory({
             userId: session.user.id,
             type: 'outfit_score',
             conversationData,
           });
           
-          console.log('Outfit analysis saved to history');
+          console.log('Outfit analysis saved to history', {
+            historyId: savedHistory.data?.id,
+            recommendationsCount: generatedRecommendations.size
+          });
+
+          // Save product recommendations to dedicated table (use the newly generated ones)
+          console.log('Checking if we should save recommendations:', {
+            hasHistoryId: !!savedHistory.data?.id,
+            recommendationsSize: generatedRecommendations.size,
+            shouldSave: savedHistory.data?.id && generatedRecommendations.size > 0
+          });
+          
+          if (savedHistory.data?.id && generatedRecommendations.size > 0) {
+            console.log('Starting to save product recommendations to database...');
+            console.log('Recommendations data:', Array.from(generatedRecommendations.entries()).map(([type, products]) => ({
+              itemType: type,
+              productCount: products.length,
+              products: products.map(p => ({ name: p.name, marketplace: p.marketplace }))
+            })));
+            
+            const { saveProductRecommendations } = await import('@/utils/productRecommendationStorage');
+            const saveResult = await saveProductRecommendations(
+              savedHistory.data.id,
+              session.user.id,
+              generatedRecommendations
+            );
+            
+            if (saveResult.success) {
+              console.log('✅ Product recommendations saved to database successfully');
+            } else {
+              console.error('❌ Failed to save product recommendations:', saveResult.error);
+            }
+          } else {
+            console.log('⚠️ Skipping recommendation save:', {
+              noHistoryId: !savedHistory.data?.id,
+              noRecommendations: generatedRecommendations.size === 0
+            });
+          }
         } catch (historyError) {
           console.error('Failed to save to history:', historyError);
           // Don't show error to user - history saving is optional
@@ -432,6 +540,25 @@ Be constructive, specific, and encouraging.`;
                   ))}
                 </View>
 
+                {/* Product Recommendations Section */}
+                {isLoadingRecommendations && (
+                  <View style={[styles.recommendationsLoading, { backgroundColor: themedColors.card }]}>
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                    <Text style={[styles.recommendationsLoadingText, { color: themedColors.textSecondary }]}>
+                      Finding perfect products for you...
+                    </Text>
+                  </View>
+                )}
+
+                {!isLoadingRecommendations && recommendations.size > 0 && (
+                  <ProductRecommendationsSection
+                    recommendations={recommendations}
+                    onProductPress={(product) => {
+                      console.log('Product clicked:', product.name, 'from', product.marketplace);
+                    }}
+                  />
+                )}
+
                 <TouchableOpacity
                   style={[
                     styles.newAnalysisButton,
@@ -441,6 +568,7 @@ Be constructive, specific, and encouraging.`;
                     setSelectedImage(null);
                     setResult(null);
                     setContext('');
+                    setRecommendations(new Map());
                   }}
                 >
                   <Text style={styles.newAnalysisText}>Analyze Another Outfit</Text>
@@ -672,6 +800,19 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     lineHeight: 22,
+  },
+  recommendationsLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    borderRadius: 16,
+    gap: 12,
+    marginVertical: 8,
+  },
+  recommendationsLoadingText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   newAnalysisButton: {
     paddingVertical: 16,
