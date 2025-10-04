@@ -1,6 +1,6 @@
 import { Audio } from 'expo-av';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Mic, MicOff, X, RotateCw, Volume2 } from 'lucide-react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -13,11 +13,17 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
+import getThemedColors from '@/constants/themedColors';
 import { generateText, generateAudioResponse } from '@/utils/pollinationsAI';
+import { saveChatHistory, getChatHistoryById } from '@/utils/chatHistory';
+import { AIStylistConversationData } from '@/types/chatHistory.types';
+import { useAuthStore } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,6 +46,42 @@ export default function AIStylistScreen() {
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams();
+  const session = useAuthStore((state) => state.session);
+  const conversationIdRef = useRef<string | null>(null);
+  
+  // Theme detection
+  const colorScheme = useColorScheme();
+  const { settings } = useApp();
+  const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
+  const themedColors = getThemedColors(isDarkMode);
+
+  // Load from history if historyId is provided
+  useEffect(() => {
+    if (params.historyId && session?.user) {
+      loadFromHistory(params.historyId as string);
+    }
+  }, [params.historyId]);
+
+  const loadFromHistory = async (historyId: string) => {
+    try {
+      const entry = await getChatHistoryById(historyId, session!.user.id);
+      if (!entry || entry.conversation_data.type !== 'ai_stylist') return;
+
+      const data = entry.conversation_data as AIStylistConversationData;
+      conversationIdRef.current = historyId;
+      
+      // Restore the conversation messages
+      const restoredMessages: Message[] = data.messages.map((msg) => ({
+        role: msg.role,
+        text: msg.content,
+      }));
+      
+      setMessages(restoredMessages);
+    } catch (error) {
+      console.error('Error loading history:', error);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -57,8 +99,47 @@ export default function AIStylistScreen() {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
+      
+      // Auto-save conversation after new messages (with debounce)
+      const saveTimer = setTimeout(() => {
+        saveConversation();
+      }, 2000); // Save 2 seconds after last message
+      
+      return () => clearTimeout(saveTimer);
     }
   }, [messages]);
+
+  const saveConversation = async () => {
+    if (!session?.user || messages.length === 0) return;
+
+    try {
+      const conversationData: AIStylistConversationData = {
+        type: 'ai_stylist',
+        timestamp: new Date().toISOString(),
+        messages: messages.map((msg) => ({
+          role: msg.role,
+          content: msg.text,
+          timestamp: new Date().toISOString(),
+        })),
+      };
+
+      await saveChatHistory({
+        userId: session.user.id,
+        type: 'ai_stylist',
+        conversationData,
+      });
+
+      console.log('AI Stylist conversation saved to history');
+    } catch (error) {
+      console.error('Failed to save conversation:', error);
+    }
+  };
+
+  const handleBack = async () => {
+    // Save conversation before leaving
+    await saveConversation();
+    router.back();
+  };
 
   const startPulse = () => {
     Animated.loop(
@@ -250,7 +331,7 @@ Provide a natural, conversational response as if you're looking at their outfit 
 
   if (!permission) {
     return (
-      <View style={styles.permissionContainer}>
+      <View style={[styles.permissionContainer, { backgroundColor: themedColors.background }]}>
         <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
@@ -258,16 +339,18 @@ Provide a natural, conversational response as if you're looking at their outfit 
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
+      <View style={[styles.permissionContainer, { backgroundColor: themedColors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.permissionTitle}>Camera Access Required</Text>
-        <Text style={styles.permissionText}>
+        <Text style={[styles.permissionTitle, { color: themedColors.text }]}>
+          Camera Access Required
+        </Text>
+        <Text style={[styles.permissionText, { color: themedColors.textSecondary }]}>
           We need your permission to access the camera for real-time outfit analysis
         </Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
           <Text style={styles.permissionButtonText}>Grant Permission</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -283,7 +366,7 @@ Provide a natural, conversational response as if you're looking at their outfit 
           <View style={styles.topBar}>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => router.back()}
+              onPress={handleBack}
             >
               <X size={28} color={Colors.white} />
             </TouchableOpacity>
@@ -310,14 +393,18 @@ Provide a natural, conversational response as if you're looking at their outfit 
                       key={index}
                       style={[
                         styles.messageBubble,
-                        msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                        msg.role === 'user' 
+                          ? styles.userBubble 
+                          : [styles.assistantBubble, { backgroundColor: themedColors.card }],
                       ]}
                     >
                       <View style={styles.messageContent}>
                         <Text
                           style={[
                             styles.messageText,
-                            msg.role === 'user' ? styles.userText : styles.assistantText,
+                            msg.role === 'user' 
+                              ? styles.userText 
+                              : [styles.assistantText, { color: themedColors.text }],
                           ]}
                         >
                           {msg.text}
@@ -439,7 +526,6 @@ const styles = StyleSheet.create({
   },
   assistantBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: Colors.white,
   },
   messageText: {
     fontSize: 15,
@@ -449,7 +535,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   assistantText: {
-    color: Colors.text,
+    // Color will be applied dynamically
   },
   controls: {
     alignItems: 'center',
@@ -482,7 +568,6 @@ const styles = StyleSheet.create({
   },
   permissionContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -490,13 +575,11 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 24,
     fontWeight: '700' as const,
-    color: Colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,
-    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 22,

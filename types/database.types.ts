@@ -50,6 +50,7 @@ export type Database = {
       }
       analysis_history: {
         Row: {
+          conversation_data: Json | null
           created_at: string | null
           feedback: Json | null
           id: string
@@ -57,9 +58,11 @@ export type Database = {
           result: string
           score: number | null
           type: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          conversation_data?: Json | null
           created_at?: string | null
           feedback?: Json | null
           id?: string
@@ -67,9 +70,11 @@ export type Database = {
           result: string
           score?: number | null
           type: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          conversation_data?: Json | null
           created_at?: string | null
           feedback?: Json | null
           id?: string
@@ -77,6 +82,7 @@ export type Database = {
           result?: string
           score?: number | null
           type?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []

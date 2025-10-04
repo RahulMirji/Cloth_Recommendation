@@ -5,19 +5,20 @@
  * Allows viewing and editing profile information.
  * 
  * Features:
- * - Profile photo upload
+ * - Profile photo upload with glowing gradient effect
  * - Edit/save modes
  * - All profile fields (name, email, phone, age, gender, bio)
  * - Logout functionality
- * - Navigation to settings
- * - Dark mode support
- * - Glassmorphism UI
+ * - Full dark/light theme support
+ * - Glassmorphism UI with gradient accents
+ * - Enhanced visual hierarchy
  */
 
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { X, Camera, User, Mail, Phone, Calendar, Users, Edit3, LogOut, Settings as SettingsIcon } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { X, Camera, User, Mail, Phone, Calendar, Users, Edit3, LogOut } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -29,17 +30,21 @@ import {
   TextInput,
   Alert,
   Modal,
+  useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-import { useAuthStore, useUserProfile, useIsDarkMode } from '@/store/authStore';
+import { useAuthStore, useUserProfile } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 
 export function ProfileScreen() {
   const userProfile = useUserProfile();
-  const isDarkMode = useIsDarkMode();
+  const { settings } = useApp();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
   const { updateUserProfile, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(userProfile);
@@ -164,20 +169,44 @@ export function ProfileScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Profile Photo */}
+          {/* Profile Photo with Glowing Effect */}
           <View style={styles.profileHeader}>
             <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
-              {editedProfile.profileImage ? (
-                <Image source={{ uri: editedProfile.profileImage }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
-                  <User size={48} color={isDarkMode ? Colors.white : Colors.primary} />
+              {/* Glowing Ring Effect */}
+              <LinearGradient
+                colors={[Colors.primary, Colors.secondary, Colors.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.glowRing}
+              >
+                <View style={styles.avatarInnerContainer}>
+                  {editedProfile.profileImage ? (
+                    <Image source={{ uri: editedProfile.profileImage }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
+                      <User size={48} color={isDarkMode ? Colors.white : Colors.primary} />
+                    </View>
+                  )}
                 </View>
-              )}
-              <View style={styles.cameraIcon}>
-                <Camera size={16} color={Colors.white} />
-              </View>
+              </LinearGradient>
+              {/* Camera Icon with Gradient */}
+              <LinearGradient
+                colors={[Colors.primary, Colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cameraIcon}
+              >
+                <Camera size={18} color={Colors.white} strokeWidth={2.5} />
+              </LinearGradient>
             </TouchableOpacity>
+            <Text style={[styles.profileName, isDarkMode && styles.textDark]}>
+              {userProfile.name || 'User'}
+            </Text>
+            {userProfile.email && (
+              <Text style={[styles.profileEmail, isDarkMode && styles.profileEmailDark]}>
+                {userProfile.email}
+              </Text>
+            )}
           </View>
 
           {/* Name Field */}
@@ -375,26 +404,14 @@ export function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Action Buttons (View Mode) */}
+          {/* Logout Button (View Mode Only) */}
           {!isEditing && (
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-                onPress={() => router.push('/(tabs)/settings')}
-              >
-                <SettingsIcon size={20} color={isDarkMode ? Colors.white : Colors.text} />
-                <Text style={[styles.actionButtonText, isDarkMode && styles.textDark]}>
-                  {Strings.profile.settingsButton}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <LogOut size={20} color={Colors.error} />
-                <Text style={styles.logoutButtonText}>
-                  {Strings.profile.logoutButton}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <LogOut size={22} color={Colors.error} strokeWidth={2.5} />
+              <Text style={styles.logoutButtonText}>
+                {Strings.profile.logoutButton}
+              </Text>
+            </TouchableOpacity>
           )}
         </ScrollView>
       </View>
@@ -454,38 +471,76 @@ const styles = StyleSheet.create({
   profileHeader: {
     alignItems: 'center',
     paddingVertical: 32,
+    paddingBottom: 24,
   },
   avatarContainer: {
     position: 'relative',
+    marginBottom: 16,
+  },
+  glowRing: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    padding: 4,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  avatarInnerContainer: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    overflow: 'hidden',
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.white,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: '100%',
+    height: '100%',
   },
   avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarPlaceholderDark: {
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.25)',
   },
   cameraIcon: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
+    bottom: 4,
+    right: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: Colors.white,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  profileName: {
+    fontSize: FontSizes.heading,
+    fontWeight: FontWeights.bold,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: FontSizes.body,
+    color: Colors.textSecondary,
+    fontWeight: FontWeights.regular,
+  },
+  profileEmailDark: {
+    color: Colors.textLight,
   },
   section: {
     gap: 12,
@@ -566,7 +621,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: 24,
-    padding: 16,
+    padding: 18,
     borderRadius: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
@@ -576,38 +631,17 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.semibold,
     color: Colors.textSecondary,
   },
-  actionButtons: {
-    marginTop: 24,
-    gap: 12,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    gap: 8,
-  },
-  actionButtonDark: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  actionButtonText: {
-    fontSize: FontSizes.body,
-    fontWeight: FontWeights.semibold,
-    color: Colors.text,
-  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: 18,
+    marginTop: 24,
     borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   logoutButtonText: {
     fontSize: FontSizes.body,
