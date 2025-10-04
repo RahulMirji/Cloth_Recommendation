@@ -19,14 +19,15 @@ import { Cloud, Smartphone, Shield, Info, Moon } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 
 import Colors from '@/constants/colors';
-import { useAuthStore, useAppSettings, useIsDarkMode } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { useColorScheme } from 'react-native';
 
 export function SettingsScreen() {
-  const settings = useAppSettings();
-  const isDarkMode = useIsDarkMode();
-  const { updateSettings, clearAllData } = useAuthStore();
+  const { settings, updateSettings, clearAllData } = useApp();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
   /**
    * Toggle Cloud AI setting
@@ -118,7 +119,7 @@ export function SettingsScreen() {
                 </View>
               </View>
               <Switch
-                value={isDarkMode}
+                value={settings.isDarkMode}
                 onValueChange={handleDarkModeToggle}
                 trackColor={{ false: Colors.border, true: Colors.secondary }}
                 thumbColor={Colors.white}

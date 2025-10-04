@@ -25,7 +25,6 @@ import {
 } from 'react-native';
 
 import { useUserProfile, useIsDarkMode } from '@/store/authStore';
-import { UserProfileCard } from '@/components/UserProfileCard';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
@@ -62,12 +61,6 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {/* User Profile Card */}
-        {userProfile && userProfile.name && (
-          <View style={styles.profileCardContainer}>
-            <UserProfileCard onPress={() => router.push('/profile')} />
-          </View>
-        )}
 
         {/* Feature Cards */}
         <View style={styles.cardsContainer}>
@@ -190,10 +183,6 @@ const styles = StyleSheet.create({
   },
   subtitleDark: {
     color: Colors.textLight,
-  },
-  profileCardContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
   },
   cardsContainer: {
     paddingHorizontal: 24,
