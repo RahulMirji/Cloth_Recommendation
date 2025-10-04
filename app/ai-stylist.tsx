@@ -1,8 +1,8 @@
 import { Audio } from 'expo-av';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { router, Stack } from 'expo-router';
-import { Mic, MicOff, X, RotateCw, Volume2 } from 'lucide-react-native';
-import React, { useState, useRef, useEffect } from 'react';
+import { Mic, MicOff, X, RotateCw, Volume2, Square, Power } from 'lucide-react-native';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,29 +17,35 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-import { generateText, generateAudioResponse } from '@/utils/pollinationsAI';
-
-interface Message {
-  role: 'user' | 'assistant';
-  text: string;
-  audioUri?: string;
-}
+import { generateTextWithImage, convertImageToBase64 } from '@/utils/pollinationsAI';
+import { SpeechToTextService, generateSpeakBackAudio, fallbackSpeechToText } from '@/utils/audioUtils';
+import { ChatMessage, ChatSession, generateChatSummary, saveChatSession, generateSessionId, createChatMessage } from '@/utils/chatUtils';
+import { supabase } from '@/lib/supabase';
 
 export default function AIStylistScreen() {
   const [facing, setFacing] = useState<CameraType>('front');
   const [permission, requestPermission] = useCameraPermissions();
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [isRecordingUnloaded, setIsRecordingUnloaded] = useState<boolean>(false);
+  const [isConversationActive, setIsConversationActive] = useState<boolean>(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [speechService] = useState(() => SpeechToTextService.getInstance());
   const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const currentSessionRef = useRef<ChatSession | null>(null);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
+  // Toggle this to false if you don't want the microphone to auto-start after
+  // the assistant audio finishes playing. For the requested behavior we keep
+  // auto-listen OFF so the assistant won't start speaking or listening again
+  // automatically.
+  const AUTO_LISTEN_AFTER_AUDIO = false;
 
   useEffect(() => {
     return () => {
@@ -49,8 +55,11 @@ export default function AIStylistScreen() {
       if (recording && !isRecordingUnloaded) {
         recording.stopAndUnloadAsync().catch(err => console.log('Error unloading recording:', err));
       }
+      if (speechService.isCurrentlyListening()) {
+        speechService.stopListening();
+      }
     };
-  }, [sound, recording, isRecordingUnloaded]);
+  }, [sound, recording, isRecordingUnloaded, speechService]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -59,6 +68,43 @@ export default function AIStylistScreen() {
       }, 100);
     }
   }, [messages]);
+
+  const startNewConversation = useCallback(async () => {
+    // Create new chat session but do NOT speak. We'll wait for the user to
+    // speak, transcribe, capture an image, then send both text+image to the
+    // model.
+    const sessionId = generateSessionId();
+    currentSessionRef.current = {
+      id: sessionId,
+      messages: [],
+      imageBase64: undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages([]);
+    setIsConversationActive(true);
+  }, [capturedImage]);
+
+  const captureCurrentImage = useCallback(async () => {
+    try {
+      if (cameraRef.current) {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.7,
+          base64: true,
+        });
+        
+        if (photo.base64) {
+          setCapturedImage(`data:image/jpeg;base64,${photo.base64}`);
+          return photo.base64;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error capturing image:', error);
+      Alert.alert('Error', 'Failed to capture image from camera');
+      return null;
+    }
+  }, []);
 
   const startPulse = () => {
     Animated.loop(
@@ -86,134 +132,219 @@ export default function AIStylistScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
-  const startRecording = async () => {
+  const startSpeechRecognition = useCallback(async () => {
     try {
-      console.log('Requesting audio permissions...');
-      const permission = await Audio.requestPermissionsAsync();
-      
-      if (!permission.granted) {
-        Alert.alert('Permission Required', 'Please grant microphone permission to use voice input.');
-        return;
+      if (!isConversationActive) {
+        // Start a session but don't generate any assistant speech yet.
+        await startNewConversation();
+        // continue to listening flow (do not return)
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      console.log('Starting recording...');
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      
-      setRecording(newRecording);
-      setIsRecordingUnloaded(false);
       setIsListening(true);
       startPulse();
-      console.log('Recording started');
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-      Alert.alert('Error', 'Failed to start recording. Please try again.');
-    }
-  };
+      
+      const userMessage = createChatMessage('user', 'Speaking...');
+      setMessages(prev => [...prev, userMessage]);
 
-  const stopRecording = async () => {
-    if (!recording || isRecordingUnloaded) return;
+      await speechService.startListening(
+        async (result) => {
+          if (result.isFinal) {
+            setIsListening(false);
+            stopPulse();
 
-    try {
-      console.log('Stopping recording...');
+            // Update the message with transcribed text
+            const userTextMessage = createChatMessage('user', result.text);
+            setMessages(prev => [...prev.slice(0, -1), userTextMessage]);
+
+            // Add to session
+            if (currentSessionRef.current) {
+              currentSessionRef.current.messages.push(userTextMessage);
+            }
+
+            // Capture an image from the camera now that we have the user's
+            // final utterance, then send text+image to the model.
+            try {
+              const imgBase64 = await captureCurrentImage();
+              if (imgBase64 && currentSessionRef.current) {
+                currentSessionRef.current.imageBase64 = `data:image/jpeg;base64,${imgBase64}`;
+              }
+            } catch (err) {
+              console.warn('Image capture failed before sending to model:', err);
+            }
+
+            // Get AI response with image and voice (this will request the TTS audio and play it)
+            await getAIResponseWithImageAndVoice(result.text);
+          } else {
+            // Update interim result
+            setMessages(prev => [
+              ...prev.slice(0, -1),
+              createChatMessage('user', `${result.text}...`)
+            ]);
+          }
+        },
+        async (error) => {
+          console.error('Speech recognition error:', error);
+          setIsListening(false);
+          stopPulse();
+          Alert.alert('Speech Recognition Error', 'Please try speaking again or use fallback mode.');
+          
+          // Fallback to manual text input  
+          const fallbackText = await fallbackSpeechToText();
+          setMessages(prev => [
+            ...prev.slice(0, -1),
+            createChatMessage('user', fallbackText)
+          ]);
+          getAIResponseWithImageAndVoice(fallbackText);
+        },
+        { continuous: false }
+      );
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
       setIsListening(false);
       stopPulse();
-      
-      const uri = recording.getURI();
-      console.log('Recording URI:', uri);
-      
-      await recording.stopAndUnloadAsync();
-      setIsRecordingUnloaded(true);
-      setRecording(null);
-      
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-      
-      console.log('Recording stopped');
-
-      if (uri) {
-        setMessages((prev) => [...prev, { role: 'user', text: 'Analyzing your outfit...' }]);
-        await getAIResponse();
-      }
-    } catch (err) {
-      console.error('Failed to stop recording:', err);
-      setIsRecordingUnloaded(true);
-      setRecording(null);
-      Alert.alert('Error', 'Failed to process recording.');
+      Alert.alert('Error', 'Failed to start speech recognition. Please try again.');
     }
-  };
+  }, [isConversationActive, speechService, startNewConversation, capturedImage]);
 
-  const handleVoicePress = () => {
+  const stopSpeechRecognition = useCallback(() => {
+    speechService.stopListening();
+    setIsListening(false);
+    stopPulse();
+  }, [speechService]);
+
+  const handleVoicePress = useCallback(() => {
     if (isListening) {
-      stopRecording();
+      stopSpeechRecognition();
     } else {
-      startRecording();
+      startSpeechRecognition();
     }
-  };
+  }, [isListening, startSpeechRecognition, stopSpeechRecognition]);
 
-  const getAIResponse = async () => {
+  const getAIResponseWithImageAndVoice = useCallback(async (voiceText: string) => {
     setIsProcessing(true);
     
     try {
-      console.log('Generating AI response...');
-      const response = await generateText({
-        messages: [
-          {
-            role: 'user',
-            content: `You are a professional fashion stylist AI assistant. The user is showing you their outfit through the camera. Provide helpful, friendly, and specific fashion advice. Keep your response concise (2-3 sentences). Focus on:
-- Color coordination
-- Fit and proportions
-- Style suggestions
+      console.log('Generating AI response with image and voice...');
+      
+      // Prepare conversation context
+      const conversationHistory = messages.map(msg => 
+        `${msg.role}: ${msg.text}`
+      ).join('\n');
+      
+      const imageBase64 = capturedImage || currentSessionRef.current?.imageBase64;
+      
+      const systemPrompt = `You are a professional fashion stylist AI assistant. The user is having a conversation with you about their outfit. You can see them through the camera.
+
+${imageBase64 ? 'You have access to an image of their current outfit.' : 'The user has not yet shared an image of their outfit.'}
+
+Conversation history:
+${conversationHistory}
+
+Latest user message: "${voiceText}"
+
+Provide helpful, friendly, and specific fashion advice based on:
+- Their current question or concern
+- Any outfit image you can see
+- The conversation context
+- Color coordination and style suggestions
+- Fit and proportions advice
 - Accessory recommendations
 
-Provide a natural, conversational response as if you're looking at their outfit right now.`,
-          },
-        ],
-        stream: true,
-      });
+Keep responses conversational and natural, as if you're talking to them in person. Be encouraging and constructive.`;
 
-      console.log('AI Response:', response);
+      let response: string;
+      
+      if (imageBase64) {
+        // Use vision model with image
+        response = await generateTextWithImage(imageBase64, systemPrompt);
+      } else {
+        // Use text-only model if not enough for structured call
+        // For now, we'll proceed without the formal generateText call
+        // and use generateTextWithImage with a dummy image
+        response = await generateTextWithImage(
+          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', // 1x1 transparent gif
+          systemPrompt
+        );
+      }
 
       if (response) {
-        let audioUri: string | undefined;
+        const assistantMessage = createChatMessage('assistant', response);
         
-        try {
-          console.log('Generating audio response...');
-          audioUri = await generateAudioResponse({ text: response });
-          console.log('Audio generated:', audioUri);
-        } catch (audioError) {
-          console.error('Failed to generate audio:', audioError);
+        // Add to current session
+        if (currentSessionRef.current) {
+          currentSessionRef.current.messages.push(assistantMessage);
         }
-
-        setMessages((prev) => [
+        
+        setMessages(prev => [
           ...prev.slice(0, -1),
-          { role: 'assistant', text: response, audioUri },
+          assistantMessage,
+          createChatMessage('assistant', '') // Placeholder for audio message
         ]);
 
-        if (audioUri) {
-          await playAudio(audioUri);
+        // Generate audio using the new curl endpoint
+        try {
+          console.log('Generating speak-back audio...');
+          console.log('Assistant will speak:', response);
+          const audioResponse = await generateSpeakBackAudio(response);
+          
+          // Update the message with audio info
+          setMessages(prev => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = {
+              ...assistantMessage,
+              audioUri: audioResponse.uri
+            };
+            return newMessages;
+          });
+          
+          await playAudio(audioResponse.uri);
+
+          // Optionally re-enable microphone after audio finishes
+          if (AUTO_LISTEN_AFTER_AUDIO) {
+            setTimeout(() => {
+              if (isConversationActive && !isListening) {
+                startSpeechRecognition();
+              }
+            }, 1000);
+          }
+          
+        } catch (audioError) {
+          console.error('Failed to generate audio:', audioError);
+          // Still show text response even if audio fails
+          setMessages(prev => prev.slice(0, -1).concat(assistantMessage));
+          
+          // Re-enable microphone only if configured
+          if (AUTO_LISTEN_AFTER_AUDIO) {
+            setTimeout(() => {
+              if (isConversationActive && !isListening) {
+                startSpeechRecognition();
+              }
+            }, 1000);
+          }
         }
       }
     } catch (error) {
       console.error('Error getting AI response:', error);
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        { 
-          role: 'assistant', 
-          text: 'Sorry, I had trouble analyzing your outfit. Please try again.' 
-        },
-      ]);
+      const errorMessage = createChatMessage('assistant', 'Sorry, I had trouble understanding. Please try speaking again.');
+      
+      if (currentSessionRef.current) {
+        currentSessionRef.current.messages.push(errorMessage);
+      }
+      
+      setMessages(prev => [...prev.slice(0, -1), errorMessage]);
+      
+      // Re-enable microphone only if configured
+      if (AUTO_LISTEN_AFTER_AUDIO) {
+        setTimeout(() => {
+          if (isConversationActive && !isListening) {
+            startSpeechRecognition();
+          }
+        }, 1000);
+      }
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [messages, capturedImage, isConversationActive, isListening, startSpeechRecognition]);
 
   const playAudio = async (uri: string) => {
     try {
@@ -248,6 +379,83 @@ Provide a natural, conversational response as if you're looking at their outfit 
     }
   };
 
+  const quitConversation = useCallback(async () => {
+    try {
+      // Stop any ongoing speech recognition
+      if (speechService.isCurrentlyListening()) {
+        speechService.stopListening();
+      }
+      
+      setIsConversationActive(false);
+      setIsListening(false);
+      stopPulse();
+
+      // Generate and save chat summary
+      if (currentSessionRef.current && currentSessionRef.current.messages.length > 0) {
+        Alert.alert(
+          'Saving Conversation',
+          'Creating summary and saving to history...',
+          [{ text: 'OK', style: 'default' }],
+          { cancelable: false }
+        );
+
+        try {
+          const summary = await generateChatSummary(currentSessionRef.current);
+          console.log('Chat summary generated:', summary);
+
+          // Get current user (you might need to adjust this based on your auth setup)
+          const { data: { user } } = await supabase.auth.getUser();
+          const userId = user?.id;
+
+          // Save to Supabase
+          await saveChatSession(
+            {
+              ...currentSessionRef.current,
+              messages: currentSessionRef.current.messages,
+              imageBase64: currentSessionRef.current.imageBase64,
+              createdAt: currentSessionRef.current.createdAt
+            },
+            userId || undefined
+          );
+
+          Alert.alert(
+            'Conversation Saved!',
+            `Your chat session has been saved successfully.\n\nSummary:\n${summary.substring(0, 200)}...`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Reset everything
+                  setMessages([]);
+                  setCapturedImage(null);
+                  currentSessionRef.current = null;
+                  router.back();
+                }
+              }
+            ]
+          );
+        } catch (error) {
+          console.error('Error saving conversation:', error);
+          Alert.alert(
+            'Error Saving',
+            'Failed to save conversation. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        // No conversation to save
+        setMessages([]);
+        setCapturedImage(null);
+        currentSessionRef.current = null;
+        router.back();
+      }
+    } catch (error) {
+      console.error('Error quitting conversation:', error);
+      Alert.alert('Error', 'Failed to quit conversation properly.');
+      router.back();
+    }
+  }, [speechService]);
+
   if (!permission) {
     return (
       <View style={styles.permissionContainer}>
@@ -278,7 +486,10 @@ Provide a natural, conversational response as if you're looking at their outfit 
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <CameraView ref={cameraRef} style={styles.camera} facing={facing}>
+      <View style={styles.cameraContainer}>
+        <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+
+        {/* Overlay rendered as absolutely positioned sibling so CameraView has no children */}
         <View style={[styles.overlay, { paddingTop: insets.top }]}>
           <View style={styles.topBar}>
             <TouchableOpacity
@@ -288,6 +499,16 @@ Provide a natural, conversational response as if you're looking at their outfit 
               <X size={28} color={Colors.white} />
             </TouchableOpacity>
             
+            <View style={styles.topCenter}>
+              <Text style={styles.cameraLabel}>AI Stylist</Text>
+              {isConversationActive && (
+                <View style={styles.statusIndicator}>
+                  <View style={[styles.statusDot, { backgroundColor: Colors.success }]} />
+                  <Text style={styles.statusText}>Live Chat</Text>
+                </View>
+              )}
+            </View>
+            
             <TouchableOpacity
               style={styles.flipButton}
               onPress={toggleCameraFacing}
@@ -295,6 +516,18 @@ Provide a natural, conversational response as if you're looking at their outfit 
               <RotateCw size={24} color={Colors.white} />
             </TouchableOpacity>
           </View>
+          
+          {isConversationActive && (
+            <View style={styles.quitButtonContainer}>
+              <TouchableOpacity
+                style={styles.quitButton}
+                onPress={quitConversation}
+              >
+                <Power size={20} color={Colors.white} />
+                <Text style={styles.quitButtonText}>Quit Chat</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.bottomSection}>
             {messages.length > 0 && (
@@ -349,24 +582,37 @@ Provide a natural, conversational response as if you're looking at their outfit 
                   style={[
                     styles.micButton,
                     isListening && styles.micButtonActive,
+                    !isConversationActive && styles.micButtonInactive,
                   ]}
                   onPress={handleVoicePress}
                   activeOpacity={0.8}
                 >
                   {isListening ? (
                     <MicOff size={32} color={Colors.white} />
-                  ) : (
+                  ) : isConversationActive ? (
                     <Mic size={32} color={Colors.white} />
+                  ) : (
+                    <Square size={32} color={Colors.white} />
                   )}
                 </TouchableOpacity>
               </Animated.View>
               <Text style={styles.micLabel}>
-                {isListening ? 'Tap to stop' : 'Tap to speak'}
+                {isListening 
+                  ? 'Speak now...' 
+                  : isConversationActive 
+                    ? 'Tap to speak' 
+                    : 'Tap to start chat'
+                }
               </Text>
+              {!isConversationActive && (
+                <Text style={styles.startHint}>
+                  Start a conversation with your AI stylist
+                </Text>
+              )}
             </View>
           </View>
         </View>
-      </CameraView>
+      </View>
     </View>
   );
 }
@@ -376,18 +622,69 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.black,
   },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   camera: {
     flex: 1,
   },
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'transparent',
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  topCenter: {
+    alignItems: 'center',
+  },
+  cameraLabel: {
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  statusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    color: Colors.white,
+    fontSize: 12,
+    opacity: 0.9,
+  },
+  quitButtonContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  quitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.error,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 8,
+  },
+  quitButtonText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   closeButton: {
     width: 44,
@@ -467,9 +764,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    // web-friendly shadow
+    ...(Platform.OS === 'web' ? { boxShadow: '0px 4px 8px rgba(0,0,0,0.3)' } : {}),
   },
   micButtonActive: {
     backgroundColor: Colors.error,
+  },
+  micButtonInactive: {
+    backgroundColor: Colors.primary,
+    opacity: 0.8,
+  },
+  startHint: {
+    marginTop: 8,
+    fontSize: 14,
+    color: Colors.white,
+    opacity: 0.8,
+    textAlign: 'center',
   },
   micLabel: {
     marginTop: 12,
@@ -479,6 +789,7 @@ const styles = StyleSheet.create({
     textShadowColor: Colors.black,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+    ...(Platform.OS === 'web' ? { textShadow: `0px 1px 4px ${Colors.black}` } : {}),
   },
   permissionContainer: {
     flex: 1,

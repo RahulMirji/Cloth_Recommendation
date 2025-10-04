@@ -20,24 +20,112 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
   try {
     // Disable streaming on mobile as ReadableStream is not supported in React Native
     const shouldStream = Platform.OS === 'web' && (options.stream ?? false);
-    
-    const response = await fetch('https://text.pollinations.ai/openai', {
+    // Helper to safely stringify messages for logging (truncate large data URIs)
+    const safeMessagesForLog = (msgs: TextGenerationMessage[]) => {
+      try {
+        return JSON.stringify(msgs, (key, value) => {
+          if (typeof value === 'string' && value.startsWith && value.startsWith('data:image')) {
+            // don't log full base64 image; truncate for diagnostics
+            return `[DATA_URI length=${value.length} truncated]`;
+          }
+          return value;
+        });
+      } catch (e) {
+        return '[unserializable messages]';
+      }
+    };
+
+    const initialUrl = 'https://text.pollinations.ai/openai';
+    const initialBody = {
+      model: 'gemini',
+      messages: options.messages,
+      stream: shouldStream,
+    };
+
+    console.log('[pollinations] POST', initialUrl, 'body:', safeMessagesForLog(options.messages));
+
+    const response = await fetch(initialUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer -GCuD_ey-sBxfDW7',
       },
-      body: JSON.stringify({
-        model: 'gemini',
-        messages: options.messages,
-        stream: shouldStream,
-      }),
+      body: JSON.stringify(initialBody),
     });
 
     if (!response.ok) {
+      // Capture server response for debugging
       const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      console.error('[pollinations] Initial API Error Response:', errorText);
+
+      // Try a safe retry: use token query param and simplify message shapes to plain text
+      try {
+        const token = '-GCuD_ey-sBxfDW7';
+        const retryUrl = `https://text.pollinations.ai/openai?token=${encodeURIComponent(token)}`;
+
+        // Simplify message shapes: convert any array/object content into a readable text
+        const simplifyMessages = (msgs: TextGenerationMessage[]) => {
+          return msgs.map(m => {
+            let contentStr = '';
+            if (Array.isArray(m.content)) {
+              contentStr = m.content.map(c => {
+                if (typeof c === 'string') return c;
+                if ((c as any).type === 'text') return (c as any).text;
+                if ((c as any).type === 'image_url') {
+                  const url = (c as any).image_url?.url || '';
+                  if (typeof url === 'string' && url.startsWith('data:image')) {
+                    return `[image data URI length=${url.length} truncated]`;
+                  }
+                  return `[image: ${url}]`;
+                }
+                return '';
+              }).join('\n');
+            } else if (typeof m.content === 'string') {
+              contentStr = m.content;
+            } else {
+              try {
+                contentStr = JSON.stringify(m.content);
+              } catch (e) {
+                contentStr = String(m.content);
+              }
+            }
+
+            return { role: m.role, content: contentStr };
+          });
+        };
+
+        const retryBody = {
+          model: 'gpt-3.5-turbo',
+          messages: simplifyMessages(options.messages),
+          stream: shouldStream,
+        };
+
+        console.log('[pollinations] Retrying POST', retryUrl, 'body:', JSON.stringify(retryBody));
+
+        const retryResp = await fetch(retryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(retryBody),
+        });
+
+        if (!retryResp.ok) {
+          const retryText = await retryResp.text();
+          console.error('[pollinations] Retry API Error Response:', retryText);
+          throw new Error(`API request failed after retry: ${retryResp.status} - ${retryText}`);
+        }
+
+        // If streaming, fall back to non-stream parse in retry for simplicity
+        if (shouldStream) {
+          const data = await retryResp.json();
+          return data.choices?.[0]?.message?.content || '';
+        }
+
+        const retryData = await retryResp.json();
+        return retryData.choices?.[0]?.message?.content || '';
+      } catch (retryError) {
+        console.error('[pollinations] Retry failed:', retryError);
+        throw new Error(`API request failed: ${response.status} - ${errorText}; retry error: ${retryError instanceof Error ? retryError.message : String(retryError)}`);
+      }
     }
 
     if (shouldStream) {
