@@ -228,9 +228,16 @@ Alternative web deployment options:
 - **Vercel**: Deploy directly from your GitHub repository
 - **Netlify**: Connect your GitHub repo to Netlify for automatic deployments
 
-## App Features
+## 🎯 Key Features
 
-This template includes:
+### ✨ User Profile Management
+- **Real-time data sync** with Supabase database
+- **Beautiful profile cards** with glassmorphism design
+- **Auto-fetch on login** - User data loaded automatically after authentication
+- **Persistent storage** - Profile cached locally for offline access
+- **Easy updates** - Profile changes sync to Supabase instantly
+
+### 📱 App Features
 
 - **Cross-platform compatibility** - Works on iOS, Android, and Web
 - **File-based routing** with Expo Router
@@ -239,6 +246,9 @@ This template includes:
 - **TypeScript support** for better development experience
 - **Async storage** for local data persistence
 - **Vector icons** with Lucide React Native
+- **Dark mode support** - Automatic theme switching
+- **Authentication** - Supabase Auth integration
+- **State management** - Zustand for global state
 
 ## Project Structure
 

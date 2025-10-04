@@ -3,6 +3,7 @@
  * 
  * Manages user authentication state and profile data.
  * Uses AsyncStorage for persistence across app restarts.
+ * Integrates with Supabase for real-time user data synchronization.
  * 
  * This store is a wrapper around the existing AppContext logic,
  * keeping all the same functionality while providing a cleaner interface.
@@ -10,6 +11,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { supabase } from '@/lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 /**
  * User Profile Data Structure
@@ -55,9 +58,11 @@ interface AuthState {
   settings: AppSettings;
   history: AnalysisHistory[];
   isLoading: boolean;
+  session: Session | null;
 
   // Actions
   initializeAuth: () => Promise<void>;
+  loadUserProfileFromSupabase: (userId: string) => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
@@ -104,21 +109,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   history: [],
   isLoading: true,
+  session: null,
 
   /**
-   * Initialize authentication state from AsyncStorage
+   * Initialize authentication state from AsyncStorage and Supabase
    * Called once when app starts
+   * Sets up auth state listener to automatically fetch user data on login
    */
   initializeAuth: async () => {
     try {
-      // Load user profile
-      const storedProfile = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
-      if (storedProfile) {
-        const profile = JSON.parse(storedProfile);
-        set({
-          userProfile: profile,
-          isAuthenticated: !!(profile.name && profile.email),
-        });
+      // Check for existing Supabase session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (currentSession?.user) {
+        set({ session: currentSession, isAuthenticated: true });
+        // Fetch user profile from Supabase
+        await get().loadUserProfileFromSupabase(currentSession.user.id);
+      } else {
+        // No session, load from local storage
+        const storedProfile = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+        if (storedProfile) {
+          const profile = JSON.parse(storedProfile);
+          set({
+            userProfile: profile,
+            isAuthenticated: !!(profile.name && profile.email),
+          });
+        }
       }
 
       // Load settings
@@ -132,6 +148,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (storedHistory) {
         set({ history: JSON.parse(storedHistory) });
       }
+
+      // Listen for auth state changes
+      supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        set({ session: newSession, isAuthenticated: !!newSession });
+
+        if (newSession?.user) {
+          // User logged in - fetch profile from Supabase
+          await get().loadUserProfileFromSupabase(newSession.user.id);
+        } else {
+          // User logged out - clear profile
+          set({ userProfile: DEFAULT_PROFILE });
+          await AsyncStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+        }
+      });
     } catch (error) {
       console.error('Error initializing auth:', error);
     } finally {
@@ -140,23 +170,95 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   /**
+   * Load user profile from Supabase
+   * Fetches user data from the user_profiles table and updates the store
+   */
+  loadUserProfileFromSupabase: async (userId: string) => {
+    try {
+      console.log('Fetching user profile from Supabase for user:', userId);
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile from Supabase:', error);
+        return;
+      }
+
+      if (data) {
+        const profile: UserProfile = {
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          age: data.age?.toString() || '',
+          gender: (data.gender as 'male' | 'female' | 'other' | '') || '',
+          bio: data.bio || '',
+          profileImage: data.profile_image || '',
+        };
+        
+        console.log('User profile loaded from Supabase:', profile);
+        
+        set({ userProfile: profile });
+        
+        // Cache profile locally
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.USER_PROFILE,
+          JSON.stringify(profile)
+        );
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  },
+
+  /**
    * Update user profile
-   * Saves to AsyncStorage and updates authentication state
+   * Saves to both AsyncStorage and Supabase
    */
   updateUserProfile: async (updates: Partial<UserProfile>) => {
     try {
       const currentProfile = get().userProfile;
+      const session = get().session;
       const updatedProfile = { ...currentProfile, ...updates };
       
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.USER_PROFILE,
-        JSON.stringify(updatedProfile)
-      );
-      
+      // Update local state
       set({
         userProfile: updatedProfile,
         isAuthenticated: !!(updatedProfile.name && updatedProfile.email),
       });
+      
+      // Save to AsyncStorage
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.USER_PROFILE,
+        JSON.stringify(updatedProfile)
+      );
+
+      // Update in Supabase if user is authenticated
+      if (session?.user) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            name: updatedProfile.name || undefined,
+            email: updatedProfile.email || undefined,
+            phone: updatedProfile.phone || undefined,
+            age: updatedProfile.age ? parseInt(updatedProfile.age) : undefined,
+            gender: updatedProfile.gender || undefined,
+            bio: updatedProfile.bio || undefined,
+            profile_image: updatedProfile.profileImage || undefined,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', session.user.id);
+
+        if (error) {
+          console.error('Error updating profile in Supabase:', error);
+          throw error;
+        }
+        
+        console.log('User profile updated in Supabase');
+      }
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;
@@ -165,15 +267,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   /**
    * Logout user
-   * Clears profile data and sets authenticated to false
+   * Signs out from Supabase and clears all local data
    */
   logout: async () => {
     try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear local data
       await AsyncStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+      
       set({
         userProfile: DEFAULT_PROFILE,
         isAuthenticated: false,
+        session: null,
       });
+      
+      console.log('User logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
       throw error;
