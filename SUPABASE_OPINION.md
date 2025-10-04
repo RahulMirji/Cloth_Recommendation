@@ -8,29 +8,29 @@
 
 ### 1. **Solves Your Core Requirements**
 
-| Requirement | Solution |
-|-------------|----------|
-| 📝 Store user information | ✅ PostgreSQL profiles table with RLS |
-| 📊 Store outfit analysis logs | ✅ outfit_analyses table with image URLs |
-| 🎨 Store AI recommendations | ✅ stylist_recommendations table |
-| 🔍 View history anytime | ✅ Query by user_id with sorting/filtering |
-| 🔐 User authentication | ✅ Built-in auth (email, Google, Apple, etc.) |
-| 🖼️ Store images | ✅ Supabase Storage (not base64 in DB!) |
-| 📱 Works on mobile & web | ✅ React Native SDK available |
-| 💰 Cost effective | ✅ Free tier: 500MB DB, 1GB storage, 50k auth users |
+| Requirement                   | Solution                                            |
+| ----------------------------- | --------------------------------------------------- |
+| 📝 Store user information     | ✅ PostgreSQL profiles table with RLS               |
+| 📊 Store outfit analysis logs | ✅ outfit_analyses table with image URLs            |
+| 🎨 Store AI recommendations   | ✅ stylist_recommendations table                    |
+| 🔍 View history anytime       | ✅ Query by user_id with sorting/filtering          |
+| 🔐 User authentication        | ✅ Built-in auth (email, Google, Apple, etc.)       |
+| 🖼️ Store images               | ✅ Supabase Storage (not base64 in DB!)             |
+| 📱 Works on mobile & web      | ✅ React Native SDK available                       |
+| 💰 Cost effective             | ✅ Free tier: 500MB DB, 1GB storage, 50k auth users |
 
 ### 2. **Better Than Current AsyncStorage**
 
-| Feature | AsyncStorage | Supabase |
-|---------|-------------|----------|
-| Cross-device sync | ❌ No | ✅ Yes |
-| Data persistence | ⚠️ Can be cleared | ✅ Cloud backup |
-| Storage limit | ⚠️ 6-10MB | ✅ 500MB-8GB |
-| Query capability | ❌ No | ✅ SQL queries |
-| Real-time updates | ❌ No | ✅ Yes |
-| Multi-user support | ❌ No | ✅ Yes |
-| Security | ⚠️ Local only | ✅ Row Level Security |
-| Image storage | ❌ Base64 (inefficient) | ✅ Object storage |
+| Feature            | AsyncStorage            | Supabase              |
+| ------------------ | ----------------------- | --------------------- |
+| Cross-device sync  | ❌ No                   | ✅ Yes                |
+| Data persistence   | ⚠️ Can be cleared       | ✅ Cloud backup       |
+| Storage limit      | ⚠️ 6-10MB               | ✅ 500MB-8GB          |
+| Query capability   | ❌ No                   | ✅ SQL queries        |
+| Real-time updates  | ❌ No                   | ✅ Yes                |
+| Multi-user support | ❌ No                   | ✅ Yes                |
+| Security           | ⚠️ Local only           | ✅ Row Level Security |
+| Image storage      | ❌ Base64 (inefficient) | ✅ Object storage     |
 
 ### 3. **Aligns with Modern Best Practices**
 
@@ -45,13 +45,15 @@
 ## 🎨 User Experience Improvements
 
 ### Current Flow (AsyncStorage):
+
 ```
 User analyzes outfit → AI response shown → Data lost on uninstall
 ```
 
 ### New Flow (Supabase):
+
 ```
-User analyzes outfit 
+User analyzes outfit
   → AI response shown
   → Image uploaded to storage
   → Analysis saved to database
@@ -63,6 +65,7 @@ User analyzes outfit
 ### New Features Enabled:
 
 1. **History Tab** 📜
+
    - See all past outfit analyses
    - Click any item → Full detail view
    - Filter by date, type, score
@@ -70,11 +73,13 @@ User analyzes outfit
    - Delete unwanted logs
 
 2. **Bookmarks** 🔖
+
    - Favorite recommendations
    - Quick access to best outfits
    - Share with friends
 
 3. **Analytics** 📊
+
    - "You've analyzed 47 outfits this month!"
    - "Your average outfit score: 8.2/10"
    - "Most worn style: Casual"
@@ -91,12 +96,14 @@ User analyzes outfit
 ## 🏗️ Architecture Benefits
 
 ### Current Architecture:
+
 ```
 App → AsyncStorage (local only)
      → Pollinations AI API
 ```
 
 ### New Architecture:
+
 ```
 App → Supabase Auth (user management)
     → Supabase Database (PostgreSQL with RLS)
@@ -108,17 +115,20 @@ App → Supabase Auth (user management)
 ### Key Improvements:
 
 1. **Authentication Layer**
+
    - No more manual user management
    - Secure session handling
    - Password reset, email verification built-in
    - Social logins (Google, Apple) with 2 lines of code
 
 2. **Data Persistence**
+
    - Users can switch devices
    - Data survives app uninstalls
    - Automatic backups
 
 3. **Image Optimization**
+
    - No more base64 strings
    - Direct image URLs
    - Automatic image optimization
@@ -135,7 +145,9 @@ App → Supabase Auth (user management)
 ## 💡 Implementation Strategy: My Recommendation
 
 ### Phase 1: Foundation (Week 1)
+
 **Priority: HIGH** 🔥
+
 - Install Supabase SDK
 - Create database schema
 - Implement authentication
@@ -144,7 +156,9 @@ App → Supabase Auth (user management)
 **Why first?** Authentication is the foundation. Everything depends on having a logged-in user.
 
 ### Phase 2: Logging (Week 2)
+
 **Priority: HIGH** 🔥
+
 - Create logging service
 - Update AI Stylist screen to log recommendations
 - Update Outfit Scorer screen to log analyses
@@ -153,7 +167,9 @@ App → Supabase Auth (user management)
 **Why second?** Start collecting data immediately. The sooner we start logging, the more valuable history users will have.
 
 ### Phase 3: History UI (Week 3)
+
 **Priority: MEDIUM** 🟡
+
 - Create History tab
 - List view of analyses
 - Detail modal on click
@@ -163,7 +179,9 @@ App → Supabase Auth (user management)
 **Why third?** Once data is being logged, give users a way to view it. This is when the value becomes visible to users.
 
 ### Phase 4: Enhancements (Week 4+)
+
 **Priority: LOW** 🔵
+
 - Bookmarks
 - Search and filters
 - Analytics dashboard
@@ -177,31 +195,39 @@ App → Supabase Auth (user management)
 ## 🚨 Potential Challenges & Solutions
 
 ### Challenge 1: Migration from AsyncStorage
+
 **Problem**: Existing users have data in AsyncStorage
-**Solution**: 
+**Solution**:
+
 - On first login after update, migrate data to Supabase
 - Keep AsyncStorage as backup for offline mode
 - Show migration progress UI
 
 ### Challenge 2: Image Upload Size
+
 **Problem**: Large images can be slow to upload
 **Solution**:
+
 - Compress images before upload (use expo-image-manipulator)
 - Show upload progress
 - Set max size limit (5MB)
 - Use thumbnail for list view, full image for detail view
 
 ### Challenge 3: Offline Mode
+
 **Problem**: Users might not always have internet
 **Solution**:
+
 - Cache recent analyses in AsyncStorage
 - Queue actions when offline
 - Sync when online
 - Show "offline mode" indicator
 
 ### Challenge 4: Cost at Scale
+
 **Problem**: Free tier limits
 **Solution**:
+
 - Free tier: 500MB DB, 1GB storage, 50k users
 - At scale, upgrade to Pro ($25/month for 8GB DB, 100GB storage)
 - Optimize: Delete old images, compress data
@@ -213,18 +239,20 @@ App → Supabase Auth (user management)
 
 ### Supabase Pricing:
 
-| Tier | Cost | Database | Storage | Bandwidth | Users |
-|------|------|----------|---------|-----------|-------|
-| **Free** | $0/mo | 500MB | 1GB | 2GB/mo | 50k |
-| **Pro** | $25/mo | 8GB | 100GB | 250GB/mo | 100k |
-| **Team** | $599/mo | 125GB | 200GB | 1TB/mo | Unlimited |
+| Tier     | Cost    | Database | Storage | Bandwidth | Users     |
+| -------- | ------- | -------- | ------- | --------- | --------- |
+| **Free** | $0/mo   | 500MB    | 1GB     | 2GB/mo    | 50k       |
+| **Pro**  | $25/mo  | 8GB      | 100GB   | 250GB/mo  | 100k      |
+| **Team** | $599/mo | 125GB    | 200GB   | 1TB/mo    | Unlimited |
 
 ### Estimated Usage:
+
 - Average user: 10 analyses/month
 - Average image: 500KB (after compression)
 - Average analysis text: 5KB
 
 **For 1,000 users:**
+
 - Storage: 1,000 × 10 × 500KB = 5GB
 - Database: 1,000 × 10 × 5KB = 50MB
 - **Total: 5GB storage, 50MB database**
@@ -238,17 +266,18 @@ App → Supabase Auth (user management)
 
 ### Your App vs Competitors:
 
-| Feature | Your App (with Supabase) | Typical Fashion Apps |
-|---------|------------------------|---------------------|
-| AI Outfit Analysis | ✅ | ⚠️ Limited |
-| Outfit History | ✅ | ❌ No |
-| Cross-device Sync | ✅ | ⚠️ Premium only |
-| Personalized Recommendations | ✅ | ✅ |
-| Free Tier | ✅ | ❌ Paywalled |
-| Fast & Modern UI | ✅ | ⚠️ Varies |
-| Privacy (RLS) | ✅ | ❌ Unclear |
+| Feature                      | Your App (with Supabase) | Typical Fashion Apps |
+| ---------------------------- | ------------------------ | -------------------- |
+| AI Outfit Analysis           | ✅                       | ⚠️ Limited           |
+| Outfit History               | ✅                       | ❌ No                |
+| Cross-device Sync            | ✅                       | ⚠️ Premium only      |
+| Personalized Recommendations | ✅                       | ✅                   |
+| Free Tier                    | ✅                       | ❌ Paywalled         |
+| Fast & Modern UI             | ✅                       | ⚠️ Varies            |
+| Privacy (RLS)                | ✅                       | ❌ Unclear           |
 
 **Unique Selling Points:**
+
 1. **AI-powered outfit analysis** (core feature)
 2. **Complete history of recommendations** (new with Supabase)
 3. **Works offline** (AsyncStorage fallback)
@@ -273,12 +302,14 @@ App → Supabase Auth (user management)
 ### **Implementation Order:**
 
 **Phase 1 (Must-have):**
+
 1. Authentication (login, signup)
 2. Profile management
 3. Outfit analysis logging
 4. History tab
 
 **Phase 2 (Nice-to-have):**
+
 1. Bookmarks
 2. Search/filters
 3. Analytics
@@ -289,6 +320,7 @@ App → Supabase Auth (user management)
 **Now!** 🚀
 
 The foundation is ready:
+
 - App structure is solid
 - AI integration works
 - UI/UX is polished
@@ -300,7 +332,8 @@ The foundation is ready:
 
 **If you're ready to proceed:**
 
-1. **You**: 
+1. **You**:
+
    - Create Supabase account
    - Create project
    - Run database schema SQL
@@ -315,7 +348,8 @@ The foundation is ready:
    - Build history tab
    - Test everything
 
-**Estimated Timeline:** 
+**Estimated Timeline:**
+
 - Setup: 30 minutes (your part)
 - Implementation: 6-8 hours (my part)
 - Testing: 2 hours
@@ -334,6 +368,7 @@ Before we start, think about:
 5. **Analytics**: Track usage metrics (anonymously)?
 
 **My defaults** (if you're not sure):
+
 1. Email + Google + Apple
 2. Keep forever (storage is cheap)
 3. Yes (GDPR compliance)

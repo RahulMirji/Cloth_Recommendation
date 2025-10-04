@@ -143,6 +143,7 @@ This project uses GitHub Actions for continuous integration and deployment.
 ### Workflows
 
 1. **CI/CD Pipeline** - Runs on every push and PR
+
    - ✅ Run tests with coverage
    - ✅ TypeScript type checking
    - ✅ Build web and Android
@@ -150,6 +151,7 @@ This project uses GitHub Actions for continuous integration and deployment.
    - ✅ Deploy to production (master branch)
 
 2. **PR Checks** - Runs on every pull request
+
    - 📊 PR statistics
    - 🔍 Code quality checks
    - 📈 Test coverage report

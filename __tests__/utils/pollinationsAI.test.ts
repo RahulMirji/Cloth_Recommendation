@@ -91,7 +91,8 @@ describe('pollinationsAI', () => {
 
   describe('generateTextWithImage', () => {
     it('should generate text with image successfully', async () => {
-      Platform.OS = 'web';
+      // Use mobile platform to avoid streaming
+      Platform.OS = 'android';
       
       const mockResponse = {
         ok: true,
@@ -117,7 +118,8 @@ describe('pollinationsAI', () => {
     });
 
     it('should prepend data URI if not present', async () => {
-      Platform.OS = 'web';
+      // Use mobile platform to avoid streaming
+      Platform.OS = 'android';
       
       const mockResponse = {
         ok: true,

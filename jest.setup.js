@@ -1,15 +1,36 @@
+// Suppress console warnings in tests
+global.console = {
+  ...console,
+  warn: jest.fn(),
+  error: jest.fn(),
+};
+
+// Mock Expo's import.meta registry to avoid "import outside scope" errors
+global.__ExpoImportMetaRegistry = {
+  register: jest.fn(),
+  get: jest.fn(),
+};
+
+// Polyfill structuredClone for Jest
+if (typeof global.structuredClone === 'undefined') {
+  global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
+}
+
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
 // Mock expo-router
+const mockRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  back: jest.fn(),
+};
+
 jest.mock('expo-router', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-  }),
+  router: mockRouter,
+  useRouter: () => mockRouter,
   usePathname: () => '/',
   Stack: {
     Screen: 'Screen',
@@ -57,10 +78,33 @@ jest.mock('lucide-react-native', () => ({
   Lock: 'Lock',
   LogOut: 'LogOut',
   ChevronRight: 'ChevronRight',
+  Cloud: 'Cloud',
+  Smartphone: 'Smartphone',
+  Shield: 'Shield',
+  Info: 'Info',
 }));
 
 // Mock react-native-onboarding-swiper
 jest.mock('react-native-onboarding-swiper', () => 'Onboarding');
+
+// Mock authStore (Zustand store)
+jest.mock('./store/authStore', () => ({
+  useAuthStore: jest.fn(() => ({
+    updateSettings: jest.fn(),
+    clearAllData: jest.fn(),
+  })),
+  useAppSettings: jest.fn(() => ({
+    isDarkMode: false,
+    useCloudAI: true,
+    saveHistory: true,
+    useVoiceInteraction: true,
+  })),
+  useIsDarkMode: jest.fn(() => false),
+  useUserProfile: jest.fn(() => ({
+    name: 'Guest',
+    email: '',
+  })),
+}));
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => {}, { virtual: true });
