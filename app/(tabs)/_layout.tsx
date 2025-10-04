@@ -3,7 +3,6 @@ import { Home, Settings, User } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, Image, View, StyleSheet, Text, useColorScheme } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -14,7 +13,7 @@ export default function TabLayout() {
   const { userProfile, settings } = useApp();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
-  const navigationTheme = useNavigationTheme();
+  const navigationTheme = useNavigationTheme(isDarkMode);
 
   const ProfileButton = () => (
     <TouchableOpacity
@@ -32,21 +31,11 @@ export default function TabLayout() {
   );
 
   const LogoTitle = () => {
-    // Theme-aware gradient colors
-    const gradientColors: [string, string, string] = isDarkMode 
-      ? ['#A78BFA', '#F0ABFC', '#FCD34D'] // Lighter, softer gradients for dark mode
-      : ['#8B5CF6', '#EC4899', '#F59E0B']; // Vibrant gradients for light mode
-    
     return (
       <View style={styles.logoContainer}>
-        <LinearGradient
-          colors={gradientColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Text style={styles.logoText}>AI Cloth Recommendation</Text>
-        </LinearGradient>
+        <Text style={[styles.logoText, { color: isDarkMode ? Colors.white : Colors.text }]}>
+          AI Cloth Recommendation
+        </Text>
       </View>
     );
   };
@@ -115,26 +104,10 @@ const styles = StyleSheet.create({
   logoContainer: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  logoGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   logoText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF', // White text works well on both light and dark gradients
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
     letterSpacing: 0.5,
   },
 });

@@ -31,11 +31,11 @@ export interface NavigationTheme {
 }
 
 /**
- * Get navigation theme based on color scheme
+ * Get navigation theme based on color scheme and app settings
  */
-export const useNavigationTheme = (): NavigationTheme => {
+export const useNavigationTheme = (isDarkMode?: boolean): NavigationTheme => {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = isDarkMode !== undefined ? isDarkMode : colorScheme === 'dark';
 
   return {
     tabBarStyle: {
