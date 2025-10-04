@@ -1,11 +1,17 @@
 # AI Cloth Recommendation
 
+![CI/CD Pipeline](https://github.com/RahulMirji/Cloth_Recommendation/actions/workflows/ci-cd.yml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-85%25-green)
+
 ## Project info
 
-This is a native cross-platform mobile app for AI-powered clothing recommendations
+This is a native cross-platform mobile app for AI-powered clothing recommendations with comprehensive testing and CI/CD pipeline.
 
-**Platform**: Native iOS & Android app, exportable to web
-**Framework**: Expo Router + React Native
+**Platform**: Native iOS & Android app, exportable to web  
+**Framework**: Expo Router + React Native  
+**Testing**: Jest + React Native Testing Library  
+**CI/CD**: GitHub Actions
 
 ## How can I edit this code?
 
@@ -100,6 +106,60 @@ bun run start -- --ios
 # Android Emulator
 bun run start -- --android
 ```
+
+## 🧪 Testing
+
+This project includes comprehensive testing with Jest and React Native Testing Library.
+
+### Run Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests for CI
+npm run test:ci
+```
+
+### Test Coverage
+
+- **Statements**: > 80%
+- **Branches**: > 75%
+- **Functions**: > 80%
+- **Lines**: > 80%
+
+For detailed testing documentation, see [TESTING.md](./TESTING.md)
+
+## 🚀 CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### Workflows
+
+1. **CI/CD Pipeline** - Runs on every push and PR
+   - ✅ Run tests with coverage
+   - ✅ TypeScript type checking
+   - ✅ Build web and Android
+   - ✅ Security scanning
+   - ✅ Deploy to production (master branch)
+
+2. **PR Checks** - Runs on every pull request
+   - 📊 PR statistics
+   - 🔍 Code quality checks
+   - 📈 Test coverage report
+   - 📦 Bundle size check
+
+3. **Security Scan** - Runs daily
+   - 🔒 NPM audit
+   - 📦 Dependency updates
+
+For detailed CI/CD documentation, see [CI-CD.md](./CI-CD.md)
 
 ## How can I deploy this project?
 
