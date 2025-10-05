@@ -1,0 +1,18 @@
+# Exclude .rorkai directory from EAS builds
+
+# This directory contains React Native private API imports that cause build failures
+
+.rorkai/
+
+# Exclude other unnecessary files
+
+_.md
+!README.md
+coverage/
+**tests**/
+_.test.ts
+_.test.tsx
+_.spec.ts
+\*.spec.tsx
+.git/
+.github/

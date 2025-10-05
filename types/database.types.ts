@@ -50,6 +50,7 @@ export type Database = {
       }
       analysis_history: {
         Row: {
+          conversation_data: Json | null
           created_at: string | null
           feedback: Json | null
           id: string
@@ -57,9 +58,11 @@ export type Database = {
           result: string
           score: number | null
           type: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          conversation_data?: Json | null
           created_at?: string | null
           feedback?: Json | null
           id?: string
@@ -67,9 +70,11 @@ export type Database = {
           result: string
           score?: number | null
           type: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          conversation_data?: Json | null
           created_at?: string | null
           feedback?: Json | null
           id?: string
@@ -77,6 +82,7 @@ export type Database = {
           result?: string
           score?: number | null
           type?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -113,6 +119,62 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      product_recommendations: {
+        Row: {
+          analysis_id: string
+          created_at: string | null
+          id: string
+          item_type: string
+          marketplace: string
+          missing_reason: string | null
+          price: string | null
+          priority: number | null
+          product_image_url: string
+          product_name: string
+          product_url: string
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string | null
+          id?: string
+          item_type: string
+          marketplace: string
+          missing_reason?: string | null
+          price?: string | null
+          priority?: number | null
+          product_image_url: string
+          product_name: string
+          product_url: string
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string | null
+          id?: string
+          item_type?: string
+          marketplace?: string
+          missing_reason?: string | null
+          price?: string | null
+          priority?: number | null
+          product_image_url?: string
+          product_name?: string
+          product_url?: string
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recommendations_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_history"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_profiles: {
         Row: {
