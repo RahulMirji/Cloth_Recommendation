@@ -8,6 +8,7 @@
  * - Dark mode support
  * - Fetches history from local storage and Supabase
  * - Clean, modular design
+ * - Auto-refresh when screen gains focus
  */
 
 import React, { useState, useEffect } from 'react';
@@ -20,6 +21,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -36,6 +38,7 @@ export function HistoryScreen() {
   
   const [activeTab, setActiveTab] = useState<TabType>('outfit');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     // Simulate loading history data
@@ -48,6 +51,14 @@ export function HistoryScreen() {
     
     loadData();
   }, []);
+
+  // Auto-refresh when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📍 History screen focused - refreshing data');
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
@@ -109,9 +120,9 @@ export function HistoryScreen() {
           showsVerticalScrollIndicator={false}
         >
           {activeTab === 'outfit' ? (
-            <OutfitHistoryList isDarkMode={isDarkMode} />
+            <OutfitHistoryList key={refreshKey} isDarkMode={isDarkMode} />
           ) : (
-            <StylistHistoryList isDarkMode={isDarkMode} />
+            <StylistHistoryList key={refreshKey} isDarkMode={isDarkMode} />
           )}
         </ScrollView>
       )}

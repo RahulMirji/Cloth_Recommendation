@@ -48,13 +48,22 @@ export function HomeScreen() {
   }, [userProfile, userName]);
 
   const ProfileButton = () => {
-    const hasProfileImage = userProfile?.profileImage && userProfile.profileImage.trim() !== '';
+    // Validate that profile image is a valid URL (Supabase Storage or other valid URL)
+    const isValidUrl = (url: string | undefined): boolean => {
+      if (!url || url.trim() === '') return false;
+      // Check if it's a Supabase Storage URL or other valid http/https URL
+      return url.startsWith('http://') || url.startsWith('https://');
+    };
+    
+    const hasProfileImage = isValidUrl(userProfile?.profileImage);
     
     React.useEffect(() => {
       if (hasProfileImage) {
         console.log('🖼️ HomeScreen - Profile Image URI:', userProfile.profileImage);
+      } else if (userProfile?.profileImage) {
+        console.warn('⚠️ HomeScreen - Invalid profile image URI (not a URL):', userProfile.profileImage);
       }
-    }, [hasProfileImage]);
+    }, [hasProfileImage, userProfile?.profileImage]);
 
     return (
       <TouchableOpacity

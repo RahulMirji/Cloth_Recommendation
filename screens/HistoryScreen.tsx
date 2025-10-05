@@ -271,7 +271,7 @@ export default function HistoryScreen() {
           ) : (
             currentHistory.map((entry) => (
               <HistoryCard
-                key={entry.id}
+                key={`${entry.id}-${entry.updated_at || entry.created_at}`}
                 entry={entry}
                 isDarkMode={isDarkMode}
                 onPress={() => handleHistoryItemPress(entry)}

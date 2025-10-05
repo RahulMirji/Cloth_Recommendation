@@ -16,7 +16,6 @@
 
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Camera, User, Mail, Phone, Calendar, Users, Edit3, LogOut } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -29,7 +28,7 @@ import {
   Image,
   TextInput,
   Alert,
-  Modal,
+  ActivityIndicator,
   useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,13 +38,16 @@ import { useApp } from '@/contexts/AppContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { Footer } from '@/components/Footer';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 export function ProfileScreen() {
   const { userProfile, settings, updateUserProfile, logout } = useApp();
+  const { uploadProfileImage, isUploading } = useImageUpload();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(userProfile);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const insets = useSafeAreaInsets();
 
   // Log profile data for debugging
@@ -62,7 +64,7 @@ export function ProfileScreen() {
   }, [userProfile]);
 
   /**
-   * Pick profile image from gallery
+   * Pick profile image from gallery and upload to Supabase
    */
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -83,10 +85,41 @@ export function ProfileScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      const updates = { ...editedProfile, profileImage: result.assets[0].uri };
-      setEditedProfile(updates);
-      if (!isEditing) {
-        await updateUserProfile(updates);
+      setIsUploadingImage(true);
+      
+      try {
+        console.log('📤 Uploading profile image to Supabase Storage...');
+        
+        // Upload to Supabase Storage
+        const uploadResult = await uploadProfileImage(result.assets[0].uri);
+        
+        if (uploadResult.success && uploadResult.url) {
+          console.log('✅ Profile image uploaded successfully:', uploadResult.url);
+          
+          // Update profile with Supabase Storage URL
+          const updates = { ...editedProfile, profileImage: uploadResult.url };
+          setEditedProfile(updates);
+          
+          // Save to database if not in editing mode
+          if (!isEditing) {
+            await updateUserProfile(updates);
+            Alert.alert('Success', 'Profile photo updated successfully!');
+          }
+        } else {
+          console.error('❌ Image upload failed:', uploadResult.error);
+          Alert.alert(
+            'Upload Failed',
+            uploadResult.error || 'Failed to upload image. Please try again.'
+          );
+        }
+      } catch (error) {
+        console.error('❌ Exception during image upload:', error);
+        Alert.alert(
+          'Error',
+          'An error occurred while uploading your photo. Please try again.'
+        );
+      } finally {
+        setIsUploadingImage(false);
       }
     }
   };
@@ -138,51 +171,44 @@ export function ProfileScreen() {
   };
 
   return (
-    <Modal
-      visible={true}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => router.back()}
-    >
-      <View style={[styles.container, isDarkMode && styles.containerDark]}>
-        <BlurView
-          intensity={80}
-          tint={isDarkMode ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-            <X size={28} color={isDarkMode ? Colors.white : Colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, isDarkMode && styles.textDark]}>
-            {Strings.profile.title}
-          </Text>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => {
-              if (isEditing) {
-                handleSave();
-              } else {
-                setIsEditing(true);
-              }
-            }}
-          >
-            <Text style={[styles.editButtonText, isEditing && styles.editButtonTextActive]}>
-              {isEditing ? Strings.profile.saveButton : Strings.profile.editButton}
+    <View style={[styles.container, isDarkMode && styles.containerDark]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 }]}
+        showsVerticalScrollIndicator={false}
+      >
+          {/* Header - Now scrollable */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+              <X size={28} color={isDarkMode ? Colors.white : Colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, isDarkMode && styles.textDark]}>
+              {Strings.profile.title}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => {
+                if (isEditing) {
+                  handleSave();
+                } else {
+                  setIsEditing(true);
+                }
+              }}
+            >
+              <Text style={[styles.editButtonText, isEditing && styles.editButtonTextActive]}>
+                {isEditing ? Strings.profile.saveButton : Strings.profile.editButton}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
-          showsVerticalScrollIndicator={false}
-        >
+
           {/* Profile Photo with Glowing Effect */}
           <View style={styles.profileHeader}>
-            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
+            <TouchableOpacity 
+              style={styles.avatarContainer} 
+              onPress={pickImage}
+              disabled={isUploadingImage}
+            >
               {/* Glowing Ring Effect */}
               <LinearGradient
                 colors={[Colors.primary, Colors.secondary, Colors.primary]}
@@ -191,7 +217,11 @@ export function ProfileScreen() {
                 style={styles.glowRing}
               >
                 <View style={styles.avatarInnerContainer}>
-                  {editedProfile.profileImage ? (
+                  {isUploadingImage ? (
+                    <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
+                      <ActivityIndicator size="large" color={Colors.primary} />
+                    </View>
+                  ) : editedProfile.profileImage ? (
                     <Image source={{ uri: editedProfile.profileImage }} style={styles.avatar} />
                   ) : (
                     <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
@@ -201,14 +231,16 @@ export function ProfileScreen() {
                 </View>
               </LinearGradient>
               {/* Camera Icon with Gradient */}
-              <LinearGradient
-                colors={[Colors.primary, Colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.cameraIcon}
-              >
-                <Camera size={18} color={Colors.white} strokeWidth={2.5} />
-              </LinearGradient>
+              {!isUploadingImage && (
+                <LinearGradient
+                  colors={[Colors.primary, Colors.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cameraIcon}
+                >
+                  <Camera size={18} color={Colors.white} strokeWidth={2.5} />
+                </LinearGradient>
+              )}
             </TouchableOpacity>
             <Text style={[styles.profileName, isDarkMode && styles.textDark]}>
               {userProfile.name || 'User'}
@@ -429,7 +461,6 @@ export function ProfileScreen() {
           <Footer showSocialLinks={true} showQuickLinks={true} />
         </ScrollView>
       </View>
-    </Modal>
   );
 }
 
@@ -478,9 +509,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: 24,
+    flexGrow: 1,
   },
   profileHeader: {
     alignItems: 'center',
