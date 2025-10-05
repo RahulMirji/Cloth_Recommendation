@@ -35,21 +35,31 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-import { useAuthStore, useUserProfile } from '@/store/authStore';
 import { useApp } from '@/contexts/AppContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { Footer } from '@/components/Footer';
 
 export function ProfileScreen() {
-  const userProfile = useUserProfile();
-  const { settings } = useApp();
+  const { userProfile, settings, updateUserProfile, logout } = useApp();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
-  const { updateUserProfile, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(userProfile);
   const insets = useSafeAreaInsets();
+
+  // Log profile data for debugging
+  React.useEffect(() => {
+    console.log('🔍 Profile Screen Debug:');
+    console.log('  - User Profile:', userProfile);
+    console.log('  - Has email:', !!userProfile.email);
+    console.log('  - Has name:', !!userProfile.name);
+  }, [userProfile]);
+
+  // Update edited profile when userProfile changes
+  React.useEffect(() => {
+    setEditedProfile(userProfile);
+  }, [userProfile]);
 
   /**
    * Pick profile image from gallery

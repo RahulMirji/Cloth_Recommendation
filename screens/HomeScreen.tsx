@@ -26,7 +26,6 @@ import {
   Image,
 } from 'react-native';
 
-import { useUserProfile } from '@/store/authStore';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
@@ -35,40 +34,61 @@ import { OutfitScorerShowcase } from '@/components/OutfitScorerShowcase';
 import { Footer } from '@/components/Footer';
 
 export function HomeScreen() {
-  const userProfile = useUserProfile();
-  const { settings } = useApp();
+  const { settings, userProfile } = useApp();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
   // Get user name or default to 'Guest'
   const userName = userProfile?.name || 'Guest';
 
-  const ProfileButton = () => (
-    <TouchableOpacity
-      style={styles.profileButtonContainer}
-      onPress={() => router.push('/profile' as any)}
-      activeOpacity={0.7}
-    >
-      <View style={[
-        styles.profileButtonGlow,
-        userProfile?.profileImage && styles.profileButtonGlowActive
-      ]}>
-        {userProfile?.profileImage ? (
-          <Image 
-            source={{ uri: userProfile.profileImage }} 
-            style={styles.profileImage}
-          />
-        ) : (
-          <View style={[
-            styles.profilePlaceholder,
-            isDarkMode && styles.profilePlaceholderDark
-          ]}>
-            <User size={18} color={isDarkMode ? Colors.white : Colors.primary} strokeWidth={2.5} />
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🏠 HomeScreen - User Profile:', userProfile);
+    console.log('🏠 HomeScreen - User Name:', userName);
+  }, [userProfile, userName]);
+
+  const ProfileButton = () => {
+    const hasProfileImage = userProfile?.profileImage && userProfile.profileImage.trim() !== '';
+    
+    React.useEffect(() => {
+      if (hasProfileImage) {
+        console.log('🖼️ HomeScreen - Profile Image URI:', userProfile.profileImage);
+      }
+    }, [hasProfileImage]);
+
+    return (
+      <TouchableOpacity
+        style={styles.profileButtonContainer}
+        onPress={() => router.push('/profile' as any)}
+        activeOpacity={0.7}
+      >
+        <View style={[
+          styles.profileButtonGlow,
+          hasProfileImage && styles.profileButtonGlowActive
+        ]}>
+          {hasProfileImage ? (
+            <Image 
+              source={{ uri: userProfile.profileImage }} 
+              style={styles.profileImage}
+              onError={(error) => {
+                console.error('❌ Error loading profile image:', error.nativeEvent.error);
+              }}
+              onLoad={() => {
+                console.log('✅ Profile image loaded successfully');
+              }}
+            />
+          ) : (
+            <View style={[
+              styles.profilePlaceholder,
+              isDarkMode && styles.profilePlaceholderDark
+            ]}>
+              <User size={18} color={isDarkMode ? Colors.white : Colors.primary} strokeWidth={2.5} />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>

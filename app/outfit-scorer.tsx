@@ -22,7 +22,6 @@ import getThemedColors from '@/constants/themedColors';
 import { convertImageToBase64, generateTextWithImage } from '@/utils/pollinationsAI';
 import { saveChatHistory, getChatHistoryById } from '@/utils/chatHistory';
 import { OutfitScoreConversationData, ProductRecommendationData } from '@/types/chatHistory.types';
-import { useAuthStore } from '@/store/authStore';
 import { useApp } from '@/contexts/AppContext';
 import { ProductRecommendationsSection } from '@/components/ProductRecommendations';
 import {
@@ -56,27 +55,64 @@ export default function OutfitScorerScreen() {
   
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
-  const session = useAuthStore((state) => state.session);
+  
+  // Get session from AppContext (not authStore)
+  const { session, settings } = useApp();
   
   // Theme detection
   const colorScheme = useColorScheme();
-  const { settings } = useApp();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
   const themedColors = getThemedColors(isDarkMode);
 
   // Load from history if historyId is provided
   useEffect(() => {
+    console.log('🔄 History load check:', {
+      hasHistoryId: !!params.historyId,
+      historyId: params.historyId,
+      hasSession: !!session,
+      userId: session?.user?.id,
+    });
+    
     if (params.historyId && session?.user) {
       loadFromHistory(params.historyId as string);
+    } else if (params.historyId && !session?.user) {
+      console.warn('⚠️ History ID provided but no session found. Waiting for session...');
     }
-  }, [params.historyId]);
+  }, [params.historyId, session]);
 
   const loadFromHistory = async (historyId: string) => {
     try {
+      console.log('📥 Loading history with ID:', historyId);
       const entry = await getChatHistoryById(historyId, session!.user.id);
-      if (!entry || entry.conversation_data.type !== 'outfit_score') return;
+      
+      console.log('📦 History entry received:', entry ? 'YES' : 'NO');
+      if (!entry) {
+        console.error('❌ No history entry found for ID:', historyId);
+        return;
+      }
+      
+      console.log('📊 Entry data:', {
+        hasConversationData: !!entry.conversation_data,
+        conversationDataType: entry.conversation_data?.type,
+        entryType: entry.type,
+      });
+      
+      if (!entry.conversation_data) {
+        console.error('❌ No conversation_data in entry');
+        return;
+      }
+      
+      if (entry.conversation_data.type !== 'outfit_score') {
+        console.error('❌ Wrong conversation type:', entry.conversation_data.type);
+        return;
+      }
 
       const data = entry.conversation_data as OutfitScoreConversationData;
+      console.log('✅ Loading outfit score data:', {
+        hasImage: !!data.outfitImage,
+        score: data.overallScore,
+        hasFeedback: !!data.feedback,
+      });
       
       // Pre-populate the UI with the previous result
       setSelectedImage(data.outfitImage);
@@ -117,7 +153,8 @@ export default function OutfitScorerScreen() {
         useNativeDriver: false,
       }).start();
     } catch (error) {
-      console.error('Error loading history:', error);
+      console.error('❌ Error loading history:', error);
+      console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
     }
   };
 

@@ -30,7 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import { deleteChatHistory } from '@/utils/chatHistory';
 
 interface OutfitHistoryEntry {
@@ -48,7 +48,7 @@ interface OutfitHistoryListProps {
 
 export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
   const router = useRouter();
-  const session = useAuthStore((state) => state.session);
+  const { session } = useApp();
   const [history, setHistory] = useState<OutfitHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectionMode, setSelectionMode] = useState(false);

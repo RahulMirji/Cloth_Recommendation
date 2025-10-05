@@ -172,10 +172,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   /**
    * Load user profile from Supabase
    * Fetches user data from the user_profiles table and updates the store
+   * Creates profile if it doesn't exist (fallback for legacy users)
    */
   loadUserProfileFromSupabase: async (userId: string) => {
     try {
-      console.log('Fetching user profile from Supabase for user:', userId);
+      console.log('📥 Fetching user profile from Supabase for user:', userId);
       
       const { data, error } = await supabase
         .from('user_profiles')
@@ -183,8 +184,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .eq('user_id', userId)
         .single();
 
-      if (error) {
-        console.error('Error loading user profile from Supabase:', error);
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = no rows returned, which is okay (we'll create it)
+        console.error('❌ Error loading user profile from Supabase:', error);
         return;
       }
 
@@ -199,7 +201,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           profileImage: data.profile_image || '',
         };
         
-        console.log('User profile loaded from Supabase:', profile);
+        console.log('✅ User profile loaded from Supabase:', profile);
         
         set({ userProfile: profile });
         
@@ -208,9 +210,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           STORAGE_KEYS.USER_PROFILE,
           JSON.stringify(profile)
         );
+      } else {
+        // Profile doesn't exist, create it with user's auth email
+        console.log('⚠️ Profile not found, creating new profile for user:', userId);
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const newProfile = {
+            user_id: userId,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert(newProfile);
+          
+          if (insertError) {
+            console.error('❌ Error creating fallback profile:', insertError);
+          } else {
+            console.log('✅ Fallback profile created successfully');
+            // Reload the profile
+            await get().loadUserProfileFromSupabase(userId);
+          }
+        }
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('❌ Exception loading user profile:', error);
     }
   },
 
