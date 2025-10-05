@@ -72,11 +72,21 @@ export async function saveProductRecommendations(
     console.log(`📤 Attempting to insert ${recordsToInsert.length} records into product_recommendations table`);
     console.log('Records to insert:', JSON.stringify(recordsToInsert, null, 2));
 
-    // Insert all recommendations
-    const { data, error } = await supabase
+    // Insert all recommendations with timeout
+    const insertPromise = supabase
       .from('product_recommendations')
       .insert(recordsToInsert)
       .select();
+
+    // Add timeout to prevent hanging on mobile
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+    );
+
+    const { data, error } = await Promise.race([
+      insertPromise,
+      timeoutPromise
+    ]) as any;
 
     if (error) {
       console.error('❌ Supabase error saving product recommendations:', error);
@@ -86,6 +96,15 @@ export async function saveProductRecommendations(
         hint: error.hint,
         code: error.code
       });
+      
+      // Provide user-friendly error message
+      if (error.message?.includes('connect')) {
+        return { 
+          success: false, 
+          error: 'Network connection error. Please check your internet connection and try again.' 
+        };
+      }
+      
       return { success: false, error: error.message };
     }
 
@@ -94,9 +113,26 @@ export async function saveProductRecommendations(
     return { success: true };
   } catch (error) {
     console.error('❌ Exception saving product recommendations:', error);
+    
+    // Handle timeout error
+    if (error instanceof Error && error.message.includes('timeout')) {
+      return {
+        success: false,
+        error: 'Request timed out. Please check your internet connection.'
+      };
+    }
+    
+    // Handle network errors
+    if (error instanceof Error && error.message.includes('Network')) {
+      return {
+        success: false,
+        error: 'Network error. Please check your internet connection.'
+      };
+    }
+    
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
     };
   }
 }
@@ -109,7 +145,10 @@ export async function loadProductRecommendations(
   userId: string
 ): Promise<Map<string, ProductRecommendation[]> | null> {
   try {
-    const { data, error } = await supabase
+    console.log('📥 Loading product recommendations for:', { analysisId, userId });
+    
+    // Add timeout to prevent hanging on mobile
+    const selectPromise = supabase
       .from('product_recommendations')
       .select('*')
       .eq('analysis_id', analysisId)
@@ -117,19 +156,37 @@ export async function loadProductRecommendations(
       .order('item_type', { ascending: true })
       .order('priority', { ascending: true });
 
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+    );
+
+    const { data, error } = await Promise.race([
+      selectPromise,
+      timeoutPromise
+    ]) as any;
+
     if (error) {
-      console.error('Error loading product recommendations:', error);
+      console.error('❌ Error loading product recommendations:', error);
+      
+      // Provide user-friendly error message
+      if (error.message?.includes('connect')) {
+        console.error('Network connection error while loading recommendations');
+      }
+      
       return null;
     }
 
     if (!data || data.length === 0) {
+      console.log('⚠️ No product recommendations found for this analysis');
       return new Map();
     }
+
+    console.log(`✅ Loaded ${data.length} recommendation records`);
 
     // Convert array to Map grouped by item type
     const recommendationsMap = new Map<string, ProductRecommendation[]>();
 
-    data.forEach((record) => {
+    data.forEach((record: any) => {
       const product: ProductRecommendation = {
         id: record.id,
         name: record.product_name,
@@ -147,10 +204,16 @@ export async function loadProductRecommendations(
       recommendationsMap.get(itemType)!.push(product);
     });
 
-    console.log(`Loaded recommendations for ${recommendationsMap.size} item types`);
+    console.log(`✅ Loaded recommendations for ${recommendationsMap.size} item types`);
     return recommendationsMap;
   } catch (error) {
-    console.error('Exception loading product recommendations:', error);
+    console.error('❌ Exception loading product recommendations:', error);
+    
+    // Handle timeout error
+    if (error instanceof Error && error.message.includes('timeout')) {
+      console.error('Request timed out while loading recommendations');
+    }
+    
     return null;
   }
 }

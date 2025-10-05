@@ -205,124 +205,243 @@ export const generateProductRecommendations = async (
 };
 
 /**
- * Extract missing items from AI feedback with improved accuracy
- * Uses more sophisticated pattern matching to avoid false positives
+ * Extract missing items from AI feedback with ADVANCED accuracy
+ * Uses sophisticated pattern matching, context awareness, and NLP-like techniques
+ * Perfectly aligned with the enhanced Pollinations AI prompt
  */
 export const extractMissingItems = (improvements: string[], context: string = ''): MissingItem[] => {
   const missingItems: MissingItem[] = [];
   const detectedTypes = new Set<string>(); // Prevent duplicates
   
-  // Enhanced keyword mapping with negative patterns to exclude false matches
+  // COMPREHENSIVE keyword mapping with contextual intelligence
   const itemKeywords: Record<string, {
-    positive: string[]; // Must contain these
-    negative?: string[]; // Must NOT contain these (to avoid false positives)
-    priority: number;
+    positive: string[]; // Primary keywords
+    synonyms: string[]; // Alternative terms
+    negative?: string[]; // Exclusion patterns
+    priority: number; // 1=critical, 2=important, 3=accessory
+    contextBoost?: string[]; // Contexts that increase priority
   }> = {
+    // FORMAL WEAR ESSENTIALS
     tie: {
-      positive: ['tie', 'necktie', 'bow tie', 'cravat'],
-      negative: ['waistline', 'tied', 'untie', 'tiepin'], // Avoid false matches
+      positive: ['tie', 'necktie', 'bow tie', 'cravat', 'neck tie'],
+      synonyms: ['add a tie', 'missing tie', 'needs tie', 'consider tie', 'wear a tie', 'add tie'],
+      negative: ['waistline', 'tied up', 'untie', 'tie dye', 'tie together'],
       priority: 1,
-    },
-    shoes: {
-      positive: ['shoe', 'shoes', 'footwear', 'oxford', 'loafer', 'sneaker', 'boot'],
-      negative: ['shoelace only', 'shoe polish'], // Avoid accessories for shoes
-      priority: 1,
+      contextBoost: ['interview', 'formal', 'business', 'professional', 'office', 'corporate', 'meeting'],
     },
     blazer: {
-      positive: ['blazer', 'sport coat', 'suit jacket'],
-      negative: ['t-shirt', 'shirt collar'], // Don't confuse with shirts
+      positive: ['blazer', 'sport coat', 'suit jacket', 'jacket formal'],
+      synonyms: ['add blazer', 'missing blazer', 'needs blazer', 'wear blazer', 'add a blazer', 'jacket would'],
+      negative: ['casual jacket', 'denim jacket', 'bomber jacket'],
       priority: 1,
+      contextBoost: ['interview', 'formal', 'business', 'professional', 'office', 'corporate'],
     },
-    jacket: {
-      positive: ['jacket', 'coat'],
-      negative: ['suit jacket', 'sport coat', 'blazer'], // Avoid blazer overlap
-      priority: 2,
-    },
-    shirt: {
-      positive: ['shirt', 'button-up', 'dress shirt', 'formal shirt'],
-      negative: ['t-shirt', 'tshirt'], // T-shirts are separate
-      priority: 2,
-    },
-    tshirt: {
-      positive: ['t-shirt', 'tshirt', 'tee', 'casual shirt'],
-      negative: ['dress shirt', 'formal shirt'],
-      priority: 2,
-    },
-    kurta: {
-      positive: ['kurta', 'ethnic wear', 'traditional wear'],
-      negative: [],
-      priority: 2,
-    },
-    necklace: {
-      positive: ['necklace', 'chain', 'pendant'],
-      negative: ['tie', 'shoelace'],
-      priority: 3,
-    },
-    earrings: {
-      positive: ['earring', 'earrings', 'studs'],
-      negative: [],
-      priority: 3,
-    },
-    bracelet: {
-      positive: ['bracelet', 'bangle', 'wristband'],
-      negative: ['watch'],
-      priority: 3,
-    },
-    bag: {
-      positive: ['bag', 'briefcase', 'purse', 'handbag', 'tote', 'satchel'],
-      negative: ['shopping bag', 'plastic bag'],
-      priority: 2,
-    },
-    watch: {
-      positive: ['watch', 'wristwatch', 'timepiece'],
-      negative: ['pocket watch'],
-      priority: 2,
+    shoes: {
+      positive: ['shoe', 'shoes', 'footwear', 'oxford', 'loafer', 'derby', 'brogue', 'dress shoes', 'formal shoes'],
+      synonyms: ['missing shoes', 'need shoes', 'add shoes', 'footwear missing', 'shoe choice', 'proper shoes'],
+      negative: ['shoelace only', 'shoe polish', 'shoe rack'],
+      priority: 1,
+      contextBoost: ['interview', 'formal', 'business', 'professional', 'wedding', 'party'],
     },
     belt: {
-      positive: ['belt', 'waist belt'],
-      negative: ['seat belt'],
+      positive: ['belt', 'waist belt', 'leather belt'],
+      synonyms: ['add belt', 'missing belt', 'needs belt', 'belt would', 'belt missing'],
+      negative: ['seat belt', 'belt bag'],
       priority: 2,
+      contextBoost: ['interview', 'formal', 'business', 'professional'],
     },
-    scarf: {
-      positive: ['scarf', 'shawl', 'stole'],
+    watch: {
+      positive: ['watch', 'wristwatch', 'timepiece', 'wrist watch'],
+      synonyms: ['add watch', 'missing watch', 'needs watch', 'wear watch', 'watch would'],
+      negative: ['watch out', 'watch for'],
+      priority: 2,
+      contextBoost: ['interview', 'formal', 'business', 'professional', 'office'],
+    },
+    
+    // FORMAL SHIRTS & TOPS
+    shirt: {
+      positive: ['shirt', 'button-up', 'dress shirt', 'formal shirt', 'button down', 'collared shirt'],
+      synonyms: ['add shirt', 'missing shirt', 'needs shirt', 'proper shirt', 'formal top'],
+      negative: ['t-shirt', 'tshirt', 'polo shirt'],
+      priority: 1,
+      contextBoost: ['interview', 'formal', 'business', 'professional'],
+    },
+    
+    // CASUAL WEAR
+    tshirt: {
+      positive: ['t-shirt', 'tshirt', 'tee', 'casual shirt', 'casual top'],
+      synonyms: ['add tshirt', 'missing tshirt', 'casual tee'],
+      negative: ['dress shirt', 'formal shirt', 'button-up'],
+      priority: 2,
+      contextBoost: ['casual', 'weekend', 'relax', 'hangout'],
+    },
+    jacket: {
+      positive: ['jacket', 'coat', 'outerwear', 'windbreaker', 'bomber'],
+      synonyms: ['add jacket', 'missing jacket', 'needs jacket', 'jacket would', 'outer layer'],
+      negative: ['suit jacket', 'blazer', 'sport coat'],
+      priority: 2,
+      contextBoost: ['outdoor', 'cold', 'winter', 'autumn', 'casual'],
+    },
+    sneakers: {
+      positive: ['sneaker', 'sneakers', 'trainers', 'casual shoes', 'athletic shoes'],
+      synonyms: ['add sneakers', 'missing sneakers', 'casual footwear', 'comfortable shoes'],
+      negative: ['formal shoes', 'dress shoes'],
+      priority: 2,
+      contextBoost: ['casual', 'sport', 'gym', 'weekend', 'street'],
+    },
+    
+    // ETHNIC & TRADITIONAL
+    kurta: {
+      positive: ['kurta', 'ethnic wear', 'traditional wear', 'indian wear', 'ethnic top'],
+      synonyms: ['add kurta', 'missing kurta', 'needs kurta', 'traditional outfit'],
+      negative: [],
+      priority: 2,
+      contextBoost: ['ethnic', 'traditional', 'cultural', 'festival', 'wedding'],
+    },
+    
+    // ACCESSORIES - BAGS
+    bag: {
+      positive: ['bag', 'briefcase', 'purse', 'handbag', 'tote', 'satchel', 'messenger bag', 'laptop bag'],
+      synonyms: ['add bag', 'missing bag', 'needs bag', 'carry bag', 'bag would', 'briefcase missing'],
+      negative: ['shopping bag', 'plastic bag', 'garbage bag'],
+      priority: 2,
+      contextBoost: ['interview', 'business', 'professional', 'office', 'work', 'travel'],
+    },
+    
+    // ACCESSORIES - JEWELRY & DETAILS
+    necklace: {
+      positive: ['necklace', 'chain', 'pendant', 'neck piece', 'choker'],
+      synonyms: ['add necklace', 'missing necklace', 'needs necklace', 'jewelry missing', 'neck jewelry'],
+      negative: ['tie', 'shoelace', 'necklace tie'],
+      priority: 3,
+      contextBoost: ['formal', 'party', 'evening', 'date', 'wedding', 'festive'],
+    },
+    earrings: {
+      positive: ['earring', 'earrings', 'studs', 'ear jewelry', 'ear piece'],
+      synonyms: ['add earrings', 'missing earrings', 'needs earrings', 'ear accessories'],
       negative: [],
       priority: 3,
+      contextBoost: ['formal', 'party', 'evening', 'date', 'wedding', 'festive'],
+    },
+    bracelet: {
+      positive: ['bracelet', 'bangle', 'wristband', 'wrist jewelry', 'arm jewelry'],
+      synonyms: ['add bracelet', 'missing bracelet', 'needs bracelet', 'wrist accessory'],
+      negative: ['watch'],
+      priority: 3,
+      contextBoost: ['formal', 'party', 'evening', 'festive', 'ethnic'],
+    },
+    ring: {
+      positive: ['ring', 'rings', 'finger ring', 'band'],
+      synonyms: ['add ring', 'missing ring', 'needs ring', 'finger jewelry'],
+      negative: ['earring', 'rings under eyes'],
+      priority: 3,
+      contextBoost: ['formal', 'party', 'evening', 'wedding', 'festive'],
+    },
+    
+    // ACCESSORIES - OTHERS
+    scarf: {
+      positive: ['scarf', 'shawl', 'stole', 'muffler', 'neck scarf'],
+      synonyms: ['add scarf', 'missing scarf', 'needs scarf', 'scarf would'],
+      negative: [],
+      priority: 3,
+      contextBoost: ['winter', 'cold', 'autumn', 'formal', 'ethnic'],
     },
     sunglasses: {
-      positive: ['sunglass', 'sunglasses', 'shades'],
-      negative: ['prescription glasses'],
+      positive: ['sunglass', 'sunglasses', 'shades', 'eyewear', 'sun glasses'],
+      synonyms: ['add sunglasses', 'missing sunglasses', 'needs sunglasses', 'shades missing'],
+      negative: ['prescription glasses', 'reading glasses'],
       priority: 3,
+      contextBoost: ['outdoor', 'summer', 'beach', 'casual', 'street'],
     },
+    hat: {
+      positive: ['hat', 'cap', 'beanie', 'fedora', 'headwear'],
+      synonyms: ['add hat', 'missing hat', 'needs hat', 'cap missing', 'head accessory'],
+      negative: ['hate'],
+      priority: 3,
+      contextBoost: ['outdoor', 'summer', 'winter', 'casual', 'street'],
+    },
+    
+    // LOWER BODY
     trousers: {
-      positive: ['trouser', 'trousers', 'pants', 'slacks'],
-      negative: ['shorts'],
+      positive: ['trouser', 'trousers', 'pants', 'slacks', 'dress pants', 'formal pants'],
+      synonyms: ['add trousers', 'missing trousers', 'needs pants', 'proper pants'],
+      negative: ['shorts', 'cargo pants'],
       priority: 1,
+      contextBoost: ['interview', 'formal', 'business', 'professional', 'office'],
+    },
+    jeans: {
+      positive: ['jeans', 'denim pants', 'denim'],
+      synonyms: ['add jeans', 'missing jeans', 'denim missing'],
+      negative: ['denim jacket'],
+      priority: 2,
+      contextBoost: ['casual', 'weekend', 'street', 'hangout'],
     },
   };
 
-  improvements.forEach((improvement, index) => {
+  // Context analysis for priority boosting
+  const lowerContext = context.toLowerCase();
+  const contextKeywords = Object.values(itemKeywords)
+    .flatMap(config => config.contextBoost || [])
+    .filter(keyword => lowerContext.includes(keyword));
+
+  // ADVANCED PATTERN MATCHING
+  improvements.forEach((improvement) => {
     const lowerImprovement = improvement.toLowerCase();
+    
+    // Remove common filler words for better matching
+    const cleanedImprovement = lowerImprovement
+      .replace(/\b(consider|adding|add|wear|wearing|needs|need|would|could|should|try|might)\b/g, '')
+      .trim();
     
     for (const [itemType, config] of Object.entries(itemKeywords)) {
       // Skip if already detected this type
       if (detectedTypes.has(itemType)) continue;
       
-      // Check if any positive keyword matches
-      const hasPositiveMatch = config.positive.some(keyword => 
-        lowerImprovement.includes(keyword)
-      );
+      // Score-based matching system
+      let matchScore = 0;
       
-      // Check if any negative keyword matches (should exclude)
+      // Check positive keywords (weight: 10)
+      if (config.positive.some(keyword => lowerImprovement.includes(keyword))) {
+        matchScore += 10;
+      }
+      
+      // Check synonyms (weight: 15 - stronger signal)
+      if (config.synonyms.some(synonym => lowerImprovement.includes(synonym))) {
+        matchScore += 15;
+      }
+      
+      // Check cleaned version for exact item type match (weight: 8)
+      if (cleanedImprovement.includes(itemType)) {
+        matchScore += 8;
+      }
+      
+      // Negative keyword check (disqualify)
       const hasNegativeMatch = config.negative && config.negative.some(keyword =>
         lowerImprovement.includes(keyword)
       );
       
-      // Only add if positive match and no negative match
-      if (hasPositiveMatch && !hasNegativeMatch) {
+      if (hasNegativeMatch) {
+        matchScore = 0; // Disqualify
+      }
+      
+      // Context boost (increases priority)
+      let adjustedPriority = config.priority;
+      if (config.contextBoost) {
+        const hasContextMatch = config.contextBoost.some(keyword =>
+          lowerContext.includes(keyword)
+        );
+        if (hasContextMatch) {
+          matchScore += 5; // Boost score
+          adjustedPriority = Math.max(1, config.priority - 1); // Increase priority
+        }
+      }
+      
+      // If match score is high enough, add the item
+      if (matchScore >= 8) {
         missingItems.push({
           itemType,
           reason: improvement,
-          priority: config.priority,
+          priority: adjustedPriority,
         });
         detectedTypes.add(itemType);
         break; // Only match one item type per improvement
@@ -330,20 +449,48 @@ export const extractMissingItems = (improvements: string[], context: string = ''
     }
   });
 
-  // Sort by priority (lower number = higher priority)
-  missingItems.sort((a, b) => a.priority - b.priority);
-
-  // If no specific items detected but context suggests formal wear
-  if (missingItems.length === 0) {
-    const lowerContext = context.toLowerCase();
-    if (lowerContext.includes('interview') || lowerContext.includes('formal') || lowerContext.includes('business')) {
+  // INTELLIGENT CONTEXT-BASED DEFAULTS
+  // If no items detected but context strongly suggests certain items
+  if (missingItems.length === 0 && context.trim()) {
+    if (lowerContext.includes('interview') || lowerContext.includes('formal') || 
+        lowerContext.includes('business') || lowerContext.includes('professional')) {
+      // Formal context - suggest professional essentials
       missingItems.push({
         itemType: 'tie',
-        reason: 'A tie would add a professional touch to your outfit',
+        reason: 'A tie would add a professional touch for this formal occasion',
         priority: 1,
+      });
+      missingItems.push({
+        itemType: 'blazer',
+        reason: 'A blazer would complete the professional look',
+        priority: 1,
+      });
+    } else if (lowerContext.includes('wedding') || lowerContext.includes('party') || 
+               lowerContext.includes('festive')) {
+      // Festive context - suggest accessories
+      missingItems.push({
+        itemType: 'watch',
+        reason: 'A watch would add a sophisticated touch',
+        priority: 2,
+      });
+      missingItems.push({
+        itemType: 'necklace',
+        reason: 'Jewelry would enhance the festive look',
+        priority: 3,
       });
     }
   }
+
+  // Sort by priority (lower number = higher priority)
+  missingItems.sort((a, b) => a.priority - b.priority);
+
+  // Log for debugging
+  console.log('🔍 Missing Items Extraction:', {
+    totalImprovements: improvements.length,
+    detectedItems: missingItems.length,
+    items: missingItems.map(item => item.itemType),
+    context: context,
+  });
 
   return missingItems;
 };
