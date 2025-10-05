@@ -22,16 +22,12 @@ function RootLayoutNav() {
     const inAuth = currentPath === 'auth';
     const inOnboarding = currentPath === 'onboarding-tutorial';
 
-    console.log('Navigation check:', { isAuthenticated, isLoading, currentPath, inAuth, inOnboarding });
-
     // If not authenticated and not in auth or onboarding, show tutorial first
     if (!isAuthenticated && !inAuth && !inOnboarding) {
-      console.log('Redirecting to onboarding tutorial');
       router.replace('/onboarding-tutorial' as any);
     } 
     // If authenticated and in auth or onboarding flow, go to home
     else if (isAuthenticated && (inAuth || inOnboarding)) {
-      console.log('User authenticated, redirecting to home');
       router.replace('/(tabs)' as any);
     }
   }, [isAuthenticated, isLoading, segments]);

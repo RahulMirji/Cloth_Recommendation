@@ -66,7 +66,6 @@ export function StylistHistoryList({ isDarkMode }: StylistHistoryListProps) {
           .limit(50);
 
         if (!error && data && data.length > 0) {
-          console.log('Loaded AI stylist history from Supabase:', data.length, 'entries');
           const mappedHistory = data.map(item => ({
             id: item.id,
             result: item.result,
@@ -78,8 +77,6 @@ export function StylistHistoryList({ isDarkMode }: StylistHistoryListProps) {
           return;
         } else if (error) {
           console.error('Error loading AI stylist history from Supabase:', error);
-        } else {
-          console.log('No AI stylist history found in Supabase');
         }
       }
 

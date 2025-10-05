@@ -44,5 +44,8 @@ supabase/.env
 *.tsbuildinfo
 .vercel
 
+# Test coverage
+coverage/
+
 # Rork AI (causes build issues with React Native private APIs)
 .rorkai/

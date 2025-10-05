@@ -71,7 +71,6 @@ export function SignInScreen() {
       }
 
       if (data.session) {
-        console.log('Sign in successful, session created');
         // Navigation will be handled by AppContext session listener
         // The app will automatically redirect to home when session is detected
         
@@ -80,7 +79,7 @@ export function SignInScreen() {
           try {
             router.replace('/(tabs)' as any);
           } catch (error) {
-            console.log('Fallback navigation executed');
+            console.error('Navigation error:', error);
           }
         }, 1000);
       }

@@ -7,7 +7,6 @@ import type { Session } from '@supabase/supabase-js';
 interface AppSettings {
   useCloudAI: boolean;
   saveHistory: boolean;
-  voiceEnabled: boolean;
   isDarkMode: boolean;
 }
 
@@ -21,18 +20,9 @@ interface UserProfile {
   profileImage?: string;
 }
 
-interface AnalysisHistory {
-  id: string;
-  type: 'stylist' | 'scorer';
-  timestamp: number;
-  result?: string;
-  score?: number;
-}
-
 const DEFAULT_SETTINGS: AppSettings = {
   useCloudAI: true,
   saveHistory: true,
-  voiceEnabled: true,
   isDarkMode: false,
 };
 
@@ -48,7 +38,6 @@ const DEFAULT_PROFILE: UserProfile = {
 
 export const [AppProvider, useApp] = createContextHook(() => {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [history, setHistory] = useState<AnalysisHistory[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -56,7 +45,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   useEffect(() => {
     loadSettings();
-    loadHistory();
     initializeAuth();
   }, []);
 
@@ -75,7 +63,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
       // Listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, newSession) => {
-          console.log('Auth state changed:', event, !!newSession);
           setSession(newSession);
           setIsAuthenticated(!!newSession);
 
@@ -112,21 +99,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   };
 
-  const loadHistory = async () => {
-    try {
-      const stored = await AsyncStorage.getItem('analysis_history');
-      if (stored) {
-        setHistory(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error('Error loading history:', error);
-    }
-  };
-
   const loadUserProfileFromSupabase = async (userId: string) => {
     try {
-      console.log('📥 Fetching user profile from Supabase for user:', userId);
-      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -135,7 +109,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows returned, which is okay (we'll create it)
-        console.error('❌ Error loading user profile from Supabase:', error);
+        console.error('Error loading user profile from Supabase:', error);
         return;
       }
 
@@ -150,15 +124,12 @@ export const [AppProvider, useApp] = createContextHook(() => {
           profileImage: data.profile_image || '',
         };
         
-        console.log('✅ User profile loaded from Supabase:', profile);
         setUserProfile(profile);
         
         // Cache profile locally
         await AsyncStorage.setItem('user_profile', JSON.stringify(profile));
       } else {
         // Profile doesn't exist, create it with user's auth email
-        console.log('⚠️ Profile not found, creating new profile for user:', userId);
-        
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
@@ -175,16 +146,15 @@ export const [AppProvider, useApp] = createContextHook(() => {
             .insert(newProfile);
           
           if (insertError) {
-            console.error('❌ Error creating fallback profile:', insertError);
+            console.error('Error creating fallback profile:', insertError);
           } else {
-            console.log('✅ Fallback profile created successfully');
             // Reload the profile
             await loadUserProfileFromSupabase(userId);
           }
         }
       }
     } catch (error) {
-      console.error('❌ Exception loading user profile:', error);
+      console.error('Exception loading user profile:', error);
     }
   };
 
@@ -197,33 +167,6 @@ export const [AppProvider, useApp] = createContextHook(() => {
       console.error('Error updating settings:', error);
     }
   }, [settings]);
-
-  const addToHistory = useCallback(async (entry: Omit<AnalysisHistory, 'id' | 'timestamp'>) => {
-    if (!settings.saveHistory) return;
-
-    try {
-      const newEntry: AnalysisHistory = {
-        ...entry,
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-      };
-
-      const updated = [newEntry, ...history].slice(0, 50);
-      setHistory(updated);
-      await AsyncStorage.setItem('analysis_history', JSON.stringify(updated));
-    } catch (error) {
-      console.error('Error adding to history:', error);
-    }
-  }, [settings.saveHistory, history]);
-
-  const clearHistory = useCallback(async () => {
-    try {
-      setHistory([]);
-      await AsyncStorage.removeItem('analysis_history');
-    } catch (error) {
-      console.error('Error clearing history:', error);
-    }
-  }, []);
 
   const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
     try {
@@ -279,30 +222,14 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   }, []);
 
-  const clearAllData = useCallback(async () => {
-    try {
-      await AsyncStorage.clear();
-      setSettings(DEFAULT_SETTINGS);
-      setHistory([]);
-      setUserProfile(DEFAULT_PROFILE);
-      setIsAuthenticated(false);
-    } catch (error) {
-      console.error('Error clearing all data:', error);
-    }
-  }, []);
-
   return useMemo(() => ({
     settings,
-    history,
     userProfile,
     isAuthenticated,
     isLoading,
     session,
     updateSettings,
     updateUserProfile,
-    addToHistory,
-    clearHistory,
-    clearAllData,
     logout,
-  }), [settings, history, userProfile, isAuthenticated, isLoading, session, updateSettings, updateUserProfile, addToHistory, clearHistory, clearAllData, logout]);
+  }), [settings, userProfile, isAuthenticated, isLoading, session, updateSettings, updateUserProfile, logout]);
 });

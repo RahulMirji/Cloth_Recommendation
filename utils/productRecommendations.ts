@@ -56,8 +56,6 @@ const generateSearchUrls = (
   
   const encodedQuery = encodeURIComponent(fullQuery);
   
-  console.log(`🔍 Search Query: "${fullQuery}" (Gender: ${gender}, Occasion: ${occasion})`);
-  
   return {
     flipkart: `https://www.flipkart.com/search?q=${encodedQuery}`,
     amazon: `https://www.amazon.in/s?k=${encodedQuery}`,
@@ -85,14 +83,10 @@ export const generateProductRecommendations = async (
   // ===== STEP 1: DETECT GENDER =====
   const genderDetection = detectGenderFromAnalysis(analysisText, improvements, context);
   const { gender } = genderDetection;
-  
-  console.log('👤 Detected Gender:', gender, `(${(genderDetection.confidence * 100).toFixed(1)}% confidence)`);
 
   // ===== STEP 2: ANALYZE OCCASION =====
   const occasionAnalysis = analyzeOccasion(context);
   const { occasion } = occasionAnalysis;
-  
-  console.log('🎯 Detected Occasion:', occasion, `(${(occasionAnalysis.confidence * 100).toFixed(1)}% confidence)`);
 
   // Product data templates for different item types
   // Using more specific and accurate product images and names
@@ -411,11 +405,8 @@ export const generateProductRecommendations = async (
     const isAppropriate = filterItemCategoriesByGender(itemType, gender, occasion);
     
     if (!isAppropriate) {
-      console.log(`❌ Filtered out "${itemType}" - not appropriate for ${gender} in ${occasion} context`);
       continue; // Skip this item - not gender-appropriate
     }
-    
-    console.log(`✅ Including "${itemType}" - appropriate for ${gender} in ${occasion} context`);
 
     const products: ProductRecommendation[] = [];
 
@@ -431,24 +422,19 @@ export const generateProductRecommendations = async (
         // Use gender-specific templates
         if (gender === 'male' && itemTemplate.male) {
           templates = itemTemplate.male[style] || itemTemplate.male.casual || [];
-          console.log(`🚹 Using male-specific templates for ${itemType}`);
         } else if (gender === 'female' && itemTemplate.female) {
           templates = itemTemplate.female[style] || itemTemplate.female.casual || [];
-          console.log(`🚺 Using female-specific templates for ${itemType}`);
         } else {
           // Fallback: use male templates for unisex/unknown or if gender template missing
           templates = (itemTemplate.male?.[style] || itemTemplate.male?.casual || 
                        itemTemplate.female?.[style] || itemTemplate.female?.casual || []);
-          console.log(`⚪ Using fallback templates for ${itemType} (gender: ${gender})`);
         }
       } else {
         // Gender-neutral items (necklace, earrings, etc.) - use style-based templates
         templates = itemTemplate[style] || itemTemplate.casual || [];
-        console.log(`⚪ Using gender-neutral templates for ${itemType}`);
       }
       
       if (templates.length === 0) {
-        console.log(`⚠️ No templates found for ${itemType}, skipping`);
         continue;
       }
 
@@ -478,8 +464,6 @@ export const generateProductRecommendations = async (
     }
   }
 
-  console.log(`📦 Generated ${recommendations.size} recommendation categories (gender-filtered for ${gender})`);
-
   return recommendations;
 };
 
@@ -504,8 +488,6 @@ export const extractMissingItems = (
   const allAnalysisText = `${analysisText} ${improvements.join(' ')}`;
   const genderDetection = detectGenderFromAnalysis(allAnalysisText, improvements, context);
   const { gender } = genderDetection;
-  
-  console.log('👤 Gender for item extraction:', gender, `(${(genderDetection.confidence * 100).toFixed(1)}% confidence)`);
   
   // ===== ANALYZE OCCASION =====
   const occasionAnalysis = analyzeOccasion(context);
@@ -740,12 +722,9 @@ export const extractMissingItems = (
         const isGenderAppropriate = filterItemCategoriesByGender(itemType, gender, occasion);
         
         if (!isGenderAppropriate) {
-          console.log(`❌ Filtered item "${itemType}" - not appropriate for ${gender}`);
           detectedTypes.add(itemType); // Mark as detected but don't add to results
           break;
         }
-        
-        console.log(`✅ Adding item "${itemType}" - appropriate for ${gender}`);
         
         missingItems.push({
           itemType,
@@ -792,14 +771,6 @@ export const extractMissingItems = (
 
   // Sort by priority (lower number = higher priority)
   missingItems.sort((a, b) => a.priority - b.priority);
-
-  // Log for debugging
-  console.log('🔍 Missing Items Extraction:', {
-    totalImprovements: improvements.length,
-    detectedItems: missingItems.length,
-    items: missingItems.map(item => item.itemType),
-    context: context,
-  });
 
   return missingItems;
 };

@@ -72,8 +72,6 @@ export function SignUpScreen() {
     setIsLoading(true);
 
     try {
-      console.log('Starting sign up for:', email.trim());
-      
       // Sign up with Supabase
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -90,8 +88,6 @@ export function SignUpScreen() {
         throw authError;
       }
 
-      console.log('Auth signup successful:', authData.user?.id);
-
       if (authData.user) {
         // Create user profile in Supabase
         const { error: profileError } = await supabase
@@ -107,8 +103,6 @@ export function SignUpScreen() {
         if (profileError) {
           console.error('Error creating user profile:', profileError);
           // Don't throw error - profile can be created on first sign in
-        } else {
-          console.log('User profile created successfully');
         }
         
         Alert.alert(
