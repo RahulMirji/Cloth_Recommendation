@@ -39,6 +39,7 @@ import { useAuthStore, useUserProfile } from '@/store/authStore';
 import { useApp } from '@/contexts/AppContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { Footer } from '@/components/Footer';
 
 export function ProfileScreen() {
   const userProfile = useUserProfile();
@@ -413,6 +414,9 @@ export function ProfileScreen() {
               </Text>
             </TouchableOpacity>
           )}
+
+          {/* Footer */}
+          <Footer showSocialLinks={true} showQuickLinks={true} />
         </ScrollView>
       </View>
     </Modal>
