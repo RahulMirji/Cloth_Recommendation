@@ -82,10 +82,38 @@ jest.mock('lucide-react-native', () => ({
   Smartphone: 'Smartphone',
   Shield: 'Shield',
   Info: 'Info',
+  Star: 'Star',
+  Mail: 'Mail',
+  Github: 'Github',
+  Linkedin: 'Linkedin',
+  Instagram: 'Instagram',
+  Twitter: 'Twitter',
+  Heart: 'Heart',
+  ExternalLink: 'ExternalLink',
+  Shirt: 'Shirt',
+  Edit3: 'Edit3',
+  Phone: 'Phone',
+  Calendar: 'Calendar',
+  Users: 'Users',
+  X: 'X',
+  Mic: 'Mic',
+  MicOff: 'MicOff',
+  RotateCw: 'RotateCw',
+  Volume2: 'Volume2',
 }));
 
 // Mock react-native-onboarding-swiper
 jest.mock('react-native-onboarding-swiper', () => 'Onboarding');
+
+// Mock OutfitScorerShowcase component
+jest.mock('./components/OutfitScorerShowcase', () => ({
+  OutfitScorerShowcase: () => 'OutfitScorerShowcase',
+}));
+
+// Mock Footer component
+jest.mock('./components/Footer', () => ({
+  Footer: () => 'Footer',
+}));
 
 // Mock authStore (Zustand store)
 jest.mock('./store/authStore', () => ({

@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.rork.react-native-ai-outfit-recommendation-app-0bkp2pt8",
+      "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
@@ -30,7 +31,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.react-native-ai-outfit-recommendation-app-0bkp2pt8",
+      "package": "com.rahulmirji.aiclothrecommendationapp",
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
@@ -71,6 +72,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "cdd0071a-e6e5-4fa1-8a87-38235f03fa5b"
+      }
     }
   }
 }
