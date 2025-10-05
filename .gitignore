@@ -43,3 +43,6 @@ supabase/.env
 # typescript
 *.tsbuildinfo
 .vercel
+
+# Rork AI (causes build issues with React Native private APIs)
+.rorkai/

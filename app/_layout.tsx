@@ -1,6 +1,3 @@
-import "@rork/polyfills";
-import { BundleInspector } from '@rork/inspector';
-import { RorkErrorBoundary } from '@rork/rork-error-boundary';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -14,7 +11,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
-  const { isAuthenticated, isLoading } = useApp();
+  const { isAuthenticated, isLoading, settings } = useApp();
   const segments = useSegments();
   const router = useRouter();
 
@@ -39,8 +36,19 @@ function RootLayoutNav() {
     }
   }, [isAuthenticated, isLoading, segments]);
 
+  const isDarkMode = settings.isDarkMode;
+
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Back' }}>
+    <Stack screenOptions={{ 
+      headerBackTitle: 'Back',
+      headerStyle: {
+        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+      },
+      headerTintColor: isDarkMode ? '#FFFFFF' : '#1F2937',
+      headerTitleStyle: {
+        color: isDarkMode ? '#FFFFFF' : '#1F2937',
+      },
+    }}>
       {/* Onboarding Flow */}
       <Stack.Screen name="onboarding-tutorial" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding-user-info" options={{ headerShown: false }} />
@@ -84,7 +92,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AppProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <BundleInspector><RorkErrorBoundary><RootLayoutNav /></RorkErrorBoundary></BundleInspector>
+          <RootLayoutNav />
         </GestureHandlerRootView>
       </AppProvider>
     </QueryClientProvider>

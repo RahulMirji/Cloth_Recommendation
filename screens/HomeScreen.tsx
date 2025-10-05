@@ -14,7 +14,7 @@
 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Sparkles } from 'lucide-react-native';
+import { Camera, Sparkles, Shirt, User } from 'lucide-react-native';
 import React from 'react';
 import {
   StyleSheet,
@@ -22,20 +22,53 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
+  useColorScheme,
+  Image,
 } from 'react-native';
 
-import { useUserProfile, useIsDarkMode } from '@/store/authStore';
+import { useUserProfile } from '@/store/authStore';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { OutfitScorerShowcase } from '@/components/OutfitScorerShowcase';
+import { Footer } from '@/components/Footer';
 
 export function HomeScreen() {
-  const { userProfile, settings } = useApp();
-  const isDarkMode = settings.isDarkMode;
+  const userProfile = useUserProfile();
+  const { settings } = useApp();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
   // Get user name or default to 'Guest'
   const userName = userProfile?.name || 'Guest';
+
+  const ProfileButton = () => (
+    <TouchableOpacity
+      style={styles.profileButtonContainer}
+      onPress={() => router.push('/profile' as any)}
+      activeOpacity={0.7}
+    >
+      <View style={[
+        styles.profileButtonGlow,
+        userProfile?.profileImage && styles.profileButtonGlowActive
+      ]}>
+        {userProfile?.profileImage ? (
+          <Image 
+            source={{ uri: userProfile.profileImage }} 
+            style={styles.profileImage}
+          />
+        ) : (
+          <View style={[
+            styles.profilePlaceholder,
+            isDarkMode && styles.profilePlaceholderDark
+          ]}>
+            <User size={18} color={isDarkMode ? Colors.white : Colors.primary} strokeWidth={2.5} />
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
@@ -50,6 +83,30 @@ export function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Custom Scrollable Header */}
+        <View style={[styles.customHeader, isDarkMode && styles.customHeaderDark]}>
+          <View style={styles.logoContainer}>
+            {/* Clothing Icon with Gradient Background and Glow */}
+            <View style={styles.logoIconContainer}>
+              <LinearGradient
+                colors={[Colors.gradient.start, Colors.gradient.end]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoIconGradient}
+              >
+                <Shirt size={22} color={Colors.white} strokeWidth={2.5} />
+              </LinearGradient>
+            </View>
+            
+            {/* Plain Text without gradient background */}
+            <Text style={[styles.logoText, { color: isDarkMode ? Colors.white : Colors.text }]}>
+              AI DressUp
+            </Text>
+          </View>
+          
+          <ProfileButton />
+        </View>
+
         {/* Header with Greeting */}
         <View style={styles.header}>
           <View>
@@ -144,6 +201,12 @@ export function HomeScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Outfit Scorer Showcase Section */}
+        <OutfitScorerShowcase />
+
+        {/* Footer */}
+        <Footer />
       </ScrollView>
     </View>
   );
@@ -162,6 +225,86 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 32,
+  },
+  // Custom scrollable header styles
+  customHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 16,
+    backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  customHeaderDark: {
+    backgroundColor: '#0F172A',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  logoIconContainer: {
+    marginRight: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    // Enhanced glow effect for icon only
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  logoIconGradient: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  logoText: {
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  // Profile button styles
+  profileButtonContainer: {
+    marginRight: 8,
+  },
+  profileButtonGlow: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  profileButtonGlowActive: {
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  profilePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+  },
+  profilePlaceholderDark: {
+    backgroundColor: 'rgba(139, 92, 246, 0.25)',
   },
   header: {
     paddingHorizontal: 24,
