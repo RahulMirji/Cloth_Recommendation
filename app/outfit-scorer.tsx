@@ -249,15 +249,21 @@ Respond in EXACTLY this JSON format (ONLY valid JSON, no markdown, no extra text
 • Accessories & Details (5%): Finishing touches, jewelry, bags
 
 ⚠️ CRITICAL RULES:
+• FIRST: Identify the person's GENDER (male/female) from clothing style, jewelry, body shape, hairstyle
 • Be BRUTALLY honest about missing items - if shoes aren't visible, explicitly state "shoes missing"
-• If the context is professional/interview, DEMAND complete formal attire (tie, blazer, dress shoes)
+• If the context is professional/interview, DEMAND complete formal attire (tie/blazer for men, blazer/necklace for women)
 • For every missing item in "missingItems", mention it specifically in "improvements"
+• GENDER-APPROPRIATE suggestions ONLY:
+  - For MEN: tie, blazer, formal shoes, belt, watch, briefcase, cufflinks, pocket square
+  - For WOMEN: necklace, earrings, heels, handbag, bracelet, blazer, dress, scarf, clutch
+  - UNISEX: watch, sunglasses, bag, jacket, sneakers
 • Look for SUBTLE issues: wrong shoe type, missing belt, no watch, lack of jewelry, etc.
 • Consider LAYERING: missing blazer, cardigan, jacket appropriate for weather/formality
 • Check ACCESSORIES: bag, watch, jewelry, eyewear - note what's absent
 • If anything is incomplete or inappropriate for the context, lower the score significantly
+• NEVER suggest gender-inappropriate items (e.g., no necklace for men, no tie for women)
 
-Be precise, professional, and constructive. Your analysis will directly drive product recommendations.`;
+Be precise, professional, and constructive. Your analysis will directly drive GENDER-APPROPRIATE product recommendations.`;
 
       const response = await generateTextWithImage(base64Image, prompt);
       console.log('AI Response:', response);
@@ -273,18 +279,33 @@ Be precise, professional, and constructive. Your analysis will directly drive pr
       setIsAnalyzing(false);
 
       // Generate product recommendations based on missing items
+      // Enhanced with gender detection and context-aware filtering
       let generatedRecommendations: Map<string, ProductRecommendation[]> = new Map();
       
       if (parsedResult.improvements && parsedResult.improvements.length > 0) {
         setIsLoadingRecommendations(true);
         try {
-          const missingItems = extractMissingItems(parsedResult.improvements, context);
-          console.log('Detected missing items:', missingItems);
+          // Extract missing items with gender awareness
+          const analysisText = `${parsedResult.feedback || ''} ${parsedResult.improvements.join(' ')}`;
+          const missingItems = extractMissingItems(
+            parsedResult.improvements,
+            context,
+            analysisText
+          );
+          console.log('Detected missing items (gender-filtered):', missingItems);
           
           if (missingItems.length > 0) {
-            generatedRecommendations = await generateProductRecommendations(missingItems, context);
+            // Generate gender-appropriate recommendations
+            generatedRecommendations = await generateProductRecommendations(
+              missingItems,
+              context,
+              analysisText,
+              parsedResult.improvements
+            );
             setRecommendations(generatedRecommendations);
             console.log('Generated recommendations for', generatedRecommendations.size, 'item types');
+          } else {
+            console.log('No gender-appropriate items to recommend');
           }
         } catch (recError) {
           console.error('Error generating recommendations:', recError);
