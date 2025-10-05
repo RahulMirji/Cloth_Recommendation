@@ -31,6 +31,7 @@ import {
   ProductRecommendation,
   MissingItem,
 } from '@/utils/productRecommendations';
+import { Footer } from '@/components/Footer';
 
 interface ScoringResult {
   score: number;
@@ -630,6 +631,9 @@ Be precise, professional, and constructive. Your analysis will directly drive pr
             )}
           </View>
         )}
+
+        {/* Footer */}
+        {result && <Footer />}
       </ScrollView>
     </View>
   );

@@ -31,6 +31,8 @@ import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { OutfitScorerShowcase } from '@/components/OutfitScorerShowcase';
+import { Footer } from '@/components/Footer';
 
 export function HomeScreen() {
   const userProfile = useUserProfile();
@@ -199,6 +201,12 @@ export function HomeScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Outfit Scorer Showcase Section */}
+        <OutfitScorerShowcase />
+
+        {/* Footer */}
+        <Footer />
       </ScrollView>
     </View>
   );
