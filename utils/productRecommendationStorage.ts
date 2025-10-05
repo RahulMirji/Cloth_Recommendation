@@ -33,18 +33,10 @@ export async function saveProductRecommendations(
   recommendations: Map<string, ProductRecommendation[]>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('📥 saveProductRecommendations called with:', {
-      analysisId,
-      userId,
-      recommendationsMapSize: recommendations.size,
-      itemTypes: Array.from(recommendations.keys())
-    });
-    
     // Convert Map to array of records for insertion
     const recordsToInsert: any[] = [];
     
     recommendations.forEach((products, itemType) => {
-      console.log(`Processing ${products.length} products for item type: ${itemType}`);
       products.forEach((product) => {
         const record = {
           analysis_id: analysisId,
@@ -60,17 +52,12 @@ export async function saveProductRecommendations(
           priority: 1,
         };
         recordsToInsert.push(record);
-        console.log('Added record:', record);
       });
     });
 
     if (recordsToInsert.length === 0) {
-      console.log('⚠️ No records to insert');
       return { success: true };
     }
-
-    console.log(`📤 Attempting to insert ${recordsToInsert.length} records into product_recommendations table`);
-    console.log('Records to insert:', JSON.stringify(recordsToInsert, null, 2));
 
     // Insert all recommendations with timeout
     const insertPromise = supabase
@@ -89,13 +76,7 @@ export async function saveProductRecommendations(
     ]) as any;
 
     if (error) {
-      console.error('❌ Supabase error saving product recommendations:', error);
-      console.error('Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.error('Supabase error saving product recommendations:', error);
       
       // Provide user-friendly error message
       if (error.message?.includes('connect')) {
@@ -108,11 +89,9 @@ export async function saveProductRecommendations(
       return { success: false, error: error.message };
     }
 
-    console.log(`✅ Successfully saved ${recordsToInsert.length} product recommendations`);
-    console.log('Inserted data:', data);
     return { success: true };
   } catch (error) {
-    console.error('❌ Exception saving product recommendations:', error);
+    console.error('Exception saving product recommendations:', error);
     
     // Handle timeout error
     if (error instanceof Error && error.message.includes('timeout')) {
@@ -145,8 +124,6 @@ export async function loadProductRecommendations(
   userId: string
 ): Promise<Map<string, ProductRecommendation[]> | null> {
   try {
-    console.log('📥 Loading product recommendations for:', { analysisId, userId });
-    
     // Add timeout to prevent hanging on mobile
     const selectPromise = supabase
       .from('product_recommendations')
@@ -166,22 +143,13 @@ export async function loadProductRecommendations(
     ]) as any;
 
     if (error) {
-      console.error('❌ Error loading product recommendations:', error);
-      
-      // Provide user-friendly error message
-      if (error.message?.includes('connect')) {
-        console.error('Network connection error while loading recommendations');
-      }
-      
+      console.error('Error loading product recommendations:', error);
       return null;
     }
 
     if (!data || data.length === 0) {
-      console.log('⚠️ No product recommendations found for this analysis');
       return new Map();
     }
-
-    console.log(`✅ Loaded ${data.length} recommendation records`);
 
     // Convert array to Map grouped by item type
     const recommendationsMap = new Map<string, ProductRecommendation[]>();
@@ -204,45 +172,11 @@ export async function loadProductRecommendations(
       recommendationsMap.get(itemType)!.push(product);
     });
 
-    console.log(`✅ Loaded recommendations for ${recommendationsMap.size} item types`);
     return recommendationsMap;
   } catch (error) {
-    console.error('❌ Exception loading product recommendations:', error);
-    
-    // Handle timeout error
-    if (error instanceof Error && error.message.includes('timeout')) {
-      console.error('Request timed out while loading recommendations');
-    }
-    
+    console.error('Exception loading product recommendations:', error);
     return null;
   }
 }
 
-/**
- * Delete product recommendations for a specific analysis
- */
-export async function deleteProductRecommendations(
-  analysisId: string,
-  userId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('product_recommendations')
-      .delete()
-      .eq('analysis_id', analysisId)
-      .eq('user_id', userId);
 
-    if (error) {
-      console.error('Error deleting product recommendations:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('Exception deleting product recommendations:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    };
-  }
-}

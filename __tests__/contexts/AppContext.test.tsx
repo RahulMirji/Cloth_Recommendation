@@ -25,7 +25,6 @@ describe('AppContext', () => {
     expect(result.current.settings).toEqual({
       useCloudAI: true,
       saveHistory: true,
-      voiceEnabled: true,
       isDarkMode: false,
     });
   });
@@ -74,31 +73,6 @@ describe('AppContext', () => {
     });
 
     expect(result.current.settings.isDarkMode).toBe(true);
-  });
-
-  it('adds analysis to history', async () => {
-    const { result } = renderHook(() => useApp(), {
-      wrapper: AppProvider,
-    });
-
-    const newAnalysis = {
-      id: '123',
-      type: 'stylist' as const,
-      timestamp: Date.now(),
-      result: 'Great outfit!',
-    };
-
-    await act(async () => {
-      await result.current.addToHistory(newAnalysis);
-    });
-
-    expect(result.current.history).toHaveLength(1);
-    expect(result.current.history[0]).toMatchObject({
-      type: 'stylist',
-      result: 'Great outfit!',
-    });
-    expect(result.current.history[0].id).toBeDefined();
-    expect(result.current.history[0].timestamp).toBeDefined();
   });
 
   it('persists data to AsyncStorage', async () => {

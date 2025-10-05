@@ -41,12 +41,6 @@ export function HomeScreen() {
   // Get user name or default to 'Guest'
   const userName = userProfile?.name || 'Guest';
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('🏠 HomeScreen - User Profile:', userProfile);
-    console.log('🏠 HomeScreen - User Name:', userName);
-  }, [userProfile, userName]);
-
   const ProfileButton = () => {
     // Validate that profile image is a valid URL (Supabase Storage or other valid URL)
     const isValidUrl = (url: string | undefined): boolean => {
@@ -56,14 +50,6 @@ export function HomeScreen() {
     };
     
     const hasProfileImage = isValidUrl(userProfile?.profileImage);
-    
-    React.useEffect(() => {
-      if (hasProfileImage) {
-        console.log('🖼️ HomeScreen - Profile Image URI:', userProfile.profileImage);
-      } else if (userProfile?.profileImage) {
-        console.warn('⚠️ HomeScreen - Invalid profile image URI (not a URL):', userProfile.profileImage);
-      }
-    }, [hasProfileImage, userProfile?.profileImage]);
 
     return (
       <TouchableOpacity
@@ -80,10 +66,7 @@ export function HomeScreen() {
               source={{ uri: userProfile.profileImage }} 
               style={styles.profileImage}
               onError={(error) => {
-                console.error('❌ Error loading profile image:', error.nativeEvent.error);
-              }}
-              onLoad={() => {
-                console.log('✅ Profile image loaded successfully');
+                console.error('Error loading profile image:', error.nativeEvent.error);
               }}
             />
           ) : (

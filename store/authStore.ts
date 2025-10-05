@@ -33,19 +33,7 @@ export interface UserProfile {
 export interface AppSettings {
   useCloudAI: boolean;
   saveHistory: boolean;
-  voiceEnabled: boolean;
   isDarkMode: boolean;
-}
-
-/**
- * Analysis History Entry
- */
-export interface AnalysisHistory {
-  id: string;
-  type: 'stylist' | 'scorer';
-  timestamp: number;
-  result?: string;
-  score?: number;
 }
 
 /**
@@ -56,7 +44,6 @@ interface AuthState {
   userProfile: UserProfile;
   isAuthenticated: boolean;
   settings: AppSettings;
-  history: AnalysisHistory[];
   isLoading: boolean;
   session: Session | null;
 
@@ -66,9 +53,6 @@ interface AuthState {
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
-  addToHistory: (entry: Omit<AnalysisHistory, 'id' | 'timestamp'>) => Promise<void>;
-  clearHistory: () => Promise<void>;
-  clearAllData: () => Promise<void>;
 }
 
 // Default values
@@ -85,7 +69,6 @@ const DEFAULT_PROFILE: UserProfile = {
 const DEFAULT_SETTINGS: AppSettings = {
   useCloudAI: true,
   saveHistory: true,
-  voiceEnabled: true,
   isDarkMode: false,
 };
 
@@ -93,7 +76,6 @@ const DEFAULT_SETTINGS: AppSettings = {
 const STORAGE_KEYS = {
   USER_PROFILE: 'user_profile',
   APP_SETTINGS: 'app_settings',
-  ANALYSIS_HISTORY: 'analysis_history',
 };
 
 /**
@@ -107,7 +89,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userProfile: DEFAULT_PROFILE,
   isAuthenticated: false,
   settings: DEFAULT_SETTINGS,
-  history: [],
   isLoading: true,
   session: null,
 
@@ -143,12 +124,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ settings: JSON.parse(storedSettings) });
       }
 
-      // Load history
-      const storedHistory = await AsyncStorage.getItem(STORAGE_KEYS.ANALYSIS_HISTORY);
-      if (storedHistory) {
-        set({ history: JSON.parse(storedHistory) });
-      }
-
       // Listen for auth state changes
       supabase.auth.onAuthStateChange(async (_event, newSession) => {
         set({ session: newSession, isAuthenticated: !!newSession });
@@ -176,8 +151,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
    */
   loadUserProfileFromSupabase: async (userId: string) => {
     try {
-      console.log('📥 Fetching user profile from Supabase for user:', userId);
-      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -186,7 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows returned, which is okay (we'll create it)
-        console.error('❌ Error loading user profile from Supabase:', error);
+        console.error('Error loading user profile from Supabase:', error);
         return;
       }
 
@@ -201,8 +174,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           profileImage: data.profile_image || '',
         };
         
-        console.log('✅ User profile loaded from Supabase:', profile);
-        
         set({ userProfile: profile });
         
         // Cache profile locally
@@ -212,8 +183,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         );
       } else {
         // Profile doesn't exist, create it with user's auth email
-        console.log('⚠️ Profile not found, creating new profile for user:', userId);
-        
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
@@ -230,16 +199,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             .insert(newProfile);
           
           if (insertError) {
-            console.error('❌ Error creating fallback profile:', insertError);
+            console.error('Error creating fallback profile:', insertError);
           } else {
-            console.log('✅ Fallback profile created successfully');
             // Reload the profile
             await get().loadUserProfileFromSupabase(userId);
           }
         }
       }
     } catch (error) {
-      console.error('❌ Exception loading user profile:', error);
+      console.error('Exception loading user profile:', error);
     }
   },
 
@@ -285,8 +253,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           console.error('Error updating profile in Supabase:', error);
           throw error;
         }
-        
-        console.log('User profile updated in Supabase');
       }
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -311,8 +277,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: false,
         session: null,
       });
-      
-      console.log('User logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
       throw error;
@@ -340,74 +304,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  /**
-   * Add entry to analysis history
-   * Only if saveHistory setting is enabled
-   */
-  addToHistory: async (entry: Omit<AnalysisHistory, 'id' | 'timestamp'>) => {
-    try {
-      const { settings, history } = get();
-      
-      if (!settings.saveHistory) return;
 
-      const newEntry: AnalysisHistory = {
-        ...entry,
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-      };
-
-      // Keep only last 50 entries
-      const updatedHistory = [newEntry, ...history].slice(0, 50);
-      
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.ANALYSIS_HISTORY,
-        JSON.stringify(updatedHistory)
-      );
-      
-      set({ history: updatedHistory });
-    } catch (error) {
-      console.error('Error adding to history:', error);
-    }
-  },
-
-  /**
-   * Clear analysis history
-   */
-  clearHistory: async () => {
-    try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.ANALYSIS_HISTORY);
-      set({ history: [] });
-    } catch (error) {
-      console.error('Error clearing history:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Clear all app data
-   * Resets to default state
-   */
-  clearAllData: async () => {
-    try {
-      await AsyncStorage.clear();
-      set({
-        userProfile: DEFAULT_PROFILE,
-        isAuthenticated: false,
-        settings: DEFAULT_SETTINGS,
-        history: [],
-      });
-    } catch (error) {
-      console.error('Error clearing all data:', error);
-      throw error;
-    }
-  },
 }));
 
 /**
- * Selector hooks for commonly used values
- * These provide optimized access to specific parts of the state
+ * Selector hook for dark mode
+ * Provides optimized access to isDarkMode setting
  */
-export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
-export const useUserProfile = () => useAuthStore((state) => state.userProfile);
-export const useAppSettings = () => useAuthStore((state) => state.settings);
 export const useIsDarkMode = () => useAuthStore((state) => state.settings.isDarkMode);

@@ -88,39 +88,17 @@ export default function OutfitScorerScreen() {
 
   // Load from history if historyId is provided
   useEffect(() => {
-    console.log('🔄 History load check:', {
-      hasHistoryId: !!params.historyId,
-      historyId: params.historyId,
-      hasSession: !!session,
-      userId: session?.user?.id,
-    });
-    
     if (params.historyId && session?.user) {
       loadFromHistory(params.historyId as string);
-    } else if (params.historyId && !session?.user) {
-      console.warn('⚠️ History ID provided but no session found. Waiting for session...');
     }
   }, [params.historyId, session]);
 
   const loadFromHistory = async (historyId: string) => {
     try {
-      console.log('📥 Loading history with ID:', historyId);
       const entry = await getChatHistoryById(historyId, session!.user.id);
       
-      console.log('📦 History entry received:', entry ? 'YES' : 'NO');
-      if (!entry) {
+      if (!entry || !entry.conversation_data) {
         console.error('❌ No history entry found for ID:', historyId);
-        return;
-      }
-      
-      console.log('📊 Entry data:', {
-        hasConversationData: !!entry.conversation_data,
-        conversationDataType: entry.conversation_data?.type,
-        entryType: entry.type,
-      });
-      
-      if (!entry.conversation_data) {
-        console.error('❌ No conversation_data in entry');
         return;
       }
       
@@ -130,11 +108,6 @@ export default function OutfitScorerScreen() {
       }
 
       const data = entry.conversation_data as OutfitScoreConversationData;
-      console.log('✅ Loading outfit score data:', {
-        hasImage: !!data.outfitImage,
-        score: data.overallScore,
-        hasFeedback: !!data.feedback,
-      });
       
       // Pre-populate the UI with the previous result
       setSelectedImage(data.outfitImage);
@@ -233,10 +206,7 @@ export default function OutfitScorerScreen() {
     setResult(null);
 
     try {
-      console.log('Converting image to base64...');
       const base64Image = await convertImageToBase64(selectedImage);
-      
-      console.log('Analyzing outfit with AI...');
       const contextInfo = context.trim() ? `\n\n🎯 CONTEXT: The user is going to ${context}. This is CRITICAL - evaluate outfit appropriateness specifically for this occasion.` : '';
       const prompt = `You are an ELITE fashion consultant with expertise in high-fashion, street style, and professional attire. Your job is to perform a METICULOUS, DETAILED analysis of this outfit image.${contextInfo}
 
@@ -328,7 +298,6 @@ Respond in EXACTLY this JSON format (ONLY valid JSON, no markdown, no extra text
 Be precise, professional, and constructive. Your analysis will directly drive GENDER-APPROPRIATE product recommendations.`;
 
       const response = await generateTextWithImage(base64Image, prompt);
-      console.log('AI Response:', response);
 
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -354,7 +323,6 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
             context,
             analysisText
           );
-          console.log('Detected missing items (gender-filtered):', missingItems);
           
           if (missingItems.length > 0) {
             // Generate gender-appropriate recommendations
@@ -365,9 +333,6 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
               parsedResult.improvements
             );
             setRecommendations(generatedRecommendations);
-            console.log('Generated recommendations for', generatedRecommendations.size, 'item types');
-          } else {
-            console.log('No gender-appropriate items to recommend');
           }
         } catch (recError) {
           console.error('Error generating recommendations:', recError);
@@ -384,19 +349,17 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
           let finalImageUrl = uploadedImageUrl;
           
           if (!uploadedImageUrl) {
-            console.log('📤 Uploading outfit image to Supabase Storage...');
             const uploadResult = await uploadOutfitImage(selectedImage, 'OUTFITS');
             
             if (uploadResult.success && uploadResult.url) {
               finalImageUrl = uploadResult.url;
               setUploadedImageUrl(uploadResult.url);
-              console.log('✅ Outfit image uploaded:', uploadResult.url);
             } else {
               console.warn('⚠️ Image upload failed, using local URI:', uploadResult.error);
               finalImageUrl = selectedImage; // Fallback to local URI
             }
           } else {
-            console.log('✅ Using previously uploaded image:', uploadedImageUrl);
+            finalImageUrl = uploadedImageUrl;
           }
 
           // Prepare product recommendations data for storage (use the newly generated ones)
@@ -434,26 +397,8 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
             conversationData,
           });
           
-          console.log('Outfit analysis saved to history', {
-            historyId: savedHistory.data?.id,
-            recommendationsCount: generatedRecommendations.size
-          });
-
           // Save product recommendations to dedicated table (use the newly generated ones)
-          console.log('Checking if we should save recommendations:', {
-            hasHistoryId: !!savedHistory.data?.id,
-            recommendationsSize: generatedRecommendations.size,
-            shouldSave: savedHistory.data?.id && generatedRecommendations.size > 0
-          });
-          
           if (savedHistory.data?.id && generatedRecommendations.size > 0) {
-            console.log('Starting to save product recommendations to database...');
-            console.log('Recommendations data:', Array.from(generatedRecommendations.entries()).map(([type, products]) => ({
-              itemType: type,
-              productCount: products.length,
-              products: products.map(p => ({ name: p.name, marketplace: p.marketplace }))
-            })));
-            
             const { saveProductRecommendations } = await import('@/utils/productRecommendationStorage');
             const saveResult = await saveProductRecommendations(
               savedHistory.data.id,
@@ -461,16 +406,9 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
               generatedRecommendations
             );
             
-            if (saveResult.success) {
-              console.log('✅ Product recommendations saved to database successfully');
-            } else {
+            if (!saveResult.success) {
               console.error('❌ Failed to save product recommendations:', saveResult.error);
             }
-          } else {
-            console.log('⚠️ Skipping recommendation save:', {
-              noHistoryId: !savedHistory.data?.id,
-              noRecommendations: generatedRecommendations.size === 0
-            });
           }
         } catch (historyError) {
           console.error('Failed to save to history:', historyError);
