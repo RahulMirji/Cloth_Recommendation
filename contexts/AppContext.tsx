@@ -195,33 +195,42 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
     try {
-      const updated = { ...userProfile, ...updates };
-      setUserProfile(updated);
-      await AsyncStorage.setItem('user_profile', JSON.stringify(updated));
-
-      // Update in Supabase if user is authenticated
-      if (session?.user) {
-        const { error } = await supabase
-          .from('user_profiles')
-          .update({
-            name: updated.name || undefined,
-            email: updated.email || undefined,
-            phone: updated.phone || undefined,
-            age: updated.age ? parseInt(updated.age) : undefined,
-            gender: updated.gender || undefined,
-            bio: updated.bio || undefined,
-            profile_image: updated.profileImage || undefined,
-          })
-          .eq('user_id', session.user.id);
-
-        if (error) {
-          console.error('Error updating profile in Supabase:', error);
+      // Use functional update to avoid stale closure
+      setUserProfile(currentProfile => {
+        const updated = { ...currentProfile, ...updates };
+        
+        // Store in AsyncStorage
+        AsyncStorage.setItem('user_profile', JSON.stringify(updated)).catch(error => {
+          console.error('Error saving profile to AsyncStorage:', error);
+        });
+        
+        // Update in Supabase if user is authenticated (async)
+        if (session?.user) {
+          supabase
+            .from('user_profiles')
+            .update({
+              name: updated.name || undefined,
+              email: updated.email || undefined,
+              phone: updated.phone || undefined,
+              age: updated.age ? parseInt(updated.age) : undefined,
+              gender: updated.gender || undefined,
+              bio: updated.bio || undefined,
+              profile_image: updated.profileImage || undefined,
+            })
+            .eq('user_id', session.user.id)
+            .then(({ error }) => {
+              if (error) {
+                console.error('Error updating profile in Supabase:', error);
+              }
+            });
         }
-      }
+        
+        return updated;
+      });
     } catch (error) {
       console.error('Error updating user profile:', error);
     }
-  }, [userProfile, session]);
+  }, [session]);
 
   const logout = useCallback(async () => {
     try {

@@ -19,7 +19,6 @@ This document describes the enhanced vision API integration added to the AI Styl
 
 ### 3. Enhanced AI Stylist Screen (`app/ai-stylist.tsx`)
 - **Vision Mode Toggle**: Switch between Enhanced Vision and Basic Vision modes
-- **Quick Outfit Analysis**: Instant analysis without starting a chat
 - **Live Chat Integration**: Seamless voice + vision interactions
 - **Storage Integration**: Automatic image upload and URL generation
 
@@ -31,12 +30,6 @@ This document describes the enhanced vision API integration added to the AI Styl
 3. **Vision API analyzes** → Image URL + user text sent to Pollinations AI
 4. **AI responds** → Text-to-speech playback
 5. **Repeat** → Continuous conversation loop
-
-### Quick Analysis Flow
-1. **User taps "Quick Outfit Analysis"**
-2. **Camera captures** → Image uploaded automatically
-3. **Vision API analyzes** → Specialized outfit analysis
-4. **Results displayed** → Alert with detailed feedback
 
 ## API Endpoints Used
 
@@ -107,11 +100,6 @@ if (result.success) {
 - **Enhanced Vision**: Uses Supabase storage + Pollinations AI
 - **Basic Vision**: Uses local base64 + original processing
 - **Toggle Location**: Top center of AI Stylist screen
-
-### Quick Analysis Button
-- **Visibility**: Only shown when Enhanced Vision is enabled
-- **Function**: Instant outfit analysis without chat
-- **Feedback**: Alert popup with detailed analysis
 
 ## Error Handling
 

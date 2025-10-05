@@ -1,7 +1,7 @@
 import { Audio } from 'expo-av';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { router, Stack } from 'expo-router';
-import { Mic, MicOff, X, RotateCw, Volume2, Square, Power, Eye, EyeOff, Zap } from 'lucide-react-native';
+import { Mic, MicOff, X, RotateCw, Volume2, Square, Power, Eye, EyeOff } from 'lucide-react-native';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
@@ -836,65 +836,6 @@ Keep responses conversational and natural, as if you're talking to them in perso
     }
   }, [speechService]);
 
-  const quickOutfitAnalysis = useCallback(async () => {
-    if (!useEnhancedVision) {
-      Alert.alert('Enhanced Vision Required', 'Please enable Enhanced Vision mode to use quick outfit analysis.');
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-      console.log('🚀 Starting quick outfit analysis...');
-      const imageUrl = await uploadImageAndGetURL();
-      
-      if (imageUrl) {
-        console.log('👁️ Getting outfit analysis from vision API...');
-        const analysis = await visionAPI.analyzeOutfit(imageUrl);
-        console.log('📝 Analysis received:', analysis.substring(0, 100) + '...');
-        
-        // Generate and play TTS for the analysis
-        try {
-          console.log('🎵 Starting TTS for quick analysis...');
-          console.log('🎵 Analysis length:', analysis.length, 'characters');
-          
-          const audioResponse = await generateSpeakBackAudio(analysis);
-          console.log('🎵 TTS Response received for quick analysis:', audioResponse);
-          
-          if (audioResponse && audioResponse.uri) {
-            console.log('🔊 Playing quick analysis audio...');
-            await playAudio(audioResponse.uri);
-            console.log('🔊 Quick analysis audio started');
-          }
-        } catch (ttsError) {
-          console.error('❌ Quick analysis TTS failed:', ttsError);
-        }
-        
-        Alert.alert(
-          'Quick Outfit Analysis',
-          analysis,
-          [
-            { text: 'Close', style: 'cancel' },
-            { 
-              text: 'Start Chat', 
-              onPress: () => {
-                if (!isConversationActive) {
-                  startNewConversation();
-                }
-              }
-            }
-          ]
-        );
-      } else {
-        Alert.alert('Error', 'Failed to capture and analyze outfit. Please try again.');
-      }
-    } catch (error) {
-      console.error('Quick analysis error:', error);
-      Alert.alert('Analysis Error', 'Failed to analyze your outfit. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [useEnhancedVision, uploadImageAndGetURL, isConversationActive, startNewConversation]);
-
   if (!permission) {
     return (
       <View style={styles.permissionContainer}>
@@ -1029,18 +970,6 @@ Keep responses conversational and natural, as if you're talking to them in perso
             )}
 
             <View style={styles.controls}>
-              {!isConversationActive && useEnhancedVision && (
-                <TouchableOpacity
-                  style={styles.quickAnalysisButton}
-                  onPress={quickOutfitAnalysis}
-                  disabled={isProcessing}
-                >
-                  <Zap size={18} color={Colors.white} />
-                  <Text style={styles.quickAnalysisText}>
-                    {isProcessing ? 'Analyzing...' : 'Quick Outfit Analysis'}
-                  </Text>
-                </TouchableOpacity>
-              )}
               
               <View style={{ paddingBottom: insets.bottom + 20 }}>
                 <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -1242,22 +1171,6 @@ const styles = StyleSheet.create({
   controls: {
     alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  quickAnalysisButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginBottom: 20,
-    gap: 8,
-    opacity: 0.9,
-  },
-  quickAnalysisText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '600' as const,
   },
   micButton: {
     width: 80,
