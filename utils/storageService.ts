@@ -7,6 +7,10 @@ import { supabase } from '@/lib/supabase';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
+// Get Supabase configuration
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtaGl3aWVvb3Fmd2tyZGN2cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1Nzg3MTksImV4cCI6MjA3NTE1NDcxOX0.R-jk3IOAGVtRXvM2nLpB3gfMXcsrPO6WDLxY5TId6UA';
+
 export interface ImageUploadResult {
   success: boolean;
   publicUrl?: string;
@@ -162,12 +166,35 @@ class StorageService {
    * @param fileName - Optional custom filename
    */
   async uploadImage(fileUri: string, fileName?: string): Promise<ImageUploadResult> {
+    console.log('🚀 === UPLOAD IMAGE STARTING ===');
+    console.log('📁 File URI:', fileUri);
+    console.log('🏷️  File name:', fileName || 'auto-generated');
+    
     try {
+      // Test Supabase connectivity first
+      console.log('🔍 Testing Supabase connectivity...');
+      try {
+        const { data: testData, error: testError } = await supabase.storage.listBuckets();
+        if (testError) {
+          console.error('❌ Supabase connectivity test failed:', testError);
+        } else {
+          console.log('✅ Supabase is reachable, found', testData?.length || 0, 'buckets');
+        }
+      } catch (connectError) {
+        console.error('❌ Network connectivity issue:', connectError);
+        return {
+          success: false,
+          error: 'Cannot connect to Supabase. Please check your internet connection.'
+        };
+      }
+      
       // Generate unique filename if not provided
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
       const defaultFileName = `ai-stylist-${timestamp}-${randomId}.jpg`;
       const finalFileName = fileName || defaultFileName;
+      
+      console.log('📝 Final filename:', finalFileName);
 
       let blob: Blob;
 
@@ -192,23 +219,83 @@ class StorageService {
           }
         }
       } else {
-        // Mobile platform: use FileSystem to read as base64
-        const base64 = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        // Mobile platform: Read file directly and use React Native's file upload
+        console.log('📱 Preparing file for upload...');
+        console.log('   File URI:', fileUri);
+        
+        // Try multiple approaches for React Native compatibility
+        try {
+          // Approach 1: Use FormData with the file URI directly
+          console.log('� Attempting FormData upload (Method 1)...');
+          const formData = new FormData();
+          formData.append('file', {
+            uri: fileUri,
+            type: 'image/jpeg',
+            name: finalFileName,
+          } as any);
+          
+          // Upload using FormData
+          const filePath = `ai-stylist/${timestamp}/${finalFileName}`;
+          console.log(`� Uploading with FormData to: ${filePath}`);
+          
+          const uploadUrl = `${supabaseUrl}/storage/v1/object/${this.bucketName}/${filePath}`;
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session?.access_token || supabaseAnonKey}`,
+            },
+            body: formData,
+          });
+          
+          if (!uploadResponse.ok) {
+            console.log('❌ FormData upload failed, trying Blob method...');
+            throw new Error(`FormData upload failed: ${uploadResponse.status}`);
+          }
+          
+          console.log('✅ FormData upload successful!');
+          
+          // Get public URL
+          const { data: publicUrlData } = supabase.storage
+            .from(this.bucketName)
+            .getPublicUrl(filePath);
 
-        // Convert base64 to blob
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+          return {
+            success: true,
+            publicUrl: publicUrlData.publicUrl,
+            path: filePath
+          };
+          
+        } catch (formDataError) {
+          console.log('⚠️  FormData failed, trying Blob conversion...');
+          console.error('FormData error:', formDataError);
+          
+          // Approach 2: Fall back to base64 + Blob
+          console.log('� Reading file as base64...');
+          const base64 = await FileSystem.readAsStringAsync(fileUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          console.log(`📊 Base64 length: ${base64.length} chars`);
+
+          console.log('🔄 Creating data URI...');
+          const dataUri = `data:image/jpeg;base64,${base64}`;
+          
+          console.log('🌐 Fetching data URI to create Blob...');
+          const response = await fetch(dataUri);
+          console.log('✅ Fetch successful, status:', response.status);
+          blob = await response.blob();
+          console.log('✅ Blob created, size:', blob.size, 'type:', blob.type);
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        blob = new Blob([byteArray], { type: 'image/jpeg' });
       }
 
       // Upload to Supabase storage
+      console.log('📤 Uploading to Supabase Storage...');
       const filePath = `ai-stylist/${timestamp}/${finalFileName}`;
+      console.log(`   Bucket: ${this.bucketName}`);
+      console.log(`   Path: ${filePath}`);
+      console.log(`   Blob size: ${blob.size} bytes`);
+      
       const { data, error } = await supabase.storage
         .from(this.bucketName)
         .upload(filePath, blob, {
@@ -217,12 +304,29 @@ class StorageService {
         });
 
       if (error) {
-        console.error('Upload error:', error);
+        console.error('❌ Supabase upload error:', error);
+        console.error('   Error name:', error.name);
+        console.error('   Error message:', error.message);
+        console.error('   Error details:', JSON.stringify(error, null, 2));
+        
+        // Check for specific error types
+        if (error.message?.includes('Network') || error.message?.includes('fetch')) {
+          console.error('💡 This appears to be a network connectivity issue');
+          console.error('   Possible causes:');
+          console.error('   1. Device not connected to internet');
+          console.error('   2. Supabase URL is unreachable');
+          console.error('   3. Storage bucket permissions issue');
+          console.error('   4. CORS policy blocking the request');
+        }
+        
         return {
           success: false,
           error: error.message
         };
       }
+
+      console.log('✅ Upload successful!');
+      console.log('   Uploaded path:', data.path);
 
       // Get public URL
       const { data: publicUrlData } = supabase.storage

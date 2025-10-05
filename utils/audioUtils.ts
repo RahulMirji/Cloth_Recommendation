@@ -131,12 +131,11 @@ export async function generateSpeakBackAudio(text: string): Promise<{
 
     // Download audio file
     const fileName = `output_audio_${Date.now()}.mp3`;
-    const localPath = Platform.OS === 'web' 
-      ? `./${fileName}` 
-      : `/tmp/${fileName}`;
+    
     // On web the expo-file-system native method may be unavailable. Use fetch+blob
     // to create an object URL that can be played by the audio player.
     if (Platform.OS === 'web') {
+      const localPath = `./${fileName}`;
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Failed to fetch audio: ${res.status} ${res.statusText}`);
@@ -153,7 +152,9 @@ export async function generateSpeakBackAudio(text: string): Promise<{
       };
     }
 
-    // Native platforms: use expo-file-system (legacy import) to download to temp path
+    // Native platforms: use expo-file-system cache directory (writable on all platforms)
+    const localPath = `${FileSystem.cacheDirectory}${fileName}`;
+    console.log('🎵 Downloading audio to:', localPath);
     const downloadResult = await FileSystem.downloadAsync(url, localPath);
 
     // downloadAsync for native returns an object with status or just uri depending on platform
