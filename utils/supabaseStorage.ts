@@ -59,8 +59,6 @@ async function compressImage(
   maxHeight: number = 1200
 ): Promise<string> {
   try {
-    console.log(`🖼️  Compressing image: ${uri}`);
-    
     const manipulatedImage = await manipulateAsync(
       uri,
       [
@@ -77,7 +75,6 @@ async function compressImage(
       }
     );
 
-    console.log(`✅ Image compressed successfully`);
     return manipulatedImage.uri;
   } catch (error) {
     console.error('Error compressing image:', error);
@@ -134,26 +131,6 @@ export async function uploadImageToStorage(
   } = options;
 
   try {
-    console.log(`📤 Starting image upload to Supabase Storage... (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
-    console.log(`   User: ${userId}`);
-    console.log(`   Path: ${STORAGE_PATHS[path]}`);
-    console.log(`   Local URI: ${localUri}`);
-
-    // Step 0: Test connectivity
-    if (retryCount === 0) {
-      try {
-        console.log('🔍 Testing Supabase connectivity...');
-        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-        if (bucketsError) {
-          console.warn('⚠️  Cannot list buckets (may lack permissions):', bucketsError.message);
-        } else {
-          console.log('✅ Supabase connection OK, found', buckets?.length || 0, 'buckets');
-        }
-      } catch (err) {
-        console.warn('⚠️  Network connectivity test failed:', err);
-      }
-    }
-
     // Step 1: Compress image
     const compressedUri = await compressImage(localUri, quality, maxWidth, maxHeight);
 
@@ -164,23 +141,15 @@ export async function uploadImageToStorage(
     const generatedFilename = filename || generateFilename(userId);
     const storagePath = `${STORAGE_PATHS[path]}/${userId}/${generatedFilename}`;
 
-    console.log(`   Storage Path: ${storagePath}`);
-    console.log(`   Base64 size: ${base64.length} bytes`);
-    console.log(`   Bucket: ${STORAGE_BUCKET}`);
-
     // Step 4: Create FormData for React Native compatibility (same approach as AI Stylist)
-    console.log('📱 Creating FormData for React Native upload...');
     const formData = new FormData();
     formData.append('file', {
       uri: compressedUri,
       type: 'image/jpeg',
       name: generatedFilename,
     } as any);
-    
-    console.log(`   FormData created with file`);
 
     // Step 5: Upload to Supabase Storage using FormData (React Native compatible)
-    console.log('📤 Uploading using FormData...');
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
     const uploadUrl = `${supabaseUrl}/storage/v1/object/${STORAGE_BUCKET}/${storagePath}`;
     
@@ -203,8 +172,7 @@ export async function uploadImageToStorage(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Upload failed:', response.status, response.statusText);
-      console.error('   Error details:', errorText);
+      console.error('Upload failed:', response.status, response.statusText);
       
       // Retry on network errors
       if (retryCount < MAX_RETRIES && (
@@ -212,7 +180,6 @@ export async function uploadImageToStorage(
         response.status >= 500 ||
         errorText?.includes('Network request failed')
       )) {
-        console.log(`⏳ Retrying in ${RETRY_DELAY}ms...`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
         return uploadImageToStorage(options, retryCount + 1);
       }
@@ -220,15 +187,12 @@ export async function uploadImageToStorage(
       throw new Error(`Upload failed: ${response.statusText || 'Unknown error'}`);
     }
 
-    console.log(`✅ Image uploaded successfully: ${storagePath}`);
-
     // Step 6: Get public URL
     const { data: urlData } = supabase.storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(storagePath);
 
     const publicUrl = urlData.publicUrl;
-    console.log(`🔗 Public URL: ${publicUrl}`);
 
     return publicUrl;
   } catch (error: any) {

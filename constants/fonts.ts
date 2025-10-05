@@ -34,38 +34,3 @@ export const FontWeights = {
   semibold: '600' as const,
   bold: '700' as const,
 } as const;
-
-/**
- * Typography preset combinations for common use cases
- */
-export const TextStyles = {
-  // Page titles
-  hero: {
-    fontSize: FontSizes.hero,
-    fontWeight: FontWeights.bold,
-  },
-  
-  // Section headers
-  heading: {
-    fontSize: FontSizes.heading,
-    fontWeight: FontWeights.bold,
-  },
-  
-  // Card titles
-  subheading: {
-    fontSize: FontSizes.subheading,
-    fontWeight: FontWeights.semibold,
-  },
-  
-  // Regular content
-  body: {
-    fontSize: FontSizes.body,
-    fontWeight: FontWeights.regular,
-  },
-  
-  // Helper text
-  caption: {
-    fontSize: FontSizes.small,
-    fontWeight: FontWeights.regular,
-  },
-} as const;

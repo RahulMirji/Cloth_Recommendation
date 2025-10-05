@@ -118,16 +118,8 @@ export async function generateSpeakBackAudio(text: string): Promise<{
     const systemPrompt = "Speak this text exactly as written, naturally and conversationally, without adding any extra words or modifications: ";
     const fullText = systemPrompt + text;
     
-    console.log('🎵 TTS System prompt added');
-    console.log('🎵 Original text length:', text.length);
-    console.log('🎵 Full text with prompt length:', fullText.length);
-    console.log('🎵 First 100 chars of full text:', fullText.substring(0, 100));
-    
     const encodedText = encodeURIComponent(fullText);
     const url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova&token=-GCuD_ey-sBxfDW7`;
-    
-    console.log('🎵 Generating audio from URL (truncated for logs)');
-    console.log('🎵 URL length:', url.length);
 
     // Download audio file
     const fileName = `output_audio_${Date.now()}.mp3`;
@@ -142,9 +134,7 @@ export async function generateSpeakBackAudio(text: string): Promise<{
       }
 
       const blob = await res.blob();
-      console.log('🎵 Audio blob size:', blob.size, 'bytes');
       const objectUrl = URL.createObjectURL(blob);
-      console.log('🎵 Created object URL for audio playback');
 
       return {
         uri: objectUrl,
@@ -154,7 +144,6 @@ export async function generateSpeakBackAudio(text: string): Promise<{
 
     // Native platforms: use expo-file-system cache directory (writable on all platforms)
     const localPath = `${FileSystem.cacheDirectory}${fileName}`;
-    console.log('🎵 Downloading audio to:', localPath);
     const downloadResult = await FileSystem.downloadAsync(url, localPath);
 
     // downloadAsync for native returns an object with status or just uri depending on platform
@@ -179,19 +168,10 @@ export async function generateSpeakBackAudio(text: string): Promise<{
  */
 export async function convertAudioToText(audioUri: string): Promise<string> {
   try {
-    console.log('🎵 convertAudioToText called with:', audioUri);
-    
     if (Platform.OS === 'web') {
-      console.log('🎵 Web platform - fetching audio blob...');
-      
       // Fetch the audio blob
       const response = await fetch(audioUri);
       const audioBlob = await response.blob();
-      
-      console.log('🎵 Audio blob details:', {
-        size: audioBlob.size,
-        type: audioBlob.type
-      });
       
       // For now, we'll use contextual responses since Web Speech API
       // cannot directly process recorded audio blobs
@@ -207,8 +187,6 @@ export async function convertAudioToText(audioUri: string): Promise<string> {
       ];
       
       const randomResponse = contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
-      console.log('🎵 Using contextual response:', randomResponse);
-      
       return randomResponse;
     }
     
@@ -266,34 +244,4 @@ export async function convertAudioToTextGoogle(audioBlob: Blob): Promise<string>
 }
 */
 
-/**
- * Check if speech recognition is available on the current platform
- */
-export function isSpeechRecognitionAvailable(): boolean {
-  if (Platform.OS === 'web') {
-    return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-  }
-  
-  // For mobile, we assume it's available if the library is installed
-  return true;
-}
 
-/**
- * Get supported languages for speech recognition
- */
-export function getSupportedLanguages(): string[] {
-  return [
-    'en-US',
-    'en-GB', 
-    'en-AU',
-    'en-CA',
-    'es-ES',
-    'fr-FR',
-    'de-DE',
-    'it-IT',
-    'pt-BR',
-    'ja-JP',
-    'zh-CN',
-    'ko-KR'
-  ];
-}

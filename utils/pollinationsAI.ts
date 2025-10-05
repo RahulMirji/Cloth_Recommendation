@@ -10,12 +10,6 @@ export interface TextGenerationOptions {
   stream?: boolean;
 }
 
-export interface AudioGenerationOptions {
-  text: string;
-  model?: string;
-  voice?: string;
-}
-
 export async function generateText(options: TextGenerationOptions): Promise<string> {
   try {
     // Disable streaming on mobile as ReadableStream is not supported in React Native
@@ -42,8 +36,6 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
       stream: shouldStream,
     };
 
-    console.log('[pollinations] POST', initialUrl, 'body:', safeMessagesForLog(options.messages));
-
     const response = await fetch(initialUrl, {
       method: 'POST',
       headers: {
@@ -56,7 +48,6 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
     if (!response.ok) {
       // Capture server response for debugging
       const errorText = await response.text();
-      console.error('[pollinations] Initial API Error Response:', errorText);
 
       // Try a safe retry: use token query param and simplify message shapes to plain text
       try {
@@ -100,8 +91,6 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
           stream: shouldStream,
         };
 
-        console.log('[pollinations] Retrying POST', retryUrl, 'body:', JSON.stringify(retryBody));
-
         const retryResp = await fetch(retryUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -110,7 +99,6 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
 
         if (!retryResp.ok) {
           const retryText = await retryResp.text();
-          console.error('[pollinations] Retry API Error Response:', retryText);
           throw new Error(`API request failed after retry: ${retryResp.status} - ${retryText}`);
         }
 
@@ -123,7 +111,6 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
         const retryData = await retryResp.json();
         return retryData.choices?.[0]?.message?.content || '';
       } catch (retryError) {
-        console.error('[pollinations] Retry failed:', retryError);
         throw new Error(`API request failed: ${response.status} - ${errorText}; retry error: ${retryError instanceof Error ? retryError.message : String(retryError)}`);
       }
     }
@@ -155,7 +142,7 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
               fullText += content;
             }
           } catch (e) {
-            console.log('Error parsing chunk:', e);
+            // Ignore parsing errors for invalid chunks
           }
         }
       }
@@ -197,48 +184,11 @@ export async function generateTextWithImage(
   });
 }
 
-export async function generateAudioResponse(options: AudioGenerationOptions): Promise<string> {
-  try {
-    const encodedText = encodeURIComponent(options.text);
-    const model = options.model || 'openai-audio';
-    const voice = options.voice || 'nova';
-    
-    const url = `https://text.pollinations.ai/${encodedText}?model=${model}&voice=${voice}`;
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Audio generation failed: ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    
-    if (Platform.OS === 'web') {
-      return URL.createObjectURL(blob);
-    } else {
-      const reader = new FileReader();
-      return new Promise((resolve, reject) => {
-        reader.onloadend = () => {
-          const base64data = reader.result as string;
-          resolve(base64data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-  } catch (error) {
-    console.error('Error generating audio:', error);
-    throw error;
-  }
-}
-
 export async function convertImageToBase64(uri: string): Promise<string> {
   try {
     if (uri.startsWith('data:')) {
       return uri;
     }
-
-    console.log('Converting image from URI:', uri);
 
     if (Platform.OS === 'web') {
       const response = await fetch(uri);

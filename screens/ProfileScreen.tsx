@@ -50,14 +50,6 @@ export function ProfileScreen() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const insets = useSafeAreaInsets();
 
-  // Log profile data for debugging
-  React.useEffect(() => {
-    console.log('🔍 Profile Screen Debug:');
-    console.log('  - User Profile:', userProfile);
-    console.log('  - Has email:', !!userProfile.email);
-    console.log('  - Has name:', !!userProfile.name);
-  }, [userProfile]);
-
   // Update edited profile when userProfile changes
   React.useEffect(() => {
     setEditedProfile(userProfile);
@@ -88,14 +80,10 @@ export function ProfileScreen() {
       setIsUploadingImage(true);
       
       try {
-        console.log('📤 Uploading profile image to Supabase Storage...');
-        
         // Upload to Supabase Storage
         const uploadResult = await uploadProfileImage(result.assets[0].uri);
         
         if (uploadResult.success && uploadResult.url) {
-          console.log('✅ Profile image uploaded successfully:', uploadResult.url);
-          
           // Update profile with Supabase Storage URL
           const updates = { ...editedProfile, profileImage: uploadResult.url };
           setEditedProfile(updates);
