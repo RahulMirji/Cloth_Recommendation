@@ -125,14 +125,17 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
   const loadUserProfileFromSupabase = async (userId: string) => {
     try {
+      console.log('📥 Fetching user profile from Supabase for user:', userId);
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (error) {
-        console.error('Error loading user profile from Supabase:', error);
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = no rows returned, which is okay (we'll create it)
+        console.error('❌ Error loading user profile from Supabase:', error);
         return;
       }
 
@@ -146,13 +149,42 @@ export const [AppProvider, useApp] = createContextHook(() => {
           bio: data.bio || '',
           profileImage: data.profile_image || '',
         };
+        
+        console.log('✅ User profile loaded from Supabase:', profile);
         setUserProfile(profile);
         
         // Cache profile locally
         await AsyncStorage.setItem('user_profile', JSON.stringify(profile));
+      } else {
+        // Profile doesn't exist, create it with user's auth email
+        console.log('⚠️ Profile not found, creating new profile for user:', userId);
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const newProfile = {
+            user_id: userId,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert(newProfile);
+          
+          if (insertError) {
+            console.error('❌ Error creating fallback profile:', insertError);
+          } else {
+            console.log('✅ Fallback profile created successfully');
+            // Reload the profile
+            await loadUserProfileFromSupabase(userId);
+          }
+        }
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('❌ Exception loading user profile:', error);
     }
   };
 

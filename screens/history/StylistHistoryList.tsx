@@ -28,7 +28,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 
 interface StylistHistoryEntry {
   id: string;
@@ -43,7 +43,7 @@ interface StylistHistoryListProps {
 
 export function StylistHistoryList({ isDarkMode }: StylistHistoryListProps) {
   const router = useRouter();
-  const session = useAuthStore((state) => state.session);
+  const { session } = useApp();
   const [history, setHistory] = useState<StylistHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

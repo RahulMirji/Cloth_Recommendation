@@ -226,6 +226,8 @@ export async function getChatHistoryById(
   userId: string
 ): Promise<ChatHistoryEntry | null> {
   try {
+    console.log('🔍 Fetching chat history by ID:', historyId, 'for user:', userId);
+    
     const { data, error } = await supabase
       .from('analysis_history')
       .select('*')
@@ -234,13 +236,21 @@ export async function getChatHistoryById(
       .single();
 
     if (error) {
-      console.error('Error fetching chat history by ID:', error);
+      console.error('❌ Error fetching chat history by ID:', error);
+      console.error('Error code:', error.code, 'Message:', error.message);
       return null;
     }
 
+    console.log('✅ Chat history fetched:', {
+      id: data?.id,
+      type: data?.type,
+      hasConversationData: !!data?.conversation_data,
+      conversationDataKeys: data?.conversation_data ? Object.keys(data.conversation_data) : [],
+    });
+
     return data as unknown as ChatHistoryEntry;
   } catch (error) {
-    console.error('Exception fetching chat history by ID:', error);
+    console.error('❌ Exception fetching chat history by ID:', error);
     return null;
   }
 }
