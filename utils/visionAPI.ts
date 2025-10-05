@@ -75,28 +75,58 @@ class VisionAPIService {
         maxTokens
       });
 
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Vision API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data: VisionResponse = await response.json();
+      console.log('📤 Sending request to Vision API...');
       
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from vision API');
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const response = await fetch(this.baseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+
+        console.log('📥 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Vision API error response:', errorText);
+          throw new Error(`Vision API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        console.log('🔄 Parsing JSON response...');
+        const data: VisionResponse = await response.json();
+        console.log('✅ Response parsed successfully');
+        console.log('📊 Response data:', JSON.stringify(data, null, 2));
+        
+        if (!data.choices || data.choices.length === 0) {
+          console.error('❌ No choices in response');
+          throw new Error('No response from vision API');
+        }
+
+        const content = data.choices[0].message.content;
+        console.log('✅ Vision API response content:', content.substring(0, 200) + '...');
+
+        return content;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          console.error('❌ Vision API request timed out after 30 seconds');
+          throw new Error('Vision API request timed out');
+        }
+        throw fetchError;
       }
-
-      const content = data.choices[0].message.content;
-      console.log('Vision API response:', content);
-
-      return content;
     } catch (error) {
       console.error('Vision API Error:', error);
       throw new Error(`Failed to analyze image: ${error instanceof Error ? error.message : 'Unknown error'}`);
