@@ -212,7 +212,7 @@ export function BundleInspector(props: BundleInspectorProps) {
       )}
 
       {inspectorEnabled && (
-        <View style={styles.inspectorContainer} pointerEvents="box-none">
+        <View style={[styles.inspectorContainer, { pointerEvents: 'box-none' }]}>
           <InspectorOverlay
             inspected={inspectedElement}
             onTouchPoint={onTouchPoint}
