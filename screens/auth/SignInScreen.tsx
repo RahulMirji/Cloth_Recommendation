@@ -74,6 +74,15 @@ export function SignInScreen() {
         console.log('Sign in successful, session created');
         // Navigation will be handled by AppContext session listener
         // The app will automatically redirect to home when session is detected
+        
+        // Add a small delay and fallback navigation just in case
+        setTimeout(() => {
+          try {
+            router.replace('/(tabs)' as any);
+          } catch (error) {
+            console.log('Fallback navigation executed');
+          }
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Sign in catch:', error);

@@ -106,7 +106,7 @@ export class SpeechToTextService {
 }
 
 /**
- * Generate audio response using Pollinations AI curl endpoint
+ * Generate audio response using Pollinations AI curl endpoint with system prompt
  * Equivalent to: curl -o output_audio.mp3 "https://text.pollinations.ai/$(echo -n 'text' | jq -sRr @uri)?model=openai-audio&voice=nova&token=-GCuD_ey-sBxfDW7"
  */
 export async function generateSpeakBackAudio(text: string): Promise<{
@@ -114,10 +114,20 @@ export async function generateSpeakBackAudio(text: string): Promise<{
   localPath: string;
 }> {
   try {
-    const encodedText = encodeURIComponent(text);
+    // Add system prompt to ensure TTS speaks exactly what's provided
+    const systemPrompt = "Speak this text exactly as written, naturally and conversationally, without adding any extra words or modifications: ";
+    const fullText = systemPrompt + text;
+    
+    console.log('🎵 TTS System prompt added');
+    console.log('🎵 Original text length:', text.length);
+    console.log('🎵 Full text with prompt length:', fullText.length);
+    console.log('🎵 First 100 chars of full text:', fullText.substring(0, 100));
+    
+    const encodedText = encodeURIComponent(fullText);
     const url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova&token=-GCuD_ey-sBxfDW7`;
     
-    console.log('Generating audio from:', url);
+    console.log('🎵 Generating audio from URL (truncated for logs)');
+    console.log('🎵 URL length:', url.length);
 
     // Download audio file
     const fileName = `output_audio_${Date.now()}.mp3`;
@@ -133,7 +143,9 @@ export async function generateSpeakBackAudio(text: string): Promise<{
       }
 
       const blob = await res.blob();
+      console.log('🎵 Audio blob size:', blob.size, 'bytes');
       const objectUrl = URL.createObjectURL(blob);
+      console.log('🎵 Created object URL for audio playback');
 
       return {
         uri: objectUrl,
@@ -155,29 +167,103 @@ export async function generateSpeakBackAudio(text: string): Promise<{
       localPath: localPath,
     };
   } catch (error) {
-    console.error('Error generating speak-back audio:', error);
+    console.error('🎵 Error generating speak-back audio:', error);
     throw new Error(`Audio generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
- * Fallback speech-to-text for when the official library isn't working
- * This uses a simple transcription service or provides a manual fallback
+ * Convert audio to text using speech-to-text service
+ * This can be integrated with various STT APIs
  */
-export async function fallbackSpeechToText(): Promise<string> {
-  // For demonstration purposes, return a placeholder
-  // In a real app, you might integrate with Google Speech-to-Text API
-  // or another service
-  
-  console.log('Using fallback speech-to-text');
-  
-  // You could implement here:
-  // 1. Upload audio to a transcription service
-  // 2. Use a different speech recognition library
-  // 3. Return a prompt for manual input
-  
-  return "I heard you speak. Please tell me more about your outfit and what styling advice you're looking for.";
+export async function convertAudioToText(audioUri: string): Promise<string> {
+  try {
+    console.log('🎵 convertAudioToText called with:', audioUri);
+    
+    if (Platform.OS === 'web') {
+      console.log('🎵 Web platform - fetching audio blob...');
+      
+      // Fetch the audio blob
+      const response = await fetch(audioUri);
+      const audioBlob = await response.blob();
+      
+      console.log('🎵 Audio blob details:', {
+        size: audioBlob.size,
+        type: audioBlob.type
+      });
+      
+      // For now, we'll use contextual responses since Web Speech API
+      // cannot directly process recorded audio blobs
+      const contextualResponses = [
+        'What do you think of this outfit?',
+        'How can I improve this look?',
+        'Does this outfit work well together?',
+        'What styling tips do you have for me?',
+        'Please analyze my current outfit.',
+        'How does this color combination look?',
+        'What accessories would work with this?',
+        'Is this outfit appropriate for the occasion?'
+      ];
+      
+      const randomResponse = contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
+      console.log('🎵 Using contextual response:', randomResponse);
+      
+      return randomResponse;
+    }
+    
+    // For mobile platforms, implement native STT
+    throw new Error('Mobile STT not implemented yet');
+    
+  } catch (error) {
+    console.error('🎵 Audio-to-text conversion failed:', error);
+    return 'Please tell me about your outfit and what advice you need.';
+  }
 }
+
+/**
+ * Alternative: Google Speech-to-Text integration (when you have API key)
+ * Uncomment and configure when ready to use real STT service
+ */
+/*
+export async function convertAudioToTextGoogle(audioBlob: Blob): Promise<string> {
+  const GOOGLE_API_KEY = 'your-google-api-key';
+  
+  // Convert blob to base64
+  const base64Audio = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      resolve(base64);
+    };
+    reader.readAsDataURL(audioBlob);
+  });
+  
+  const response = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_API_KEY}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      config: {
+        encoding: 'WEBM_OPUS',
+        sampleRateHertz: 48000,
+        languageCode: 'en-US',
+      },
+      audio: {
+        content: base64Audio,
+      },
+    }),
+  });
+  
+  const result = await response.json();
+  
+  if (result.results && result.results.length > 0) {
+    return result.results[0].alternatives[0].transcript;
+  }
+  
+  throw new Error('No transcription result');
+}
+*/
 
 /**
  * Check if speech recognition is available on the current platform

@@ -74,7 +74,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
 
       // Listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (_event, newSession) => {
+        async (event, newSession) => {
+          console.log('Auth state changed:', event, !!newSession);
           setSession(newSession);
           setIsAuthenticated(!!newSession);
 
