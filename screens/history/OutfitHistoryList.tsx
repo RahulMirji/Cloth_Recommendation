@@ -75,7 +75,6 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
           .limit(50);
 
         if (!error && data && data.length > 0) {
-          console.log('Loaded outfit history from Supabase:', data.length, 'entries');
           const mappedHistory = data.map(item => {
             // Try to get data from conversation_data if available (new format)
             let score = item.score || 0;
@@ -110,8 +109,6 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
           return;
         } else if (error) {
           console.error('Error loading outfit history from Supabase:', error);
-        } else {
-          console.log('No outfit history found in Supabase');
         }
       }
 

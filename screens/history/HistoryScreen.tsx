@@ -55,7 +55,6 @@ export function HistoryScreen() {
   // Auto-refresh when screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      console.log('📍 History screen focused - refreshing data');
       setRefreshKey(prev => prev + 1);
     }, [])
   );
