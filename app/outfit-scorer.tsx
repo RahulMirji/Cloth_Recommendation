@@ -31,6 +31,7 @@ import {
   MissingItem,
 } from '@/utils/productRecommendations';
 import { Footer } from '@/components/Footer';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface ScoringResult {
   score: number;
@@ -45,6 +46,7 @@ interface ScoringResult {
 
 export default function OutfitScorerScreen() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [result, setResult] = useState<ScoringResult | null>(null);
   const [scoreAnim] = useState(new Animated.Value(0));
@@ -52,17 +54,37 @@ export default function OutfitScorerScreen() {
   const [context, setContext] = useState<string>('');
   const [recommendations, setRecommendations] = useState<Map<string, ProductRecommendation[]>>(new Map());
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false);
+  const [glowAnim] = useState(new Animated.Value(0));
   
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   
   // Get session from AppContext (not authStore)
   const { session, settings } = useApp();
+  const { uploadOutfitImage } = useImageUpload();
   
   // Theme detection
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
   const themedColors = getThemedColors(isDarkMode);
+
+  // Glow animation for gallery button
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
 
   // Load from history if historyId is provided
   useEffect(() => {
@@ -116,6 +138,7 @@ export default function OutfitScorerScreen() {
       
       // Pre-populate the UI with the previous result
       setSelectedImage(data.outfitImage);
+      setUploadedImageUrl(data.outfitImage); // This is already a Supabase URL from history
       setDisplayScore(data.overallScore);
       
       const loadedResult: ScoringResult = {
@@ -168,13 +191,14 @@ export default function OutfitScorerScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [3, 4],
+      allowsEditing: false, // Disable built-in crop editor
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
+      // Set local image immediately for preview
       setSelectedImage(result.assets[0].uri);
+      setUploadedImageUrl(null); // Clear previous upload
       setResult(null);
       setContext('');
     }
@@ -189,13 +213,14 @@ export default function OutfitScorerScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [3, 4],
+      allowsEditing: false, // Disable built-in crop editor
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
+      // Set local image immediately for preview
       setSelectedImage(result.assets[0].uri);
+      setUploadedImageUrl(null); // Clear previous upload
       setResult(null);
       setContext('');
     }
@@ -355,6 +380,25 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
       // Save to chat history if user has enabled it
       if (session?.user && selectedImage) {
         try {
+          // Upload image to Supabase Storage if not already uploaded
+          let finalImageUrl = uploadedImageUrl;
+          
+          if (!uploadedImageUrl) {
+            console.log('📤 Uploading outfit image to Supabase Storage...');
+            const uploadResult = await uploadOutfitImage(selectedImage, 'OUTFITS');
+            
+            if (uploadResult.success && uploadResult.url) {
+              finalImageUrl = uploadResult.url;
+              setUploadedImageUrl(uploadResult.url);
+              console.log('✅ Outfit image uploaded:', uploadResult.url);
+            } else {
+              console.warn('⚠️ Image upload failed, using local URI:', uploadResult.error);
+              finalImageUrl = selectedImage; // Fallback to local URI
+            }
+          } else {
+            console.log('✅ Using previously uploaded image:', uploadedImageUrl);
+          }
+
           // Prepare product recommendations data for storage (use the newly generated ones)
           const productRecsData: { [itemType: string]: ProductRecommendationData[] } = {};
           generatedRecommendations.forEach((products: ProductRecommendation[], itemType: string) => {
@@ -373,7 +417,7 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
           const conversationData: OutfitScoreConversationData = {
             type: 'outfit_score',
             timestamp: new Date().toISOString(),
-            outfitImage: selectedImage,
+            outfitImage: finalImageUrl!, // Use Supabase URL
             overallScore: parsedResult.score,
             feedback: {
               strengths: parsedResult.strengths,
@@ -381,7 +425,7 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
               summary: parsedResult.feedback,
             },
             productRecommendations: Object.keys(productRecsData).length > 0 ? productRecsData : undefined,
-            images: [selectedImage],
+            images: [finalImageUrl!], // Use Supabase URL
           };
 
           const savedHistory = await saveChatHistory({
@@ -493,18 +537,37 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
                 <Text style={styles.primaryButtonText}>Take Photo</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.secondaryButton, { 
-                  backgroundColor: themedColors.buttonSecondary,
-                  borderColor: themedColors.buttonSecondaryBorder 
-                }]} 
-                onPress={pickImage}
+              <Animated.View
+                style={{
+                  shadowColor: Colors.primary,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.3, 0.8],
+                  }),
+                  shadowRadius: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [8, 20],
+                  }),
+                  elevation: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [5, 15],
+                  }),
+                }}
               >
-                <Upload size={24} color={Colors.primary} />
-                <Text style={[styles.secondaryButtonText, { color: themedColors.buttonSecondaryText }]}>
-                  Choose from Gallery
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.secondaryButton, { 
+                    backgroundColor: themedColors.buttonSecondary,
+                    borderColor: themedColors.buttonSecondaryBorder 
+                  }]} 
+                  onPress={pickImage}
+                >
+                  <Upload size={24} color={Colors.primary} />
+                  <Text style={[styles.secondaryButtonText, { color: themedColors.buttonSecondaryText }]}>
+                    Choose from Gallery
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
             </View>
           </View>
         ) : (

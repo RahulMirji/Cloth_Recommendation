@@ -22,6 +22,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sparkles, Calendar, TrendingUp, Trash2, CheckSquare, Square } from 'lucide-react-native';
@@ -308,32 +309,50 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
         )}
 
         <View style={[styles.cardContent, selectionMode && styles.cardContentWithCheckbox]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.scoreContainer, { backgroundColor: getScoreColor(item.score) + '20' }]}>
-              <TrendingUp size={20} color={getScoreColor(item.score)} />
-              <Text style={[styles.scoreText, { color: getScoreColor(item.score) }]}>
-                {item.score}/100
-              </Text>
-            </View>
-            <View style={styles.dateContainer}>
-              <Calendar size={14} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-              <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
-                {formatDate(item.created_at)}
-              </Text>
-            </View>
+          {/* Image Thumbnail */}
+          <View style={styles.thumbnailContainer}>
+            {item.image_url && item.image_url.startsWith('http') ? (
+              <Image
+                source={{ uri: item.image_url }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.thumbnailPlaceholder, isDarkMode && styles.thumbnailPlaceholderDark]}>
+                <Sparkles size={32} color={Colors.primary} opacity={0.5} />
+              </View>
+            )}
           </View>
 
-          <Text
-            style={[styles.resultPreview, isDarkMode && styles.resultPreviewDark]}
-            numberOfLines={2}
-          >
-            {item.result || 'Outfit analysis'}
-          </Text>
+          {/* Content Info */}
+          <View style={styles.cardInfo}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.scoreContainer, { backgroundColor: getScoreColor(item.score) + '20' }]}>
+                <TrendingUp size={20} color={getScoreColor(item.score)} />
+                <Text style={[styles.scoreText, { color: getScoreColor(item.score) }]}>
+                  {item.score}/100
+                </Text>
+              </View>
+              <View style={styles.dateContainer}>
+                <Calendar size={14} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
+                  {formatDate(item.created_at)}
+                </Text>
+              </View>
+            </View>
 
-          <View style={styles.cardFooter}>
-            <Text style={[styles.tapToView, isDarkMode && styles.tapToViewDark]}>
-              {selectionMode ? 'Tap to select' : 'Tap to view details'}
+            <Text
+              style={[styles.resultPreview, isDarkMode && styles.resultPreviewDark]}
+              numberOfLines={2}
+            >
+              {item.result || 'Outfit analysis'}
             </Text>
+
+            <View style={styles.cardFooter}>
+              <Text style={[styles.tapToView, isDarkMode && styles.tapToViewDark]}>
+                {selectionMode ? 'Tap to select' : 'Tap to view details'}
+              </Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -531,6 +550,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
+    flexDirection: 'row',
   },
   cardContentWithCheckbox: {
     paddingRight: 40,
@@ -607,5 +627,31 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: Colors.white,
     fontWeight: FontWeights.bold,
+  },
+  // Thumbnail styles
+  thumbnailContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    width: 90,
+    height: 90,
+  },
+  thumbnailPlaceholder: {
+    width: 90,
+    height: 90,
+    backgroundColor: Colors.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  thumbnailPlaceholderDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  cardInfo: {
+    flex: 1,
   },
 });

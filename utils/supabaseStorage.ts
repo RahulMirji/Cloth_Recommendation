@@ -168,54 +168,59 @@ export async function uploadImageToStorage(
     console.log(`   Base64 size: ${base64.length} bytes`);
     console.log(`   Bucket: ${STORAGE_BUCKET}`);
 
-    // Step 4: Create Blob from base64 for React Native
-    // Convert base64 to Uint8Array, then to Blob
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    // Step 4: Create FormData for React Native compatibility (same approach as AI Stylist)
+    console.log('📱 Creating FormData for React Native upload...');
+    const formData = new FormData();
+    formData.append('file', {
+      uri: compressedUri,
+      type: 'image/jpeg',
+      name: generatedFilename,
+    } as any);
     
-    console.log(`   Blob size: ${blob.size} bytes`);
+    console.log(`   FormData created with file`);
 
-    // Step 5: Upload to Supabase Storage with timeout
-    const uploadPromise = supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(storagePath, blob, {
-        contentType: 'image/jpeg',
-        upsert: true, // Replace if exists
-      });
+    // Step 5: Upload to Supabase Storage using FormData (React Native compatible)
+    console.log('📤 Uploading using FormData...');
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/${STORAGE_BUCKET}/${storagePath}`;
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const uploadPromise = fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: formData,
+    });
 
     // Add timeout to detect hanging requests
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000)
     );
 
-    const { data, error } = await Promise.race([uploadPromise, timeoutPromise]) as any;
+    const response = await Promise.race([uploadPromise, timeoutPromise]) as Response;
 
-    if (error) {
-      console.error('❌ Supabase upload error:', error);
-      console.error('   Error name:', error.name);
-      console.error('   Error message:', error.message);
-      console.error('   Error details:', JSON.stringify(error, null, 2));
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Upload failed:', response.status, response.statusText);
+      console.error('   Error details:', errorText);
       
       // Retry on network errors
       if (retryCount < MAX_RETRIES && (
-        error.message?.includes('Network request failed') ||
-        error.message?.includes('timeout') ||
-        error.name === 'StorageUnknownError'
+        response.status === 0 ||
+        response.status >= 500 ||
+        errorText?.includes('Network request failed')
       )) {
         console.log(`⏳ Retrying in ${RETRY_DELAY}ms...`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
         return uploadImageToStorage(options, retryCount + 1);
       }
       
-      throw new Error(`Upload failed: ${error.message}`);
+      throw new Error(`Upload failed: ${response.statusText || 'Unknown error'}`);
     }
 
-    console.log(`✅ Image uploaded successfully: ${data.path}`);
+    console.log(`✅ Image uploaded successfully: ${storagePath}`);
 
     // Step 6: Get public URL
     const { data: urlData } = supabase.storage
@@ -252,32 +257,38 @@ export async function uploadImageToStorage(
  */
 export async function deleteImageFromStorage(imageUrl: string): Promise<boolean> {
   try {
+    // Skip deletion if it's a local file URI (not a Supabase URL)
+    if (!imageUrl || !imageUrl.startsWith('http')) {
+      console.log('⏭️  Skipping deletion - not a Supabase URL:', imageUrl);
+      return true; // Return true since there's nothing to delete
+    }
+
     // Extract path from URL
     const url = new URL(imageUrl);
     const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
     
     if (!pathMatch) {
-      console.error('❌ Invalid image URL format');
-      return false;
+      console.warn('⚠️  Cannot extract storage path from URL, skipping deletion');
+      return true; // Return true to not block the operation
     }
 
     const storagePath = pathMatch[1];
-    console.log(`🗑️  Deleting image: ${storagePath}`);
+    console.log(`🗑️  Deleting old image: ${storagePath}`);
 
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .remove([storagePath]);
 
     if (error) {
-      console.error('❌ Error deleting image:', error);
-      return false;
+      console.warn('⚠️  Error deleting old image (non-critical):', error.message);
+      return true; // Return true anyway - deletion failure shouldn't block upload
     }
 
-    console.log(`✅ Image deleted successfully`);
+    console.log(`✅ Old image deleted successfully`);
     return true;
   } catch (error) {
-    console.error('❌ Error in deleteImageFromStorage:', error);
-    return false;
+    console.warn('⚠️  Exception deleting old image (non-critical):', error);
+    return true; // Return true anyway - deletion is non-critical
   }
 }
 

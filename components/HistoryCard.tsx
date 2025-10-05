@@ -51,6 +51,24 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
     const data = conversationData as OutfitScoreConversationData;
     const score = data.overallScore || entry.score || 0;
     const summary = data.feedback?.summary || '';
+    const imageUrl = data.outfitImage || entry.image_url;
+
+    // Debug logging
+    console.log('🖼️ HistoryCard - Outfit Score:', {
+      hasOutfitImage: !!data.outfitImage,
+      hasEntryImageUrl: !!entry.image_url,
+      imageUrl: imageUrl,
+      score: score
+    });
+
+    // Get score color based on value
+    const getScoreColor = (score: number) => {
+      if (score >= 80) return '#10B981'; // Green
+      if (score >= 60) return '#F59E0B'; // Orange
+      return '#EF4444'; // Red
+    };
+
+    const scoreColor = getScoreColor(score);
 
     return (
       <TouchableOpacity
@@ -66,22 +84,44 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
         >
           <View style={[styles.cardInner, isDarkMode && styles.cardInnerDark]}>
             <View style={styles.cardContent}>
-              {/* Thumbnail */}
-              {(data.outfitImage || entry.image_url) && (
+              {/* Thumbnail - Square Image */}
+              <View style={styles.thumbnailContainer}>
                 <Image
-                  source={{ uri: data.outfitImage || entry.image_url || '' }}
+                  source={{ 
+                    uri: imageUrl && imageUrl.startsWith('http') 
+                      ? imageUrl 
+                      : 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop'
+                  }}
                   style={styles.thumbnail}
                   resizeMode="cover"
                 />
-              )}
+              </View>
 
               {/* Content */}
               <View style={styles.cardInfo}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.scoreContainer}>
-                    <Star size={18} color={Colors.primary} fill={Colors.primary} />
-                    <Text style={[styles.scoreText, isDarkMode && styles.scoreTextDark]}>
-                      {score}/100
+                {/* Score Badge - Matching original design */}
+                <View style={[styles.scoreBadge, { backgroundColor: `${scoreColor}15` }]}>
+                  <Star size={16} color={scoreColor} fill={scoreColor} />
+                  <Text style={[styles.scoreBadgeText, { color: scoreColor }]}>
+                    {score}/100
+                  </Text>
+                </View>
+
+                {/* Summary Text */}
+                <Text
+                  style={[styles.cardSubtitle, isDarkMode && styles.cardSubtitleDark]}
+                  numberOfLines={2}
+                >
+                  {summary.substring(0, 100)}
+                  {summary.length > 100 ? '...' : ''}
+                </Text>
+
+                {/* Date and Delete Button Row */}
+                <View style={styles.bottomRow}>
+                  <View style={styles.dateContainer}>
+                    <Clock size={12} color={isDarkMode ? Colors.white : Colors.textSecondary} />
+                    <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
+                      {isToday(date) ? 'Today' : formattedDate}
                     </Text>
                   </View>
                   {onDelete && (
@@ -93,24 +133,9 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
                       style={styles.deleteButton}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Trash2 size={18} color={isDarkMode ? Colors.white : Colors.textSecondary} />
+                      <Trash2 size={16} color={isDarkMode ? Colors.white : Colors.textSecondary} opacity={0.6} />
                     </TouchableOpacity>
                   )}
-                </View>
-
-                <Text
-                  style={[styles.cardSubtitle, isDarkMode && styles.cardSubtitleDark]}
-                  numberOfLines={2}
-                >
-                  {summary.substring(0, 100)}
-                  {summary.length > 100 ? '...' : ''}
-                </Text>
-
-                <View style={styles.dateContainer}>
-                  <Clock size={12} color={isDarkMode ? Colors.white : Colors.textSecondary} />
-                  <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
-                    {formattedDate} • {formattedTime}
-                  </Text>
                 </View>
               </View>
             </View>
@@ -118,6 +143,14 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
         </LinearGradient>
       </TouchableOpacity>
     );
+  };
+
+  // Helper function to check if date is today
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
   };
 
   const renderAIStylistCard = () => {
@@ -142,7 +175,7 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
             <View style={styles.cardContent}>
               {/* Icon */}
               <View style={[styles.iconContainer, isDarkMode && styles.iconContainerDark]}>
-                <MessageSquare size={28} color={Colors.primary} />
+                <MessageSquare size={32} color={Colors.primary} />
               </View>
 
               {/* Content */}
@@ -164,7 +197,7 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
                       style={styles.deleteButton}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Trash2 size={18} color={isDarkMode ? Colors.white : Colors.textSecondary} />
+                      <Trash2 size={16} color={isDarkMode ? Colors.white : Colors.textSecondary} opacity={0.6} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -181,11 +214,13 @@ export function HistoryCard({ entry, isDarkMode, onPress, onDelete }: HistoryCar
                   {lastMessage.length > 80 ? '...' : ''}
                 </Text>
 
-                <View style={styles.dateContainer}>
-                  <Clock size={12} color={isDarkMode ? Colors.white : Colors.textSecondary} />
-                  <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
-                    {formattedDate} • {formattedTime}
-                  </Text>
+                <View style={styles.bottomRow}>
+                  <View style={styles.dateContainer}>
+                    <Clock size={12} color={isDarkMode ? Colors.white : Colors.textSecondary} />
+                    <Text style={[styles.dateText, isDarkMode && styles.dateTextDark]}>
+                      {isToday(date) ? 'Today' : formattedDate}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -222,16 +257,33 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  thumbnailContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   thumbnail: {
-    width: 100,
-    height: 100,
-    borderRadius: 14,
+    width: 90,
+    height: 90,
+    borderRadius: 12,
     backgroundColor: Colors.backgroundSecondary,
   },
+  thumbnailPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnailPlaceholderDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 14,
+    width: 90,
+    height: 90,
+    borderRadius: 12,
     backgroundColor: Colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -258,6 +310,20 @@ const styles = StyleSheet.create({
   cardTitleDark: {
     color: Colors.white,
   },
+  scoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  scoreBadgeText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
   scoreContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -270,6 +336,11 @@ const styles = StyleSheet.create({
   },
   scoreTextDark: {
     color: Colors.primary,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   messageCountText: {
     fontSize: 13,
