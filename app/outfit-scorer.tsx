@@ -174,36 +174,89 @@ export default function OutfitScorerScreen() {
       const base64Image = await convertImageToBase64(selectedImage);
       
       console.log('Analyzing outfit with AI...');
-      const contextInfo = context.trim() ? `\n\nContext: The user is going to ${context}. Consider this when evaluating the outfit's appropriateness.` : '';
-      const prompt = `You are a professional fashion stylist AI. Analyze this outfit image and provide a detailed assessment.${contextInfo}
+      const contextInfo = context.trim() ? `\n\n🎯 CONTEXT: The user is going to ${context}. This is CRITICAL - evaluate outfit appropriateness specifically for this occasion.` : '';
+      const prompt = `You are an ELITE fashion consultant with expertise in high-fashion, street style, and professional attire. Your job is to perform a METICULOUS, DETAILED analysis of this outfit image.${contextInfo}
 
-IMPORTANT: Look carefully at the image and identify any MISSING or inappropriate items for the given context/occasion.
+🔍 CRITICAL ANALYSIS REQUIREMENTS:
 
-Respond in the following JSON format (respond ONLY with valid JSON, no other text):
+1. **VISUAL SCANNING CHECKLIST** - Examine EVERY detail:
+   ✓ HEAD: Hair styling, accessories (headband, hat, clips)
+   ✓ FACE: Makeup coordination, eyewear (glasses/sunglasses)
+   ✓ NECK: Necklace, scarf, tie, collar style
+   ✓ UPPER BODY: Shirt/top (type, fit, pattern, fabric texture), blazer/jacket presence
+   ✓ TORSO: Belt, waistline definition, layering
+   ✓ ARMS: Watch, bracelets, sleeve style and length
+   ✓ HANDS: Rings, nail polish, bag/clutch being held
+   ✓ LOWER BODY: Pants/skirt/dress (fit, length, style, fabric), pockets
+   ✓ FEET: Shoes (type, condition, color match), socks visibility
+   ✓ OVERALL: Bag/purse (type, size, color), umbrella, any other accessories
+
+2. **MICRO-DETAIL EXTRACTION**:
+   • Fabric Analysis: Identify material type (cotton, silk, denim, wool, synthetic), texture (smooth, rough, knit), and quality indicators
+   • Pattern Recognition: Stripes, checks, floral, solid, print details, pattern scale
+   • Color Palette: Exact shades (navy vs royal blue), undertones (warm/cool), saturation levels, color blocking
+   • Fit Assessment: Too tight/loose, proper length, shoulder alignment, waist definition, proportion balance
+   • Condition Check: Wrinkles, stains, pilling, wear and tear, ironing needed
+   • Styling Details: Tucked vs untucked, rolled sleeves, button count, pocket squares, cufflinks
+
+3. **MISSING ITEMS IDENTIFICATION** - Be EXTREMELY thorough:
+   • Essential Items: List EVERY missing clothing piece or accessory
+   • Context Gaps: What's missing specifically for the stated occasion/context?
+   • Completion Items: What would elevate this from incomplete to complete?
+   • Professional Must-Haves: For formal contexts (tie, blazer, dress shoes, belt, watch, briefcase)
+   • Casual Must-Haves: For casual contexts (appropriate footwear, bag, sunglasses, casual jacket)
+   • Accessory Voids: Missing jewelry, belts, scarves, hats, bags that would enhance
+   • Layering Needs: Missing under/over layers (camisole, blazer, cardigan, coat)
+
+4. **COLOR HARMONY ANALYSIS**:
+   • Primary Color: Dominant color and its appropriateness
+   • Secondary Colors: Supporting colors and their harmony
+   • Color Temperature: Warm vs cool tones consistency
+   • Contrast Levels: High/low contrast and its effectiveness
+   • Seasonal Appropriateness: Colors matching the season
+   • Skin Tone Compatibility: How colors complement skin undertones
+
+Respond in EXACTLY this JSON format (ONLY valid JSON, no markdown, no extra text):
 {
-  "score": <number between 0-100>,
+  "score": <number 0-100>,
   "category": "<Outstanding/Excellent/Good/Fair/Needs Work>",
-  "feedback": "<2-3 sentences of overall feedback>",
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "improvements": ["<improvement 1>", "<improvement 2>"],
-  "missingItems": ["<missing item 1 (e.g., 'tie', 'shoes', 'blazer', 'necklace')>", "<missing item 2>"]
+  "feedback": "<3-4 detailed sentences covering overall impression, key strengths, main issues, and potential>",
+  "strengths": [
+    "<specific strength with detail (e.g., 'Navy blue shirt perfectly matches your skin undertone and creates a professional appearance')>",
+    "<another strength with context>",
+    "<third strength with specifics>"
+  ],
+  "improvements": [
+    "<detailed improvement mentioning SPECIFIC missing item or fix (e.g., 'Add a burgundy silk tie to elevate the professional look and add color contrast')>",
+    "<another detailed improvement with specific item/change>",
+    "<third improvement focusing on fit, color, or missing accessory>",
+    "<fourth improvement if applicable>"
+  ],
+  "missingItems": [
+    "<specific item type: 'tie', 'blazer', 'shoes', 'watch', 'belt', 'necklace', 'earrings', 'bag', 'scarf', 'sunglasses', etc.>",
+    "<another missing item>",
+    "<another missing item>"
+  ]
 }
 
-Consider:
-- Color coordination and harmony
-- Fit and proportions
-- Style appropriateness${context.trim() ? ' for the occasion' : ''}
-- Accessory choices
-- Overall aesthetic appeal
-- MISSING ITEMS: Specifically identify missing clothing items or accessories that would complete the outfit (e.g., tie for interview, proper shoes, blazer, jewelry, bag, watch, etc.)
+📋 EVALUATION CRITERIA (rate each 0-100, then average):
+• Color Coordination (25%): Harmony, contrast, seasonal appropriateness
+• Fit & Proportions (25%): Proper sizing, length, silhouette balance
+• Completeness (20%): All necessary items present for the occasion
+• Style Appropriateness (15%): Matches context/occasion requirements
+• Fabric & Quality (10%): Material choice, texture, condition
+• Accessories & Details (5%): Finishing touches, jewelry, bags
 
-In the "improvements" array, mention specific missing items. For example:
-- "Consider adding a tie for a more professional look"
-- "Shoes are missing - formal leather shoes would complete the outfit"
-- "A blazer would add polish to this outfit"
-- "Adding a necklace or jewelry would enhance the look"
+⚠️ CRITICAL RULES:
+• Be BRUTALLY honest about missing items - if shoes aren't visible, explicitly state "shoes missing"
+• If the context is professional/interview, DEMAND complete formal attire (tie, blazer, dress shoes)
+• For every missing item in "missingItems", mention it specifically in "improvements"
+• Look for SUBTLE issues: wrong shoe type, missing belt, no watch, lack of jewelry, etc.
+• Consider LAYERING: missing blazer, cardigan, jacket appropriate for weather/formality
+• Check ACCESSORIES: bag, watch, jewelry, eyewear - note what's absent
+• If anything is incomplete or inappropriate for the context, lower the score significantly
 
-Be constructive, specific, and encouraging.`;
+Be precise, professional, and constructive. Your analysis will directly drive product recommendations.`;
 
       const response = await generateTextWithImage(base64Image, prompt);
       console.log('AI Response:', response);

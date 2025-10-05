@@ -83,28 +83,63 @@ export async function saveChatHistory(
         : null,
     };
 
-    // Insert into database
-    const { data, error } = await supabase
+    // Insert into database with timeout
+    const insertPromise = supabase
       .from('analysis_history')
       .insert(historyEntry)
       .select()
       .single();
 
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+    );
+
+    const { data, error } = await Promise.race([
+      insertPromise,
+      timeoutPromise
+    ]) as any;
+
     if (error) {
-      console.error('Error saving chat history:', error);
+      console.error('❌ Error saving chat history:', error);
+      
+      // Provide user-friendly error message
+      if (error.message?.includes('connect')) {
+        return {
+          success: false,
+          error: 'Network connection error. Please check your internet connection.',
+        };
+      }
+      
       return {
         success: false,
         error: error.message,
       };
     }
 
-    console.log('Chat history saved successfully');
+    console.log('✅ Chat history saved successfully');
     return {
       success: true,
       data: data as unknown as ChatHistoryEntry,
     };
   } catch (error: any) {
-    console.error('Exception saving chat history:', error);
+    console.error('❌ Exception saving chat history:', error);
+    
+    // Handle timeout error
+    if (error.message?.includes('timeout')) {
+      return {
+        success: false,
+        error: 'Request timed out. Please check your internet connection.',
+      };
+    }
+    
+    // Handle network errors
+    if (error.message?.includes('Network') || error.message?.includes('connect')) {
+      return {
+        success: false,
+        error: 'Network error. Please check your internet connection.',
+      };
+    }
+    
     return {
       success: false,
       error: error.message || 'Unknown error occurred',
