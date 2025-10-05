@@ -25,13 +25,14 @@ import {
 } from 'react-native';
 
 import { useUserProfile, useIsDarkMode } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 
 export function HomeScreen() {
-  const userProfile = useUserProfile();
-  const isDarkMode = useIsDarkMode();
+  const { userProfile, settings } = useApp();
+  const isDarkMode = settings.isDarkMode;
 
   // Get user name or default to 'Guest'
   const userName = userProfile?.name || 'Guest';
