@@ -27,7 +27,6 @@ import {
   ScrollView,
   Image,
   TextInput,
-  Alert,
   ActivityIndicator,
   useColorScheme,
 } from 'react-native';
@@ -39,6 +38,7 @@ import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { Footer } from '@/components/Footer';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { useAlert } from '@/contexts/AlertContext';
 
 export function ProfileScreen() {
   const { userProfile, settings, updateUserProfile, logout } = useApp();
@@ -49,6 +49,7 @@ export function ProfileScreen() {
   const [editedProfile, setEditedProfile] = useState(userProfile);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const insets = useSafeAreaInsets();
+  const { showAlert } = useAlert();
 
   // Update edited profile when userProfile changes
   React.useEffect(() => {
@@ -62,7 +63,8 @@ export function ProfileScreen() {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (!permissionResult.granted) {
-      Alert.alert(
+      showAlert(
+        'warning',
         Strings.profile.permissions.title,
         Strings.profile.permissions.message
       );
@@ -91,18 +93,20 @@ export function ProfileScreen() {
           // Save to database if not in editing mode
           if (!isEditing) {
             await updateUserProfile(updates);
-            Alert.alert('Success', 'Profile photo updated successfully!');
+            showAlert('success', 'Profile photo updated successfully!');
           }
         } else {
           console.error('❌ Image upload failed:', uploadResult.error);
-          Alert.alert(
+          showAlert(
+            'error',
             'Upload Failed',
             uploadResult.error || 'Failed to upload image. Please try again.'
           );
         }
       } catch (error) {
         console.error('❌ Exception during image upload:', error);
-        Alert.alert(
+        showAlert(
+          'error',
           'Error',
           'An error occurred while uploading your photo. Please try again.'
         );
@@ -117,11 +121,11 @@ export function ProfileScreen() {
    */
   const handleSave = async () => {
     if (!editedProfile.name.trim()) {
-      Alert.alert('Required Field', Strings.profile.alerts.nameRequired);
+      showAlert('warning', 'Required Field', Strings.profile.alerts.nameRequired);
       return;
     }
     if (!editedProfile.email.trim()) {
-      Alert.alert('Required Field', Strings.profile.alerts.emailRequired);
+      showAlert('warning', 'Required Field', Strings.profile.alerts.emailRequired);
       return;
     }
 
@@ -141,7 +145,8 @@ export function ProfileScreen() {
    * Handle logout with confirmation
    */
   const handleLogout = () => {
-    Alert.alert(
+    showAlert(
+      'warning',
       Strings.profile.alerts.logoutTitle,
       Strings.profile.alerts.logoutMessage,
       [
@@ -151,7 +156,7 @@ export function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await logout();
-            router.replace('/onboarding' as any);
+            router.replace('/auth/sign-in' as any);
           },
         },
       ]
