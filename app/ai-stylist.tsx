@@ -1,6 +1,6 @@
 import { Audio } from 'expo-av';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useNavigation } from 'expo-router';
 import { Mic, MicOff, X, RotateCw, Volume2, Square, Power, Eye, EyeOff } from 'lucide-react-native';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 import { generateTextWithImage, convertImageToBase64 } from '@/utils/pollinationsAI';
-import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText } from '@/utils/audioUtils';
+import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText, speakTextLocal } from '@/utils/audioUtils';
 import { ChatMessage, ChatSession, generateChatSummary, saveChatSession, generateSessionId, createChatMessage } from '@/utils/chatUtils';
 import { supabase } from '@/lib/supabase';
 import { visionAPI } from '@/utils/visionAPI';
@@ -45,9 +45,10 @@ export default function AIStylistScreen() {
   const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const currentSessionRef = useRef<ChatSession | null>(null);
-  
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   // Toggle this to false if you don't want the microphone to auto-start after
   // the assistant audio finishes playing. For the requested behavior we keep
   // auto-listen OFF so the assistant won't start speaking or listening again
@@ -58,14 +59,14 @@ export default function AIStylistScreen() {
     // Initialize storage service for enhanced vision
     if (useEnhancedVision) {
       console.log('🔧 Initializing Enhanced Vision mode...');
-      
+
       // Debug bucket information first
       storageService.debugBuckets().then(() => {
         // Then try to initialize
         storageService.initializeBucket().catch(error => {
           console.error('Failed to initialize storage bucket:', error);
           Alert.alert(
-            'Storage Setup', 
+            'Storage Setup',
             'Enhanced vision features may not work properly. Check console for bucket debug info.',
             [{ text: 'OK' }]
           );
@@ -75,6 +76,7 @@ export default function AIStylistScreen() {
     }
   }, [useEnhancedVision]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (sound) {
@@ -120,7 +122,7 @@ export default function AIStylistScreen() {
           quality: 0.7,
           base64: true,
         });
-        
+
         if (photo.base64) {
           setCapturedImage(`data:image/jpeg;base64,${photo.base64}`);
           return photo.base64;
@@ -141,21 +143,21 @@ export default function AIStylistScreen() {
           quality: 0.8,
           base64: Platform.OS === 'web', // Need base64 for web platform
         });
-        
+
         if (photo.uri) {
           console.log('Uploading image to Supabase...');
-          
+
           let uploadResult;
-          
+
           if (Platform.OS === 'web' && photo.base64) {
             // Web platform: convert base64 to blob URL for storage service
             const base64Data = photo.base64;
             console.log('Processing base64 data for web platform...');
-            
+
             try {
               // Clean base64 data - remove any data URL prefix and whitespace
               const cleanBase64 = base64Data.replace(/^data:image\/[a-z]+;base64,/, '').replace(/\s/g, '');
-              
+
               const byteCharacters = atob(cleanBase64);
               const byteNumbers = new Array(byteCharacters.length);
               for (let i = 0; i < byteCharacters.length; i++) {
@@ -164,7 +166,7 @@ export default function AIStylistScreen() {
               const byteArray = new Uint8Array(byteNumbers);
               const blob = new Blob([byteArray], { type: 'image/jpeg' });
               const blobUrl = URL.createObjectURL(blob);
-              
+
               uploadResult = await storageService.uploadCameraImage(blobUrl);
             } catch (base64Error) {
               console.error('Base64 processing error:', base64Error);
@@ -176,7 +178,7 @@ export default function AIStylistScreen() {
             // Mobile platform: use URI directly
             uploadResult = await storageService.uploadCameraImage(photo.uri);
           }
-          
+
           if (uploadResult.success && uploadResult.publicUrl) {
             console.log('Image uploaded successfully:', uploadResult.publicUrl);
             return uploadResult.publicUrl;
@@ -225,7 +227,7 @@ export default function AIStylistScreen() {
       console.log('🎙️ Browser:', navigator.userAgent);
       console.log('🎙️ HTTPS:', window.location.protocol === 'https:');
       console.log('🎙️ Speech Recognition available:', 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
-      
+
       if (!isConversationActive) {
         // Start a session but don't generate any assistant speech yet.
         await startNewConversation();
@@ -234,7 +236,7 @@ export default function AIStylistScreen() {
 
       setIsListening(true);
       startPulse();
-      
+
       const userMessage = createChatMessage('user', 'Speaking...');
       setMessages(prev => [...prev, userMessage]);
 
@@ -295,15 +297,15 @@ export default function AIStylistScreen() {
           console.error('  - SpeechRecognition:', 'SpeechRecognition' in window);
           console.error('  - navigator.onLine:', navigator.onLine);
           console.error('  - location.protocol:', window.location.protocol);
-          
+
           setIsListening(false);
           stopPulse();
-          
+
           // Check if it's a network error that might be temporary
           if (error.message && error.message.includes('network')) {
             console.error('🎙️ Network error detected - offering retry');
             Alert.alert(
-              'Network Error', 
+              'Network Error',
               'Speech recognition failed due to network issues. Try the hold-to-speak feature instead (press and hold the microphone).',
               [
                 { text: 'Cancel', style: 'cancel' },
@@ -313,12 +315,12 @@ export default function AIStylistScreen() {
           } else {
             console.error('🎙️ Non-network error - showing general error');
             Alert.alert(
-              'Speech Recognition Error', 
+              'Speech Recognition Error',
               'Voice recognition is not working properly. Please use the hold-to-speak feature instead (press and hold the microphone).',
               [{ text: 'OK' }]
             );
           }
-          
+
           // Remove the fallback text input to avoid mock data
           setMessages(prev => prev.slice(0, -1)); // Remove the "Speaking..." message
         },
@@ -343,13 +345,13 @@ export default function AIStylistScreen() {
     if (Platform.OS === 'web') {
       console.log('🎙️ Web platform: Use hold-to-speak instead of click-to-speak');
       Alert.alert(
-        'Hold to Speak', 
+        'Hold to Speak',
         'On web, please press and HOLD the microphone button to record your voice.',
         [{ text: 'Got it!' }]
       );
       return;
     }
-    
+
     // For mobile platforms, use speech recognition
     if (isListening) {
       stopSpeechRecognition();
@@ -364,24 +366,24 @@ export default function AIStylistScreen() {
       console.log('🎵 === STARTING HOLD-TO-SPEAK RECORDING ===');
       console.log('🎵 Platform:', Platform.OS);
       console.log('🎵 Conversation active:', isConversationActive);
-      
+
       if (!isConversationActive) {
         console.log('🎵 Starting new conversation first...');
         await startNewConversation();
       }
-      
+
       console.log('🎵 Setting recording state to true...');
       setIsRecording(true);
-      
+
       const userMessage = createChatMessage('user', 'Recording...');
       setMessages(prev => [...prev, userMessage]);
       console.log('🎵 Added "Recording..." message to UI');
-      
+
       // Request microphone permissions
       console.log('🎵 Requesting microphone permissions...');
       const { status } = await Audio.requestPermissionsAsync();
       console.log('🎵 Permission status:', status);
-      
+
       if (status !== 'granted') {
         console.error('🎵 ❌ Microphone permission denied');
         Alert.alert('Permission Required', 'Microphone permission is needed for voice input.');
@@ -389,19 +391,19 @@ export default function AIStylistScreen() {
         setMessages(prev => prev.slice(0, -1));
         return;
       }
-      
+
       console.log('🎵 ✅ Microphone permission granted');
       console.log('🎵 Creating audio recording...');
-      
+
       // Configure audio recording with simplified options
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
+
       console.log('🎵 ✅ Audio recording created successfully');
       console.log('🎵 Recording object:', newRecording);
       setRecording(newRecording);
-      
+
     } catch (error) {
       console.error('🎵 ❌ Error starting recording:', error);
       console.error('🎵 Error details:', {
@@ -413,103 +415,109 @@ export default function AIStylistScreen() {
       Alert.alert('Recording Error', 'Failed to start voice recording. Please try again.');
     }
   }, [isConversationActive, startNewConversation]);
-  
+
   const stopHoldToSpeak = useCallback(async () => {
     try {
       console.log('🎵 === STOPPING HOLD-TO-SPEAK RECORDING ===');
       console.log('🎵 Recording exists:', !!recording);
       console.log('🎵 Is recording state:', isRecording);
-      
+
       if (!recording || !isRecording) {
         console.log('🎵 ⚠️ No recording to stop or not in recording state');
         return;
       }
-      
+
       console.log('🎵 Setting recording state to false...');
       setIsRecording(false);
-      
+
       console.log('🎵 Stopping and unloading recording...');
       await recording.stopAndUnloadAsync();
-      
+
       console.log('🎵 Getting recording URI...');
       const uri = recording.getURI();
       console.log('🎵 Recording URI:', uri);
       console.log('🎵 URI type:', typeof uri);
       console.log('🎵 URI length:', uri ? uri.length : 0);
-      
+
       setRecordingUri(uri);
-      
+
       if (uri) {
         console.log('🎵 ✅ Recording URI obtained successfully');
-        
+
         // Update message to show processing
         setMessages(prev => [
           ...prev.slice(0, -1),
           createChatMessage('user', 'Processing voice...')
         ]);
         console.log('🎵 Updated UI to show "Processing voice..."');
-        
+
         // Convert audio to text
         try {
-          console.log('🎵 === STARTING AUDIO-TO-TEXT CONVERSION ===');
+          console.log('🎵 === STARTING PARALLEL PROCESSING ===');
           console.log('🎵 Audio URI for conversion:', uri);
-          
-          const voiceText = await convertAudioToText(uri);
-          
-          console.log('🎵 === AUDIO-TO-TEXT CONVERSION COMPLETE ===');
+
+          // 🚀 PARALLEL PROCESSING: Start both STT and image capture at the same time
+          const [voiceText, imageResult] = await Promise.all([
+            // Process 1: Convert audio to text
+            (async () => {
+              console.log('⚡ STT: Starting audio-to-text conversion...');
+              const text = await convertAudioToText(uri);
+              console.log('⚡ STT: Complete! Text:', text.substring(0, 100));
+              return text;
+            })(),
+            
+            // Process 2: Capture/upload image (parallel!)
+            (async () => {
+              console.log('⚡ IMAGE: Starting capture...');
+              try {
+                if (useEnhancedVision) {
+                  const imageUrl = await uploadImageAndGetURL();
+                  console.log('⚡ IMAGE: Upload complete!');
+                  return { type: 'enhanced', url: imageUrl };
+                } else {
+                  const imgBase64 = await captureCurrentImage();
+                  console.log('⚡ IMAGE: Base64 capture complete!');
+                  return { type: 'basic', url: imgBase64 ? `data:image/jpeg;base64,${imgBase64}` : null };
+                }
+              } catch (err) {
+                console.warn('⚡ IMAGE: Capture failed:', err);
+                return { type: 'none', url: null };
+              }
+            })()
+          ]);
+
+          console.log('🎵 === PARALLEL PROCESSING COMPLETE ===');
           console.log('🎵 Converted text:', voiceText);
           console.log('🎵 Text length:', voiceText.length);
-          console.log('🎵 Text preview (first 100 chars):', voiceText.substring(0, 100));
-          
+          console.log('🎵 Image result:', imageResult.type);
+
           // Update message with transcribed text
           const userTextMessage = createChatMessage('user', voiceText);
           setMessages(prev => [...prev.slice(0, -1), userTextMessage]);
           console.log('🎵 Updated UI with transcribed text');
-          
-          // Add to session
+
+          // Store both text and image in session
           if (currentSessionRef.current) {
             currentSessionRef.current.messages.push(userTextMessage);
+            if (imageResult.url) {
+              currentSessionRef.current.imageBase64 = imageResult.url;
+              console.log('🎵 Stored image in session');
+            }
             console.log('🎵 Added message to session');
           }
-          
-          // Capture image and get AI response
-          console.log('🎵 === STARTING IMAGE CAPTURE ===');
-          try {
-            if (useEnhancedVision) {
-              console.log('🎵 Using enhanced vision - uploading image...');
-              const imageUrl = await uploadImageAndGetURL();
-              console.log('🎵 Image upload result:', imageUrl);
-              
-              if (imageUrl && currentSessionRef.current) {
-                currentSessionRef.current.imageBase64 = imageUrl;
-                console.log('🎵 Stored image URL in session');
-              }
-            } else {
-              console.log('🎵 Using basic vision - capturing base64 image...');
-              const imgBase64 = await captureCurrentImage();
-              console.log('🎵 Base64 image length:', imgBase64 ? imgBase64.length : 0);
-              
-              if (imgBase64 && currentSessionRef.current) {
-                currentSessionRef.current.imageBase64 = `data:image/jpeg;base64,${imgBase64}`;
-                console.log('🎵 Stored base64 image in session');
-              }
-            }
-          } catch (err) {
-            console.warn('🎵 ⚠️ Image capture failed:', err);
-          }
-          
+
           console.log('🎵 === STARTING AI RESPONSE GENERATION ===');
           console.log('🎵 Voice text for AI:', voiceText);
           await getAIResponseWithImageAndVoice(voiceText);
           console.log('🎵 AI response generation initiated');
-          
+
         } catch (transcriptionError) {
           console.error('🎵 ❌ Voice transcription failed:', transcriptionError);
           console.error('🎵 Transcription error details:', {
             message: transcriptionError instanceof Error ? transcriptionError.message : String(transcriptionError),
             stack: transcriptionError instanceof Error ? transcriptionError.stack : 'No stack trace'
           });
-          
+
           setMessages(prev => [
             ...prev.slice(0, -1),
             createChatMessage('user', 'Voice input (transcription failed)')
@@ -520,50 +528,50 @@ export default function AIStylistScreen() {
         console.error('🎵 ❌ No recording URI obtained');
         Alert.alert('Recording Error', 'No audio was recorded. Please try again.');
       }
-      
+
       console.log('🎵 Cleaning up recording...');
       setRecording(null);
-      
+
     } catch (error) {
       console.error('🎵 ❌ Error stopping recording:', error);
       console.error('🎵 Stop recording error details:', {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : 'No stack trace'
       });
-      
+
       setIsRecording(false);
       setRecording(null);
       Alert.alert('Recording Error', 'Failed to process voice recording.');
     }
   }, [recording, isRecording, useEnhancedVision, uploadImageAndGetURL, captureCurrentImage, currentSessionRef]);
-  
+
 
 
   const getAIResponseWithImageAndVoice = useCallback(async (voiceText: string) => {
     setIsProcessing(true);
-    
+
     try {
       console.log('Generating AI response with image and voice...');
-      
+
       // Prepare conversation context
-      const conversationHistory = messages.map(msg => 
+      const conversationHistory = messages.map(msg =>
         `${msg.role}: ${msg.text}`
       ).join('\n');
-      
+
       // Update conversation context for continuous chat
       setConversationContext(conversationHistory);
-      
+
       const imageReference = capturedImage || currentSessionRef.current?.imageBase64;
-      
+
       let response: string;
-      
+
       console.log('🔍 Image reference check:', {
         useEnhancedVision,
         hasImageReference: !!imageReference,
         imageReferenceType: imageReference ? (imageReference.startsWith('data:') ? 'base64' : 'url') : 'none',
         imageReferencePreview: imageReference ? imageReference.substring(0, 50) + '...' : 'none'
       });
-      
+
       if (useEnhancedVision && imageReference && !imageReference.startsWith('data:')) {
         // Use enhanced vision API with uploaded image URL
         console.log('🚀 Using enhanced vision API with image URL:', imageReference.substring(0, 50) + '...');
@@ -575,7 +583,40 @@ export default function AIStylistScreen() {
           );
         } catch (visionError) {
           console.error('❌ Enhanced vision API failed:', visionError);
-          throw visionError; // Don't fallback to broken API
+          
+          // Show user-friendly error with options
+          const errorMessage = visionError instanceof Error ? visionError.message : 'Unknown error';
+          const isTimeout = errorMessage.includes('timed out');
+          
+          Alert.alert(
+            isTimeout ? 'Vision Analysis Timeout' : 'Vision Analysis Error',
+            isTimeout 
+              ? 'The image analysis is taking longer than expected. This might be due to network issues or high server load.'
+              : 'There was an error analyzing your outfit image.',
+            [
+              {
+                text: 'Use Basic Vision',
+                onPress: () => {
+                  setUseEnhancedVision(false);
+                  Alert.alert(
+                    'Switched to Basic Vision',
+                    'Enhanced Vision has been disabled. Please try your request again with the basic vision mode.',
+                    [{ text: 'OK' }]
+                  );
+                },
+              },
+              {
+                text: 'Retry',
+                onPress: () => {
+                  // User can manually retry by speaking again
+                  setIsProcessing(false);
+                },
+                style: 'cancel',
+              },
+            ]
+          );
+          
+          throw visionError; // Re-throw to trigger error handling below
         }
       } else if (useEnhancedVision && !imageReference) {
         // Enhanced vision mode but no image captured yet - force capture
@@ -616,7 +657,7 @@ Provide helpful, friendly, and specific fashion advice based on:
 - Accessory recommendations
 
 Keep responses conversational and natural, as if you're talking to them in person. Be encouraging and constructive.`;
-        
+
         response = await generateTextWithImage(imageReference, systemPrompt);
       } else {
         // This should rarely happen now
@@ -627,85 +668,109 @@ Keep responses conversational and natural, as if you're talking to them in perso
       if (response) {
         console.log('📝 Vision API Response received:', response.substring(0, 100) + '...');
         const assistantMessage = createChatMessage('assistant', response);
-        
+
         // Add to current session
         if (currentSessionRef.current) {
           currentSessionRef.current.messages.push(assistantMessage);
         }
-        
+
         setMessages(prev => [
           ...prev.slice(0, -1),
           assistantMessage,
           createChatMessage('assistant', '') // Placeholder for audio message
         ]);
 
-        // Generate audio using the new curl endpoint
+        // Generate and play audio response
         try {
           console.log('🎵 Starting TTS process...');
           console.log('🎵 Response length:', response.length, 'characters');
           console.log('🎵 First 200 chars:', response.substring(0, 200));
-          console.log('🎵 Calling generateSpeakBackAudio...');
-          
-          const audioResponse = await generateSpeakBackAudio(response);
-          
-          console.log('🎵 TTS Response received:', audioResponse);
-          console.log('🎵 Audio URI:', audioResponse?.uri);
-          console.log('🎵 Audio URI type:', typeof audioResponse?.uri);
-          
-          if (!audioResponse || !audioResponse.uri) {
-            throw new Error('No audio URI received from TTS service');
-          }
-          
-          // Update the message with audio info
-          setMessages(prev => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1] = {
-              ...assistantMessage,
-              audioUri: audioResponse.uri
-            };
-            return newMessages;
-          });
-          
-          console.log('🔊 About to play audio:', audioResponse.uri);
-          
-          // Disable microphone during audio playback
-          setMicrophoneDisabled(true);
-          
-          await playAudio(audioResponse.uri);
-          console.log('🔊 Audio playback initiated');
-          
-          // Audio playback completion will be handled in playAudio function
 
-          // Optionally re-enable microphone after audio finishes
-          if (AUTO_LISTEN_AFTER_AUDIO) {
-            setTimeout(() => {
-              if (isConversationActive && !isListening) {
-                startSpeechRecognition();
-              }
-            }, 1000);
+          // 🚀 ALWAYS use native TTS on mobile for instant playback (0 latency!)
+          if (Platform.OS !== 'web') {
+            setMicrophoneDisabled(true);
+            await speakTextLocal(response);
+            setMicrophoneDisabled(false);
+
+            // Remove placeholder audio message since local TTS doesn't need a URI
+            setMessages(prev => {
+              const newMessages = [...prev];
+              // Replace the placeholder with the assistant text-only message
+              newMessages[newMessages.length - 1] = assistantMessage;
+              return newMessages;
+            });
+
+            if (AUTO_LISTEN_AFTER_AUDIO) {
+              setTimeout(() => {
+                if (isConversationActive && !isListening) {
+                  startSpeechRecognition();
+                }
+              }, 600);
+            }
+          } else {
+            // Web: fetch/stream remote TTS
+            const audioResponse = await generateSpeakBackAudio(response);
+            if (!audioResponse || !audioResponse.uri) {
+              throw new Error('No audio URI received from TTS service');
+            }
+
+            // Update the message with audio info
+            setMessages(prev => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = {
+                ...assistantMessage,
+                audioUri: audioResponse.uri
+              };
+              return newMessages;
+            });
+
+            setMicrophoneDisabled(true);
+            await playAudio(audioResponse.uri);
+            // playAudio will re-enable microphone on finish
+
+            if (AUTO_LISTEN_AFTER_AUDIO) {
+              setTimeout(() => {
+                if (isConversationActive && !isListening) {
+                  startSpeechRecognition();
+                }
+              }, 1000);
+            }
           }
         } catch (audioError) {
-          console.error('❌ TTS Generation failed:', audioError);
-          console.error('❌ Error type:', typeof audioError);
-          console.error('❌ Error message:', audioError instanceof Error ? audioError.message : String(audioError));
-          console.error('❌ Full error object:', audioError);
-          
+          console.error('❌ TTS failed:', audioError);
           // Still show text response even if audio fails
           setMessages(prev => prev.slice(0, -1).concat(assistantMessage));
-          
-          // ... existing code ...
         }
       }
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      const errorMessage = createChatMessage('assistant', 'Sorry, I had trouble understanding. Please try speaking again.');
+      // 🔇 Silent error handling - log to console but don't show scary errors to user
+      console.error('❌ Error getting AI response:', error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const errorMsg = errorObj.message;
+      console.error('❌ Error details:', errorMsg);
       
+      // Provide natural, conversational fallback responses instead of technical errors
+      let userFriendlyMessage = "Hmm, I'm having a little trouble right now. Could you try asking again?";
+      
+      if (errorMsg.includes('timed out') || errorMsg.includes('timeout')) {
+        userFriendlyMessage = "That's taking longer than expected. Let me try again - could you repeat that?";
+      } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+        userFriendlyMessage = "I'm having trouble connecting right now. Could you try again?";
+      } else if (errorMsg.includes('Failed to capture image') || errorMsg.includes('camera')) {
+        userFriendlyMessage = "I couldn't see the image clearly. Could you try again?";
+      }
+      
+      const errorMessage = createChatMessage('assistant', userFriendlyMessage);
+
       if (currentSessionRef.current) {
         currentSessionRef.current.messages.push(errorMessage);
       }
-      
+
       setMessages(prev => [...prev.slice(0, -1), errorMessage]);
       
+      // Re-enable microphone so user can try again
+      setMicrophoneDisabled(false);
+
       // Re-enable microphone only if configured
       if (AUTO_LISTEN_AFTER_AUDIO) {
         setTimeout(() => {
@@ -723,7 +788,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
     try {
       console.log('Playing audio:', uri);
       setIsPlayingAudio(true);
-      
+
       if (sound) {
         try {
           await sound.unloadAsync();
@@ -737,9 +802,9 @@ Keep responses conversational and natural, as if you're talking to them in perso
         { uri },
         { shouldPlay: true, isLooping: false }
       );
-      
+
       setSound(newSound);
-      
+
       newSound.setOnPlaybackStatusUpdate((status) => {
         console.log('Audio playback status:', status);
         if (status.isLoaded && status.didJustFinish) {
@@ -759,13 +824,55 @@ Keep responses conversational and natural, as if you're talking to them in perso
     }
   };
 
+  const stopAllAudio = useCallback(async () => {
+    console.log('🛑 Stopping all audio...');
+    
+    // Stop current sound playback
+    if (sound) {
+      try {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+        setSound(null);
+      } catch (err) {
+        console.log('Error stopping sound:', err);
+      }
+    }
+    
+    // Stop native TTS if on mobile
+    if (Platform.OS !== 'web') {
+      try {
+        const Speech = require('expo-speech');
+        await Speech.stop();
+        console.log('✅ Native TTS stopped');
+      } catch (err) {
+        console.log('Error stopping native TTS:', err);
+      }
+    }
+    
+    setIsPlayingAudio(false);
+    setMicrophoneDisabled(false);
+  }, [sound]);
+
+  // Navigation guard - stop audio when leaving screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', async () => {
+      console.log('🚪 User navigating away - stopping audio...');
+      await stopAllAudio();
+    });
+    
+    return unsubscribe;
+  }, [navigation, stopAllAudio]);
+
   const quitConversation = useCallback(async () => {
     try {
+      // CRITICAL: Stop audio FIRST before anything else
+      await stopAllAudio();
+      
       // Stop any ongoing speech recognition
       if (speechService.isCurrentlyListening()) {
         speechService.stopListening();
       }
-      
+
       setIsConversationActive(false);
       setIsListening(false);
       stopPulse();
@@ -834,7 +941,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
       Alert.alert('Error', 'Failed to quit conversation properly.');
       router.back();
     }
-  }, [speechService]);
+  }, [speechService, stopAllAudio]);
 
   if (!permission) {
     return (
@@ -865,7 +972,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       <View style={styles.cameraContainer}>
         <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
 
@@ -878,7 +985,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
             >
               <X size={28} color={Colors.white} />
             </TouchableOpacity>
-            
+
             <View style={styles.topCenter}>
               <Text style={styles.cameraLabel}>AI Stylist</Text>
               {isConversationActive && (
@@ -887,7 +994,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
                   <Text style={styles.statusText}>Live Chat</Text>
                 </View>
               )}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.visionToggle}
                 onPress={() => setUseEnhancedVision(!useEnhancedVision)}
               >
@@ -901,7 +1008,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             <TouchableOpacity
               style={styles.flipButton}
               onPress={toggleCameraFacing}
@@ -909,7 +1016,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
               <RotateCw size={24} color={Colors.white} />
             </TouchableOpacity>
           </View>
-          
+
           {isConversationActive && (
             <View style={styles.quitButtonContainer}>
               <TouchableOpacity
@@ -970,7 +1077,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
             )}
 
             <View style={styles.controls}>
-              
+
               <View style={{ paddingBottom: insets.bottom + 20 }}>
                 <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                   <TouchableOpacity
@@ -1001,11 +1108,11 @@ Keep responses conversational and natural, as if you're talking to them in perso
                     ? 'AI is speaking...'
                     : isRecording
                       ? 'Recording... (release to send)'
-                    : isListening 
-                      ? 'Speak now...' 
-                      : isConversationActive 
-                        ? 'Hold to record voice' 
-                        : 'Tap to start chat'
+                      : isListening
+                        ? 'Speak now...'
+                        : isConversationActive
+                          ? 'Hold to record voice'
+                          : 'Tap to start chat'
                   }
                 </Text>
                 {!isConversationActive && (

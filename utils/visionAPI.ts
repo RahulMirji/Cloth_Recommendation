@@ -36,101 +36,160 @@ export interface VisionAPIRequest {
 }
 
 class VisionAPIService {
-  private readonly baseUrl = 'https://text.pollinations.ai/openai';
+  private readonly pollinationsUrl = 'https://text.pollinations.ai/openai';
+  private readonly openaiUrl = 'https://api.openai.com/v1/chat/completions';
   private readonly defaultModel = 'openai';
+  private readonly openaiModel = 'gpt-4-vision-preview';
   private readonly defaultMaxTokens = 300;
+  
+  /**
+   * Get the appropriate API endpoint and headers
+   */
+  private getApiConfig(): { url: string; headers: Record<string, string>; model: string } {
+    const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+    
+    if (apiKey) {
+      console.log('🔑 Using OpenAI official API');
+      return {
+        url: this.openaiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        model: this.openaiModel,
+      };
+    }
+    
+    console.log('🌐 Using Pollinations AI API');
+    return {
+      url: this.pollinationsUrl,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      model: this.defaultModel,
+    };
+  }
 
   /**
-   * Analyze an image with optional text prompt
+   * Analyze an image with optional text prompt (with retry logic)
    * @param imageUrl - URL of the image to analyze
    * @param textPrompt - Optional text prompt for context
    * @param maxTokens - Maximum tokens for response
+   * @param maxRetries - Maximum number of retry attempts (default: 3)
    */
   async analyzeImage(
     imageUrl: string,
     textPrompt: string = "What do you see in this image? Describe the clothing, style, colors, and overall fashion aesthetic.",
-    maxTokens: number = this.defaultMaxTokens
+    maxTokens: number = this.defaultMaxTokens,
+    maxRetries: number = 3
   ): Promise<string> {
-    try {
-      const requestBody: VisionAPIRequest = {
-        model: this.defaultModel,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: textPrompt },
-              { 
-                type: 'image_url', 
-                image_url: { url: imageUrl } 
-              }
-            ]
-          }
-        ],
-        max_tokens: maxTokens
-      };
+    let lastError: Error | null = null;
 
-      console.log('Making vision API request with:', {
-        imageUrl,
-        textPrompt,
-        maxTokens
-      });
-
-      console.log('📤 Sending request to Vision API...');
-      
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await fetch(this.baseUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
+        console.log(`🔄 Vision API attempt ${attempt}/${maxRetries}...`);
         
-        clearTimeout(timeoutId);
+        const requestBody: VisionAPIRequest = {
+          model: this.defaultModel,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: textPrompt },
+                { 
+                  type: 'image_url', 
+                  image_url: { url: imageUrl } 
+                }
+              ]
+            }
+          ],
+          max_tokens: maxTokens
+        };
 
-        console.log('📥 Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Vision API error response:', errorText);
-          throw new Error(`Vision API request failed: ${response.status} ${response.statusText}`);
+        if (attempt === 1) {
+          console.log('Making vision API request with:', {
+            imageUrl: imageUrl.substring(0, 50) + '...',
+            textPrompt: textPrompt.substring(0, 100) + '...',
+            maxTokens
+          });
         }
 
-        console.log('🔄 Parsing JSON response...');
-        const data: VisionResponse = await response.json();
-        console.log('✅ Response parsed successfully');
-        console.log('📊 Response data:', JSON.stringify(data, null, 2));
+        console.log('📤 Sending request to Vision API...');
         
-        if (!data.choices || data.choices.length === 0) {
-          console.error('❌ No choices in response');
-          throw new Error('No response from vision API');
+        // Get API configuration (Pollinations or OpenAI)
+        const apiConfig = this.getApiConfig();
+        
+        // Update model in request if using OpenAI
+        if (apiConfig.model !== this.defaultModel) {
+          requestBody.model = apiConfig.model;
         }
+        
+        // Progressive timeout: 20s, 30s, 40s (faster than before)
+        const timeout = 20000 + (attempt - 1) * 10000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+          const response = await fetch(apiConfig.url, {
+            method: 'POST',
+            headers: apiConfig.headers,
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
 
-        const content = data.choices[0].message.content;
-        console.log('✅ Vision API response content:', content.substring(0, 200) + '...');
+          console.log('📥 Response received:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+          });
 
-        return content;
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          console.error('❌ Vision API request timed out after 30 seconds');
-          throw new Error('Vision API request timed out');
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Vision API error response:', errorText);
+            throw new Error(`Vision API request failed: ${response.status} ${response.statusText}`);
+          }
+
+          console.log('🔄 Parsing JSON response...');
+          const data: VisionResponse = await response.json();
+          console.log('✅ Response parsed successfully');
+          
+          if (!data.choices || data.choices.length === 0) {
+            console.error('❌ No choices in response');
+            throw new Error('No response from vision API');
+          }
+
+          const content = data.choices[0].message.content;
+          console.log(`✅ Vision API success on attempt ${attempt}`);
+          console.log('📝 Response preview:', content.substring(0, 150) + '...');
+
+          return content;
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            const timeoutSeconds = timeout / 1000;
+            console.error(`❌ Vision API request timed out after ${timeoutSeconds} seconds`);
+            throw new Error(`Vision API request timed out after ${timeoutSeconds}s`);
+          }
+          throw fetchError;
         }
-        throw fetchError;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`❌ Vision API attempt ${attempt}/${maxRetries} failed:`, lastError.message);
+
+        // If this isn't the last attempt, wait before retrying (exponential backoff)
+        if (attempt < maxRetries) {
+          const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-    } catch (error) {
-      console.error('Vision API Error:', error);
-      throw new Error(`Failed to analyze image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+
+    // All retries failed
+    console.error(`❌ All ${maxRetries} Vision API attempts failed:`, lastError);
+    throw new Error(`Failed to analyze image after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
   }
 
   /**
@@ -178,9 +237,14 @@ Please be specific and constructive in your feedback.`;
       ? `Previous conversation: ${conversationContext}\n\n` 
       : '';
     
-    const prompt = `${contextPrompt}User says: "${userMessage}"\n\nPlease respond as a helpful fashion AI assistant. Look at the current image and respond to what the user is asking about the outfit, clothing, or style. Keep responses conversational and friendly, as this is a live voice chat.`;
+    const prompt = `${contextPrompt}User says: "${userMessage}"
 
-    return this.analyzeImage(imageUrl, prompt, 200);
+IMPORTANT: Keep your response under 40 words (6-10 seconds of speech). Be concise, conversational, and natural.
+
+Respond as a helpful fashion AI assistant. Look at the image and respond to the user's question about their outfit, clothing, or style.`;
+
+    // Reduced from 200 to 80 tokens for faster, more concise responses
+    return this.analyzeImage(imageUrl, prompt, 80, 2);
   }
 
   /**
