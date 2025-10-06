@@ -147,11 +147,11 @@ jobs:
           # Check node_modules size
           NODE_MODULES_SIZE=$(du -sh node_modules/ | cut -f1)
           echo "NODE_MODULES_SIZE=$NODE_MODULES_SIZE" >> $GITHUB_ENV
-          
+
           # Count dependencies
           DEPS_COUNT=$(cat package.json | grep -c '".*":' || echo "0")
           echo "DEPS_COUNT=$DEPS_COUNT" >> $GITHUB_ENV
-          
+
           echo "📦 Node modules size: $NODE_MODULES_SIZE"
           echo "📚 Dependencies count: $DEPS_COUNT"
 

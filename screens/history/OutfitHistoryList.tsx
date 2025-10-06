@@ -479,14 +479,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   scoreContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
   },
   scoreText: {
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   dateText: {
     fontSize: FontSizes.small,
@@ -508,14 +508,14 @@ const styles = StyleSheet.create({
   resultPreview: {
     fontSize: FontSizes.body,
     color: Colors.text,
-    lineHeight: 22,
-    marginBottom: 12,
+    lineHeight: 20,
+    marginBottom: 10,
   },
   resultPreviewDark: {
     color: Colors.white,
   },
   cardFooter: {
-    paddingTop: 12,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: Colors.borderLight,
   },
@@ -548,6 +548,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     flexDirection: 'row',
+    alignItems: 'center', // Center thumbnail vertically
   },
   cardContentWithCheckbox: {
     paddingRight: 40,
@@ -625,21 +626,21 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: FontWeights.bold,
   },
-  // Thumbnail styles
+  // Thumbnail styles - Vertical rectangle for better outfit visibility
   thumbnailContainer: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 110,
     borderRadius: 12,
     marginRight: 12,
     overflow: 'hidden',
   },
   thumbnail: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 110,
   },
   thumbnailPlaceholder: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 110,
     backgroundColor: Colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -650,5 +651,8 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingRight: 4,
   },
 });

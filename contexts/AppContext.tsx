@@ -44,17 +44,27 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    loadSettings();
-    initializeAuth();
+    const initialize = async () => {
+      console.log('🔄 AppContext - Starting initialization...');
+      await Promise.all([loadSettings(), initializeAuth()]);
+      console.log('✅ AppContext - Initialization complete');
+    };
+    initialize();
   }, []);
 
   // Initialize authentication and listen for changes
   const initializeAuth = async () => {
     try {
+      console.log('🔐 AppContext - Checking auth session...');
       // Check for existing session
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       setIsAuthenticated(!!currentSession);
+      
+      console.log('🔐 AppContext - Auth state:', { 
+        hasSession: !!currentSession, 
+        isAuthenticated: !!currentSession 
+      });
 
       if (currentSession?.user) {
         await loadUserProfileFromSupabase(currentSession.user.id);
@@ -63,6 +73,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
       // Listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, newSession) => {
+          console.log('🔐 AppContext - Auth state changed:', event);
           setSession(newSession);
           setIsAuthenticated(!!newSession);
 
@@ -80,7 +91,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
         subscription.unsubscribe();
       };
     } catch (error) {
-      console.error('Error initializing auth:', error);
+      console.error('❌ AppContext - Error initializing auth:', error);
     } finally {
       setIsLoading(false);
     }
@@ -94,9 +105,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-    } finally {
-      setIsLoading(false);
     }
+    // Don't set isLoading here - let initializeAuth handle it
   };
 
   const loadUserProfileFromSupabase = async (userId: string) => {
