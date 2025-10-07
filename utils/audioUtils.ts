@@ -6,12 +6,18 @@ import { Platform } from 'react-native';
 // On-device TTS
 import * as ExpoSpeech from 'expo-speech';
 // Dynamically import native Voice to avoid web bundling issues
-let Voice: any;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Voice = require('@react-native-voice/voice');
-} catch (_) {
-  Voice = null;
+let Voice: any = null;
+
+// Initialize Voice only on native platforms
+if (Platform.OS !== 'web') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    Voice = require('@react-native-voice/voice').default;
+    console.log('🎤 Voice module loaded:', typeof Voice);
+  } catch (error) {
+    console.warn('⚠️ Failed to load Voice module:', error);
+    Voice = null;
+  }
 }
 // Use the legacy API for downloadAsync to avoid the new File/Directory migration
 // and to prevent the deprecation runtime error in older SDK usage.
@@ -85,14 +91,28 @@ export class SpeechToTextService {
       } else {
         if (!Voice) {
           this.isListening = false;
-          throw new Error('Native STT not available. Install @react-native-voice/voice');
+          console.error('❌ Voice module not available');
+          throw new Error('Voice recognition not available. Using fallback audio recording.');
+        }
+
+        console.log('🎤 Initializing Voice recognition...');
+        console.log('🎤 Voice methods:', Object.keys(Voice));
+
+        // Clean up any previous session
+        try {
+          await Voice.destroy();
+          console.log('🎤 Previous Voice session destroyed');
+        } catch (e) {
+          console.log('🎤 No previous session to destroy');
         }
 
         if (!this.voiceHandlersSet) {
           Voice.onSpeechError = (e: any) => {
+            console.error('🎤 Speech error:', e);
             onError?.(new Error(e?.error?.message || 'Speech error'));
           };
           Voice.onSpeechResults = (e: any) => {
+            console.log('🎤 Speech results:', e);
             const values: string[] = e?.value || [];
             const text = values[0] || '';
             if (text) onResult({ text, confidence: 0.9, isFinal: true });
@@ -103,13 +123,16 @@ export class SpeechToTextService {
             if (text) onResult({ text, confidence: 0.6, isFinal: false });
           };
           this.voiceHandlersSet = true;
+          console.log('🎤 Voice handlers set');
         }
 
+        console.log('🎤 Starting Voice recognition...');
         await Voice.start('en-US', {
           EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 500,
           EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: 500,
           EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS: 300,
         });
+        console.log('🎤 Voice recognition started successfully');
 
         if (options.timeout && options.timeout > 0) {
           this.pendingTimeout = setTimeout(async () => {
@@ -332,25 +355,106 @@ export async function convertAudioToTextGoogle(audioBlob: Blob): Promise<string>
 }
 */
 
-export async function speakTextLocal(text: string): Promise<void> {
+/**
+ * Chunk text into sentences for streaming TTS
+ */
+function chunkTextIntoSentences(text: string): string[] {
+  // Split by sentence boundaries (., !, ?)
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  
+  // Filter empty and merge very short sentences
+  const chunks: string[] = [];
+  let buffer = '';
+  
+  for (const sentence of sentences) {
+    const trimmed = sentence.trim();
+    if (!trimmed) continue;
+    
+    // If sentence is very short (< 10 chars), buffer it
+    if (trimmed.length < 10) {
+      buffer += ' ' + trimmed;
+    } else {
+      // If we have buffered text, combine it
+      if (buffer) {
+        chunks.push((buffer + ' ' + trimmed).trim());
+        buffer = '';
+      } else {
+        chunks.push(trimmed);
+      }
+    }
+  }
+  
+  // Add remaining buffer
+  if (buffer) {
+    chunks.push(buffer.trim());
+  }
+  
+  return chunks.filter(c => c.length > 0);
+}
+
+/**
+ * Speak text locally with sentence chunking for streaming effect
+ * @param text - Text to speak
+ * @param enableChunking - Whether to chunk into sentences (default: true)
+ */
+export async function speakTextLocal(text: string, enableChunking: boolean = true): Promise<void> {
   if (Platform.OS === 'web') {
     return Promise.resolve();
   }
-  return new Promise<void>((resolve) => {
-    try {
-      ExpoSpeech.stop();
-      ExpoSpeech.speak(text, {
-        language: 'en-US',
-        pitch: 1.0,
-        rate: 0.95,
-        onDone: () => resolve(),
-        onStopped: () => resolve(),
-        onError: () => resolve(),
-      } as any);
-    } catch {
-      resolve();
+
+  try {
+    // Stop any ongoing speech
+    await ExpoSpeech.stop();
+
+    if (!enableChunking || text.length < 50) {
+      // Short text, speak all at once
+      return new Promise<void>((resolve) => {
+        ExpoSpeech.speak(text, {
+          language: 'en-US',
+          pitch: 1.0,
+          rate: 0.95,
+          onDone: () => resolve(),
+          onStopped: () => resolve(),
+          onError: () => resolve(),
+        } as any);
+      });
     }
-  });
+
+    // 🚀 STREAMING TTS: Chunk into sentences and speak progressively
+    const chunks = chunkTextIntoSentences(text);
+    console.log(`🎵 Chunked response into ${chunks.length} parts for streaming TTS`);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(`🎵 Speaking chunk ${i + 1}/${chunks.length}: "${chunk.substring(0, 30)}..."`);
+      
+      await new Promise<void>((resolve) => {
+        ExpoSpeech.speak(chunk, {
+          language: 'en-US',
+          pitch: 1.0,
+          rate: 0.95,
+          onDone: () => {
+            console.log(`✅ Chunk ${i + 1} done`);
+            resolve();
+          },
+          onStopped: () => resolve(),
+          onError: (error: any) => {
+            console.warn(`⚠️ Chunk ${i + 1} error:`, error);
+            resolve();
+          },
+        } as any);
+      });
+
+      // Small delay between chunks for natural pacing
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    console.log('✅ All TTS chunks complete');
+  } catch (error) {
+    console.error('❌ TTS error:', error);
+  }
 }
 
 

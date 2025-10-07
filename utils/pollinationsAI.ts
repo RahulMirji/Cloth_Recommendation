@@ -36,6 +36,10 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
       stream: shouldStream,
     };
 
+    // Add timeout to detect service unavailability quickly
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     const response = await fetch(initialUrl, {
       method: 'POST',
       headers: {
@@ -43,7 +47,8 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
         'Authorization': 'Bearer -GCuD_ey-sBxfDW7',
       },
       body: JSON.stringify(initialBody),
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
 
     if (!response.ok) {
       // Capture server response for debugging
@@ -155,6 +160,16 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
     }
   } catch (error) {
     console.error('Error generating text:', error);
+    
+    // Check if it's a 502 Bad Gateway or network error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('502') || errorMessage.includes('Bad Gateway') || 
+        errorMessage.includes('cloudflared') || errorMessage.includes('aborted')) {
+      // Service is down - return friendly offline message
+      console.warn('⚠️ Pollinations AI service appears to be down, returning offline fallback');
+      return "I'm having trouble connecting to my AI service right now. The outfit looks great! Try asking me again in a moment when the connection is better.";
+    }
+    
     throw error;
   }
 }
