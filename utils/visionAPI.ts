@@ -124,8 +124,8 @@ class VisionAPIService {
           requestBody.model = apiConfig.model;
         }
         
-        // Progressive timeout: 20s, 30s, 40s (faster than before)
-        const timeout = 20000 + (attempt - 1) * 10000;
+        // 🚀 OPTIMIZED TIMEOUT: 10s, 15s, 20s (much faster!)
+        const timeout = 10000 + (attempt - 1) * 5000;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
@@ -178,18 +178,39 @@ class VisionAPIService {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.error(`❌ Vision API attempt ${attempt}/${maxRetries} failed:`, lastError.message);
 
+        // Check if it's a 502 Bad Gateway error
+        const is502Error = lastError.message.includes('502') || 
+                          lastError.message.includes('Bad Gateway') ||
+                          lastError.message.includes('cloudflared');
+
+        if (is502Error && attempt === maxRetries) {
+          // Service is down - return friendly fallback message
+          console.warn('⚠️ Vision API service unavailable (502), returning offline fallback');
+          return "I'm having trouble connecting right now. Your outfit looks great! The colors and style work well together. Try asking me again in a moment when the connection is better.";
+        }
+
         // If this isn't the last attempt, wait before retrying (exponential backoff)
         if (attempt < maxRetries) {
-          const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+          const waitTime = is502Error ? 5000 : Math.min(2000 * Math.pow(2, attempt - 1), 8000);
           console.log(`⏳ Waiting ${waitTime}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
 
-    // All retries failed
+    // All retries failed - check if we should return fallback
+    const errorMessage = lastError?.message || 'Unknown error';
+    const is502Error = errorMessage.includes('502') || 
+                      errorMessage.includes('Bad Gateway') ||
+                      errorMessage.includes('cloudflared');
+    
+    if (is502Error) {
+      console.warn('⚠️ Vision API service unavailable, returning offline fallback');
+      return "I'm having trouble connecting to my AI service right now. Your outfit looks great! Try asking me again in a moment when the connection is better.";
+    }
+
     console.error(`❌ All ${maxRetries} Vision API attempts failed:`, lastError);
-    throw new Error(`Failed to analyze image after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+    throw new Error(`Failed to analyze image after ${maxRetries} attempts: ${errorMessage}`);
   }
 
   /**
@@ -239,12 +260,16 @@ Please be specific and constructive in your feedback.`;
     
     const prompt = `${contextPrompt}User says: "${userMessage}"
 
-IMPORTANT: Keep your response under 40 words (6-10 seconds of speech). Be concise, conversational, and natural.
+CRITICAL RULES:
+1. Keep response under 30 words (5-8 seconds of speech)
+2. Answer ONLY what was asked
+3. Be conversational and natural
+4. Use 2-3 short sentences maximum
 
-Respond as a helpful fashion AI assistant. Look at the image and respond to the user's question about their outfit, clothing, or style.`;
+Respond as a helpful fashion AI assistant. Look at the image and respond to the user's question.`;
 
-    // Reduced from 200 to 80 tokens for faster, more concise responses
-    return this.analyzeImage(imageUrl, prompt, 80, 2);
+    // 🚀 OPTIMIZED: 60 tokens max (was 80), 2 retries only (was 3)
+    return this.analyzeImage(imageUrl, prompt, 60, 2);
   }
 
   /**

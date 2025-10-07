@@ -1,7 +1,6 @@
 import { Audio } from 'expo-av';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { router, Stack, useNavigation } from 'expo-router';
-import * as Speech from 'expo-speech';
 import { Mic, MicOff, X, RotateCw, Volume2, Square, Power, Eye, EyeOff } from 'lucide-react-native';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
@@ -16,10 +15,11 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ExpoSpeechRecognition from 'expo-speech-recognition';
 
 import Colors from '@/constants/colors';
 import { generateTextWithImage, convertImageToBase64 } from '@/utils/pollinationsAI';
-import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText, speakTextLocal } from '@/utils/audioUtils';
+import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText, speakTextLocal, stopTTS } from '@/utils/audioUtils';
 import { ChatMessage, ChatSession, generateChatSummary, saveChatSession, generateSessionId, createChatMessage } from '@/utils/chatUtils';
 import { supabase } from '@/lib/supabase';
 import { visionAPI } from '@/utils/visionAPI';
@@ -83,24 +83,17 @@ export default function AIStylistScreen() {
     }
   }, [useEnhancedVision]);
 
-  // Cleanup on unmount - CRITICAL: Stop all audio immediately
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // Stop TTS immediately
-      if (Platform.OS !== 'web') {
-        Speech.stop().catch(err => console.log('Error stopping TTS:', err));
-      }
+      // 🛑 Stop TTS immediately on unmount
+      stopTTS().catch(err => console.log('Error stopping TTS:', err));
       
       if (sound) {
         sound.unloadAsync().catch(err => console.log('Error unloading sound:', err));
       }
       if (recording && !isRecordingUnloaded) {
-        recording.stopAndUnloadAsync().catch(err => {
-          // Silently ignore "already unloaded" errors
-          if (!err.message?.includes('already been unloaded')) {
-            console.log('Error unloading recording:', err);
-          }
-        });
+        recording.stopAndUnloadAsync().catch(err => console.log('Error unloading recording:', err));
       }
       if (speechService.isCurrentlyListening()) {
         speechService.stopListening();
@@ -425,182 +418,216 @@ export default function AIStylistScreen() {
     }
   }, [isListening, startSpeechRecognition, stopSpeechRecognition]);
 
-  // Hold-to-speak functionality
+  // Hold-to-speak functionality with ON-DEVICE STT
   const startHoldToSpeak = useCallback(async () => {
     try {
-      console.log('🎵 === STARTING HOLD-TO-SPEAK RECORDING ===');
-      console.log('🎵 Platform:', Platform.OS);
-      console.log('🎵 Conversation active:', isConversationActive);
+      console.log('� === STARTING ON-DEVICE VOICE RECOGNITION ===');
+      console.log('� Platform:', Platform.OS);
+      console.log('� Conversation active:', isConversationActive);
 
       if (!isConversationActive) {
-        console.log('🎵 Starting new conversation first...');
+        console.log('� Starting new conversation first...');
         await startNewConversation();
       }
 
-      console.log('🎵 Setting recording state to true...');
+      console.log('� Setting recording state to true...');
       setIsRecording(true);
 
-      const userMessage = createChatMessage('user', 'Recording...');
+      const userMessage = createChatMessage('user', 'Listening...');
       setMessages(prev => [...prev, userMessage]);
-      console.log('🎵 Added "Recording..." message to UI');
+      console.log('� Added "Listening..." message to UI');
 
       // Request microphone permissions
-      console.log('🎵 Requesting microphone permissions...');
+      console.log('� Requesting microphone permissions...');
       const { status } = await Audio.requestPermissionsAsync();
-      console.log('🎵 Permission status:', status);
+      console.log('� Permission status:', status);
 
       if (status !== 'granted') {
-        console.error('🎵 ❌ Microphone permission denied');
+        console.error('� ❌ Microphone permission denied');
         Alert.alert('Permission Required', 'Microphone permission is needed for voice input.');
         setIsRecording(false);
         setMessages(prev => prev.slice(0, -1));
         return;
       }
 
-      console.log('🎵 ✅ Microphone permission granted');
-      console.log('🎵 Creating audio recording...');
+      console.log('� ✅ Microphone permission granted');
+      
+      // � START VOICE RECOGNITION (not audio recording!)
+      const Voice = require('@react-native-voice/voice').default;
+      
+      // Set up event handlers for live transcription
+      Voice.onSpeechPartialResults = (e: any) => {
+        const values: string[] = e?.value || [];
+        if (values.length > 0) {
+          const partialText = values[0];
+          console.log('🎤 Partial:', partialText);
+          // Show live transcription
+          setMessages(prev => [
+            ...prev.slice(0, -1),
+            createChatMessage('user', `${partialText}...`)
+          ]);
+        }
+      };
 
-      // Configure audio recording with simplified options
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      Voice.onSpeechResults = (e: any) => {
+        const values: string[] = e?.value || [];
+        if (values.length > 0) {
+          const finalText = values[0];
+          console.log('� Final result:', finalText);
+          // Store final transcription
+          setRecordingUri(finalText); // Reuse state to store text
+        }
+      };
 
-      console.log('🎵 ✅ Audio recording created successfully');
-      console.log('🎵 Recording object:', newRecording);
-      setRecording(newRecording);
+      Voice.onSpeechError = (e: any) => {
+        console.error('� Recognition error:', e);
+      };
+
+      console.log('🎤 Starting Voice recognition...');
+      await Voice.start('en-US', {
+        EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 2000,
+        EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: 1500,
+        EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS: 300,
+      });
+      console.log('🎤 ✅ Voice recognition started');
 
     } catch (error) {
-      console.error('🎵 ❌ Error starting recording:', error);
-      console.error('🎵 Error details:', {
+      console.error('� ❌ Error starting voice recognition:', error);
+      console.error('� Error details:', {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : 'No stack trace'
       });
       setIsRecording(false);
       setMessages(prev => prev.slice(0, -1));
-      Alert.alert('Recording Error', 'Failed to start voice recording. Please try again.');
+      Alert.alert('Voice Recognition Error', 'Failed to start voice recognition. Please try again.');
     }
   }, [isConversationActive, startNewConversation]);
 
   const stopHoldToSpeak = useCallback(async () => {
     try {
-      console.log('🎵 === STOPPING HOLD-TO-SPEAK RECORDING ===');
-      console.log('🎵 Recording exists:', !!recording);
-      console.log('🎵 Is recording state:', isRecording);
+      console.log('� === STOPPING VOICE RECOGNITION ===');
+      console.log('� Is recording state:', isRecording);
 
-      if (!recording || !isRecording) {
-        console.log('🎵 ⚠️ No recording to stop or not in recording state');
+      if (!isRecording) {
+        console.log('� ⚠️ Not in recording state');
         return;
       }
 
-      console.log('🎵 Setting recording state to false...');
+      console.log('� Setting recording state to false...');
       setIsRecording(false);
 
-      console.log('🎵 Stopping and unloading recording...');
-      try {
-        await recording.stopAndUnloadAsync();
-        setIsRecordingUnloaded(true);
-      } catch (err: any) {
-        // Ignore "already unloaded" errors
-        if (!err.message?.includes('already been unloaded')) {
-          console.error('🎵 Error stopping recording:', err);
-          throw err;
-        }
-      }
+      // 🎤 STOP VOICE RECOGNITION
+      const Voice = require('@react-native-voice/voice').default;
+      
+      console.log('� Stopping Voice recognition...');
+      await Voice.stop();
 
-      console.log('🎵 Getting recording URI...');
-      const uri = recording.getURI();
-      console.log('🎵 Recording URI:', uri);
-      console.log('🎵 URI type:', typeof uri);
-      console.log('🎵 URI length:', uri ? uri.length : 0);
+      // Give Voice a moment to process final results
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      setRecordingUri(uri);
+      // Get the stored transcription (from recordingUri state)
+      const transcribedText = recordingUri;
+      console.log('� Transcribed text:', transcribedText);
 
-      if (uri) {
-        console.log('🎵 ✅ Recording URI obtained successfully');
+      // Clean up Voice
+      Voice.removeAllListeners();
+      await Voice.destroy();
+      console.log('� Voice recognition cleaned up');
+
+      if (transcribedText && transcribedText.length > 3) {
+        console.log('� ✅ Transcription obtained successfully');
 
         // Update message to show processing
         setMessages(prev => [
           ...prev.slice(0, -1),
-          createChatMessage('user', 'Processing voice...')
+          createChatMessage('user', 'Processing...')
         ]);
-        console.log('🎵 Updated UI to show "Processing voice..."');
+        console.log('� Updated UI to show "Processing..."');
 
-        // Convert audio to text
+        // 🎤 Use the on-device transcribed text directly!
         try {
-          console.log('🎵 === STARTING PARALLEL PROCESSING ===');
-          console.log('🎵 Audio URI for conversion:', uri);
+          console.log('� === STARTING PARALLEL PROCESSING ===');
+          console.log('� Using on-device transcription:', transcribedText);
 
-          // 🚀 PARALLEL PROCESSING: Start both STT and image capture at the same time
-          const [voiceText, imageResult] = await Promise.all([
-            // Process 1: Convert audio to text
-            (async () => {
-              console.log('⚡ STT: Starting audio-to-text conversion...');
-              const text = await convertAudioToText(uri);
-              console.log('⚡ STT: Complete! Text:', text.substring(0, 100));
-              return text;
-            })(),
-            
-            // Process 2: Capture/upload image (parallel!)
-            (async () => {
-              console.log('⚡ IMAGE: Starting capture...');
-              try {
-                if (useEnhancedVision) {
-                  const imageUrl = await uploadImageAndGetURL();
-                  console.log('⚡ IMAGE: Upload complete!');
-                  return { type: 'enhanced', url: imageUrl };
-                } else {
-                  const imgBase64 = await captureCurrentImage();
-                  console.log('⚡ IMAGE: Base64 capture complete!');
-                  return { type: 'basic', url: imgBase64 ? `data:image/jpeg;base64,${imgBase64}` : null };
-                }
-              } catch (err) {
-                console.warn('⚡ IMAGE: Capture failed:', err);
-                return { type: 'none', url: null };
+          // 🚀 PARALLEL PROCESSING: Voice text is ready, just capture image!
+          const imageResult = await (async () => {
+            console.log('⚡ IMAGE: Starting capture...');
+            try {
+              if (useEnhancedVision) {
+                const imageUrl = await uploadImageAndGetURL();
+                console.log('⚡ IMAGE: Upload complete!');
+                return { type: 'enhanced', url: imageUrl };
+              } else {
+                const imgBase64 = await captureCurrentImage();
+                console.log('⚡ IMAGE: Base64 capture complete!');
+                return { type: 'basic', url: imgBase64 ? `data:image/jpeg;base64,${imgBase64}` : null };
               }
-            })()
-          ]);
+            } catch (err) {
+              console.warn('⚡ IMAGE: Capture failed:', err);
+              return { type: 'none', url: null };
+            }
+          })();
 
-          console.log('🎵 === PARALLEL PROCESSING COMPLETE ===');
-          console.log('🎵 Converted text:', voiceText);
-          console.log('🎵 Text length:', voiceText.length);
-          console.log('🎵 Image result:', imageResult.type);
+          console.log('� === PARALLEL PROCESSING COMPLETE ===');
+          console.log('� Transcribed text:', transcribedText);
+          console.log('� Text length:', transcribedText.length);
+          console.log('� Image result:', imageResult.type);
 
           // Update message with transcribed text
-          const userTextMessage = createChatMessage('user', voiceText);
+          const userTextMessage = createChatMessage('user', transcribedText);
           setMessages(prev => [...prev.slice(0, -1), userTextMessage]);
-          console.log('🎵 Updated UI with transcribed text');
+          console.log('� Updated UI with transcribed text');
 
           // Store both text and image in session
           if (currentSessionRef.current) {
             currentSessionRef.current.messages.push(userTextMessage);
             if (imageResult.url) {
               currentSessionRef.current.imageBase64 = imageResult.url;
-              console.log('🎵 Stored image in session');
+              console.log('� Stored image in session');
             }
-            console.log('🎵 Added message to session');
+            console.log('� Added message to session');
           }
 
-          console.log('🎵 === STARTING AI RESPONSE GENERATION ===');
-          console.log('🎵 Voice text for AI:', voiceText);
-          await getAIResponseWithImageAndVoice(voiceText);
-          console.log('🎵 AI response generation initiated');
+          console.log('� === STARTING AI RESPONSE GENERATION ===');
+          console.log('� Voice text for AI:', transcribedText);
+          await getAIResponseWithImageAndVoice(transcribedText);
+          console.log('� AI response generation initiated');
 
-        } catch (transcriptionError) {
-          console.error('🎵 ❌ Voice transcription failed:', transcriptionError);
-          console.error('🎵 Transcription error details:', {
-            message: transcriptionError instanceof Error ? transcriptionError.message : String(transcriptionError),
-            stack: transcriptionError instanceof Error ? transcriptionError.stack : 'No stack trace'
+        } catch (processingError) {
+          console.error('� ❌ Processing failed:', processingError);
+          console.error('� Error details:', {
+            message: processingError instanceof Error ? processingError.message : String(processingError),
+            stack: processingError instanceof Error ? processingError.stack : 'No stack trace'
           });
 
           setMessages(prev => [
             ...prev.slice(0, -1),
-            createChatMessage('user', 'Voice input (transcription failed)')
+            createChatMessage('user', transcribedText || 'Voice input (processing failed)')
           ]);
-          Alert.alert('Transcription Error', 'Could not convert voice to text. Please try again.');
+          Alert.alert('Processing Error', 'Could not process your request. Please try again.');
         }
       } else {
-        console.error('🎵 ❌ No recording URI obtained');
-        Alert.alert('Recording Error', 'No audio was recorded. Please try again.');
+        console.error('� ❌ No transcription obtained');
+        // Use fallback question when no transcription is available
+        const fallbackText = 'Please describe my outfit and give styling advice';
+        console.log('🎙️ Using fallback text:', fallbackText);
+        
+        setMessages(prev => [
+          ...prev.slice(0, -1),
+          createChatMessage('user', fallbackText)
+        ]);
+        
+        try {
+          console.log('📸 Capturing image for fallback...');
+          await captureCurrentImage();
+          
+          console.log('🤖 === STARTING AI RESPONSE GENERATION (FALLBACK) ===');
+          await getAIResponseWithImageAndVoice(fallbackText);
+          console.log('✅ AI response generation initiated with fallback');
+        } catch (fallbackError) {
+          console.error('❌ Fallback processing failed:', fallbackError);
+          Alert.alert('Error', 'Could not process your request. Please try again.');
+        }
       }
 
       console.log('🎵 Cleaning up recording...');
@@ -930,6 +957,9 @@ Keep responses conversational and natural, as if you're talking to them in perso
   const stopAllAudio = useCallback(async () => {
     console.log('🛑 Stopping all audio...');
     
+    // 🛑 CRITICAL: Stop TTS loop immediately (includes all chunks)
+    await stopTTS();
+    
     // Stop current sound playback
     if (sound) {
       try {
@@ -938,16 +968,6 @@ Keep responses conversational and natural, as if you're talking to them in perso
         setSound(null);
       } catch (err) {
         console.log('Error stopping sound:', err);
-      }
-    }
-    
-    // Stop native TTS if on mobile (use the imported Speech module)
-    if (Platform.OS !== 'web') {
-      try {
-        await Speech.stop();
-        console.log('✅ Native TTS stopped');
-      } catch (err) {
-        console.log('Error stopping native TTS:', err);
       }
     }
     
