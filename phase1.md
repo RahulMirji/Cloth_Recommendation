@@ -613,24 +613,28 @@ how_look: [
 ## � Critical Bugs Fixed (January 7, 2025)
 
 ### **Bug 1: Voice.start is not a function** → **FIXED** ✅
+
 - **Problem**: Voice recognition failed with error
 - **Fix**: Added `.default` to Voice module import
 - **Location**: `utils/audioUtils.ts` line ~10
 - **Impact**: Voice recognition now works perfectly
 
 ### **Bug 2: Vision API Timeout** → **FIXED** ✅
+
 - **Problem**: First request timed out after 20s, needed retry
 - **Fix**: Optimized timeout from 20s→10s, reduced tokens 80→60
 - **Location**: `utils/visionAPI.ts` line ~115, ~262
 - **Impact**: 2.5x faster (now responds in 10-15s)
 
 ### **Bug 3: Long Single Audio Output** → **FIXED** ✅
+
 - **Problem**: AI spoke entire response as one 18s audio (robotic)
 - **Fix**: Implemented sentence-based TTS chunking
 - **Location**: `utils/audioUtils.ts` line ~345
 - **Impact**: Now streams 2-3 natural chunks with pauses
 
 ### **Bug 4: System Not Listening** → **FIXED** ✅
+
 - **Problem**: Voice commands not recognized
 - **Fix**: Better initialization + error logging + session cleanup
 - **Location**: `utils/audioUtils.ts` line ~90

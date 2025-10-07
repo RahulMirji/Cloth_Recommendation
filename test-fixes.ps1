@@ -13,7 +13,8 @@ Write-Host "📋 Test 1: Checking Voice Module Installation..." -ForegroundColor
 $voicePackage = Get-Content package.json | ConvertFrom-Json | Select-Object -ExpandProperty dependencies | Select-Object -ExpandProperty '@react-native-voice/voice'
 if ($voicePackage) {
     Write-Host "✅ @react-native-voice/voice installed: $voicePackage" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "❌ @react-native-voice/voice NOT found in package.json" -ForegroundColor Red
     Write-Host "   Run: npm install @react-native-voice/voice" -ForegroundColor Yellow
 }
@@ -31,7 +32,8 @@ $files = @(
 foreach ($file in $files) {
     if (Test-Path $file) {
         Write-Host "✅ $file exists" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "❌ $file missing" -ForegroundColor Red
     }
 }
@@ -44,14 +46,16 @@ Write-Host "📋 Test 3: Checking Code Fixes..." -ForegroundColor Yellow
 $audioUtils = Get-Content "utils\audioUtils.ts" -Raw
 if ($audioUtils -match "require\('@react-native-voice/voice'\)\.default") {
     Write-Host "✅ Voice module import fixed (.default added)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠️  Voice module import may need review" -ForegroundColor Yellow
 }
 
 # Check TTS chunking
 if ($audioUtils -match "chunkTextIntoSentences") {
     Write-Host "✅ TTS chunking implemented" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "❌ TTS chunking not found" -ForegroundColor Red
 }
 
@@ -59,7 +63,8 @@ if ($audioUtils -match "chunkTextIntoSentences") {
 $visionAPI = Get-Content "utils\visionAPI.ts" -Raw
 if ($visionAPI -match "10000 \+ \(attempt - 1\) \* 5000") {
     Write-Host "✅ Vision API timeout optimized (10s, 15s, 20s)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠️  Vision API timeout may need review" -ForegroundColor Yellow
 }
 Write-Host ""
@@ -84,7 +89,8 @@ if ($response -eq "Y" -or $response -eq "y") {
     
     Write-Host ""
     Write-Host "✅ Caches cleared! Ready to restart." -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⏭️  Skipping cache clear" -ForegroundColor Yellow
 }
 Write-Host ""
