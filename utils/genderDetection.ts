@@ -180,7 +180,7 @@ export const GENDER_ITEM_CATEGORIES = {
       'sunglasses',
       'watch',
       'backpack',
-      'bag',
+      // Note: 'bag' removed - now gender-specific (handbag/purse for women, briefcase/laptop bag for men)
       'cap',
       'hat',
       'scarf',

@@ -14,7 +14,7 @@
 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Sparkles, Shirt, User } from 'lucide-react-native';
+import { Camera, Sparkles, Shirt, User, Wand2 } from 'lucide-react-native';
 import React from 'react';
 import {
   StyleSheet,
@@ -30,7 +30,6 @@ import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
-import { OutfitScorerShowcase } from '@/components/OutfitScorerShowcase';
 import { Footer } from '@/components/Footer';
 
 export function HomeScreen() {
@@ -134,31 +133,7 @@ export function HomeScreen() {
 
         {/* Feature Cards */}
         <View style={styles.cardsContainer}>
-          {/* AI Stylist Card */}
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.8}
-            onPress={() => router.push('/ai-stylist')}
-          >
-            <LinearGradient
-              colors={[Colors.gradient.start, Colors.gradient.end]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <Camera size={32} color={Colors.white} strokeWidth={2.5} />
-              </View>
-              <Text style={styles.cardTitle}>
-                {Strings.home.aiStylist.title}
-              </Text>
-              <Text style={styles.cardDescription}>
-                {Strings.home.aiStylist.description}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Outfit Scorer Card */}
+          {/* Outfit Scorer Card - First */}
           <TouchableOpacity
             style={styles.card}
             activeOpacity={0.8}
@@ -178,6 +153,79 @@ export function HomeScreen() {
               </Text>
               <Text style={styles.cardDescription}>
                 {Strings.home.outfitScorer.description}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* AI Stylist Card - Second (Beta) */}
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => router.push('/ai-stylist')}
+          >
+            <LinearGradient
+              colors={[Colors.gradient.start, Colors.gradient.end]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardGradient}
+            >
+              {/* Beta Tag */}
+              <View style={styles.betaTag}>
+                <Text style={styles.betaText}>BETA</Text>
+              </View>
+              
+              <View style={styles.cardIcon}>
+                <Camera size={32} color={Colors.white} strokeWidth={2.5} />
+              </View>
+              <Text style={styles.cardTitle}>
+                {Strings.home.aiStylist.title}
+              </Text>
+              <Text style={styles.cardDescription}>
+                {Strings.home.aiStylist.description}
+              </Text>
+            Running "expo doctor"
+env: load .env
+env: export EXPO_PUBLIC_RORK_API_BASE_URL EXPO_PUBLIC_TOOLKIT_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
+Running 17 checks on your project...
+16/17 checks passed. 1 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+
+✖ Check Expo config (app.json/ app.config.js) schema
+Errors validating fields in /home/expo/workingdir/build/app.json:
+ Field: android - should NOT have additional property 'enableJetifier'.
+ Field: android - should NOT have additional property 'useNextNotificationsApi'.
+Advice:
+Resolve schema errors in your app config. Learn more: https://docs.expo.dev/workflow/configuration/
+
+1 check failed, indicating possible issues with the project.
+Command "expo doctor" failed.</LinearGradient>
+          </TouchableOpacity>
+
+          {/* AI Image Generator Card - Third (Beta) */}
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => router.push('/ai-image-generator')}
+          >
+            <LinearGradient
+              colors={['#F59E0B', '#EF4444']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardGradient}
+            >
+              {/* Beta Tag */}
+              <View style={styles.betaTag}>
+                <Text style={styles.betaText}>BETA</Text>
+              </View>
+              
+              <View style={styles.cardIcon}>
+                <Wand2 size={32} color={Colors.white} strokeWidth={2.5} />
+              </View>
+              <Text style={styles.cardTitle}>
+                AI Image Generator
+              </Text>
+              <Text style={styles.cardDescription}>
+                Create any image you can imagine with AI-powered generation
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -213,9 +261,6 @@ export function HomeScreen() {
             </Text>
           </View>
         </View>
-
-        {/* Outfit Scorer Showcase Section */}
-        <OutfitScorerShowcase />
 
         {/* Footer */}
         <Footer />
@@ -358,6 +403,40 @@ const styles = StyleSheet.create({
     padding: 28,
     minHeight: 200,
     justifyContent: 'center',
+  },
+  betaTag: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  betaText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.white,
+    letterSpacing: 1,
+  },
+  betaSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.white,
+    letterSpacing: 0.3,
+  },
+  betaSubtitleContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginHorizontal: -8,
   },
   cardIcon: {
     width: 64,
