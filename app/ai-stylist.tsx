@@ -43,7 +43,7 @@ export default function AIStylistScreen() {
   const [isRecordingUnloaded, setIsRecordingUnloaded] = useState<boolean>(false);
   const [isConversationActive, setIsConversationActive] = useState<boolean>(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [useEnhancedVision, setUseEnhancedVision] = useState<boolean>(true);
+  const [useEnhancedVision, setUseEnhancedVision] = useState<boolean>(false);
   const [conversationContext, setConversationContext] = useState<string>('');
   const [speechService] = useState(() => SpeechToTextService.getInstance());
   const [streamingHandler] = useState(() => new StreamingResponseHandler());

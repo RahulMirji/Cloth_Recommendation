@@ -100,6 +100,11 @@ jest.mock('lucide-react-native', () => ({
   MicOff: 'MicOff',
   RotateCw: 'RotateCw',
   Volume2: 'Volume2',
+  Wand2: 'Wand2',
+  Download: 'Download',
+  CheckCircle: 'CheckCircle',
+  XCircle: 'XCircle',
+  AlertCircle: 'AlertCircle',
 }));
 
 // Mock react-native-onboarding-swiper

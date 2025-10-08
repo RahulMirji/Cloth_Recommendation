@@ -1,0 +1,15 @@
+// Force all dependencies to use AndroidX
+allprojects {
+    configurations.all {
+        resolutionStrategy {
+            // Force AndroidX libraries
+            force 'androidx.core:core:1.16.0'
+            force 'androidx.versionedparcelable:versionedparcelable:1.1.1'
+            
+            // Exclude old Android Support libraries
+            exclude group: 'com.android.support', module: 'support-compat'
+            exclude group: 'com.android.support', module: 'support-v4'
+            exclude group: 'com.android.support', module: 'versionedparcelable'
+        }
+    }
+}
