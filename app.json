@@ -32,16 +32,18 @@
       },
       "package": "com.rahulmirji.aiclothrecommendationapp",
       "permissions": [
-        "CAMERA",
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withAndroidXResolution",
       [
         "expo-router",
         {
@@ -77,8 +79,9 @@
         "origin": "https://rork.com/"
       },
       "eas": {
-        "projectId": "cdd0071a-e6e5-4fa1-8a87-38235f03fa5b"
+        "projectId": "3087b3fe-4b5a-4714-836c-8765d40344d0"
       }
-    }
+    },
+    "owner": "rahulmirji07"
   }
 }
