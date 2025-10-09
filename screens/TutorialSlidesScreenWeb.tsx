@@ -79,11 +79,11 @@ export default function TutorialSlidesScreen() {
   };
 
   const handleSkip = () => {
-    router.replace('/auth/sign-up' as any);
+    router.replace('/auth/sign-in' as any);
   };
 
   const handleDone = () => {
-    router.replace('/auth/sign-up' as any);
+    router.replace('/auth/sign-in' as any);
   };
 
   const currentSlideData = slides[currentSlide];

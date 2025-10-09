@@ -6,6 +6,7 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: false,
       }}
+      initialRouteName="sign-in"
     >
       <Stack.Screen name="sign-in" />
       <Stack.Screen name="sign-up" />
