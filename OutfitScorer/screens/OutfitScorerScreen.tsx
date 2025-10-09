@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import getThemedColors from '@/constants/themedColors';
 import { useApp } from '@/contexts/AppContext';
+import { useAlert } from '@/contexts/AlertContext';
 
 // OutfitScorer feature imports
 import { convertImageToBase64 } from '@/OutfitScorer/utils/pollinationsAI';
@@ -69,6 +70,7 @@ export default function OutfitScorerScreen() {
   // Get session from AppContext (not authStore)
   const { session, settings } = useApp();
   const { uploadOutfitImage } = useImageUpload();
+  const { showAlert } = useAlert();
   
   // Theme detection
   const colorScheme = useColorScheme();
@@ -165,7 +167,7 @@ export default function OutfitScorerScreen() {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (!permissionResult.granted) {
-      alert('Permission to access gallery is required!');
+      showAlert('error', 'Permission Required', 'Permission to access gallery is required!');
       return;
     }
 
@@ -188,7 +190,7 @@ export default function OutfitScorerScreen() {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     
     if (!permissionResult.granted) {
-      alert('Permission to access camera is required!');
+      showAlert('error', 'Permission Required', 'Permission to access camera is required!');
       return;
     }
 
@@ -416,27 +418,27 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
       
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('taking too long')) {
-          errorMessage = `⏱️ Analysis timeout with ${selectedModel.name}\n\n` +
+          errorMessage = `Analysis timeout with ${selectedModel.name}\n\n` +
                        'The AI service is taking too long. This might be due to:\n\n' +
                        '• Large image size - try taking a new photo\n' +
                        '• Slow internet connection\n' +
                        '• Server is busy\n\n' +
                        '💡 Try selecting a different AI model above or try again later!';
         } else if (error.message.includes('network') || error.message.includes('connection')) {
-          errorMessage = '🌐 Network connection issue\n\nPlease check your internet and try again.';
+          errorMessage = 'Network connection issue\n\nPlease check your internet and try again.';
         } else if (error.message.includes('Invalid response format')) {
-          errorMessage = `⚠️ ${selectedModel.name} returned an unexpected format\n\n` +
+          errorMessage = `${selectedModel.name} returned an unexpected format\n\n` +
                        '💡 Try selecting a different AI model from the dropdown above!';
         } else if (error.message.includes('API error') || error.message.includes('failed')) {
-          errorMessage = `❌ ${selectedModel.name} is currently unavailable\n\n` +
+          errorMessage = `${selectedModel.name} is currently unavailable\n\n` +
                        '💡 Please select a different AI model from the dropdown above and try again!';
         } else {
-          errorMessage = `❌ Error with ${selectedModel.name}\n\n${error.message}\n\n` +
+          errorMessage = `Error with ${selectedModel.name}\n\n${error.message}\n\n` +
                        '💡 Try selecting a different AI model from the dropdown above!';
         }
       }
       
-      alert(`Failed to analyze outfit:\n\n${errorMessage}`);
+      showAlert('error', 'Failed to analyze outfit', errorMessage);
     }
   };
 
