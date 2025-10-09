@@ -21,7 +21,7 @@ import { ExternalLink, ShoppingBag } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import getThemedColors from '@/constants/themedColors';
 import { useApp } from '@/contexts/AppContext';
-import { ProductRecommendation } from '@/utils/productRecommendations';
+import { ProductRecommendation } from '@/OutfitScorer/utils/productRecommendations';
 
 interface ProductRecommendationsProps {
   recommendations: Map<string, ProductRecommendation[]>;
