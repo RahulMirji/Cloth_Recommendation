@@ -107,36 +107,18 @@ jest.mock('lucide-react-native', () => ({
   AlertCircle: 'AlertCircle',
 }));
 
-// Mock react-native-onboarding-swiper
-jest.mock('react-native-onboarding-swiper', () => 'Onboarding');
-
-// Mock OutfitScorerShowcase component
-jest.mock('./components/OutfitScorerShowcase', () => ({
+// Mock modularized components (now in feature modules)
+jest.mock('@/OutfitScorer/components/OutfitScorerShowcase', () => ({
   OutfitScorerShowcase: () => 'OutfitScorerShowcase',
+}));
+
+jest.mock('@/OutfitScorer/components/ProductRecommendations', () => ({
+  ProductRecommendationsSection: () => 'ProductRecommendationsSection',
 }));
 
 // Mock Footer component
 jest.mock('./components/Footer', () => ({
   Footer: () => 'Footer',
-}));
-
-// Mock authStore (Zustand store)
-jest.mock('./store/authStore', () => ({
-  useAuthStore: jest.fn(() => ({
-    updateSettings: jest.fn(),
-    clearAllData: jest.fn(),
-  })),
-  useAppSettings: jest.fn(() => ({
-    isDarkMode: false,
-    useCloudAI: true,
-    saveHistory: true,
-    useVoiceInteraction: true,
-  })),
-  useIsDarkMode: jest.fn(() => false),
-  useUserProfile: jest.fn(() => ({
-    name: 'Guest',
-    email: '',
-  })),
 }));
 
 // Silence the warning: Animated: `useNativeDriver` is not supported

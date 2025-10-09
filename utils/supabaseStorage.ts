@@ -1,8 +1,8 @@
 /**
  * Supabase Storage Utility
  * 
- * Centralized image storage management using Supabase Storage.
- * Handles upload, download, and deletion of user images across devices.
+ * Centralized image storage management for Profile Images using Supabase Storage.
+ * Handles upload, download, and deletion of profile images across devices.
  * 
  * Features:
  * - Cross-device image persistence
@@ -17,14 +17,11 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 // Storage bucket name (must match the bucket name in Supabase Dashboard)
-// Note: Supabase stores bucket names in lowercase internally
 const STORAGE_BUCKET = 'user-images';
 
 // Image storage paths
 const STORAGE_PATHS = {
   PROFILE: 'profiles',
-  OUTFITS: 'outfits',
-  ANALYSIS: 'analysis',
 } as const;
 
 export type StoragePath = keyof typeof STORAGE_PATHS;
@@ -284,22 +281,10 @@ export async function replaceImage(
 }
 
 /**
- * Get fallback image URL
- * 
- * @param path - Storage path type
- * @returns Default placeholder image URL
+ * Get fallback image URL for profile
  */
-export function getFallbackImageUrl(path: StoragePath): string {
-  switch (path) {
-    case 'PROFILE':
-      return 'https://via.placeholder.com/400x400.png?text=No+Profile+Image';
-    case 'OUTFITS':
-      return 'https://via.placeholder.com/800x600.png?text=No+Outfit+Image';
-    case 'ANALYSIS':
-      return 'https://via.placeholder.com/800x600.png?text=No+Analysis+Image';
-    default:
-      return 'https://via.placeholder.com/400x400.png?text=No+Image';
-  }
+export function getFallbackImageUrl(): string {
+  return 'https://via.placeholder.com/400x400.png?text=No+Profile+Image';
 }
 
 /**
@@ -401,6 +386,6 @@ export const STORAGE_CONFIG = {
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FORMATS: ['jpg', 'jpeg', 'png'],
   DEFAULT_QUALITY: 0.8,
-  DEFAULT_MAX_WIDTH: 1200,
-  DEFAULT_MAX_HEIGHT: 1200,
+  DEFAULT_MAX_WIDTH: 800,
+  DEFAULT_MAX_HEIGHT: 800,
 } as const;
