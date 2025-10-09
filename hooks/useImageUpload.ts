@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { uploadImageToStorage, replaceImage } from '@/utils/supabaseStorage';
+import { replaceImage } from '@/utils/supabaseStorage';
 import { useApp } from '@/contexts/AppContext';
 
 export interface ImageUploadResult {
@@ -64,50 +64,8 @@ export function useImageUpload() {
     [session, userProfile.profileImage, updateUserProfile]
   );
 
-  /**
-   * Upload outfit/analysis image to Supabase Storage
-   */
-  const uploadOutfitImage = useCallback(
-    async (localUri: string, type: 'OUTFITS' | 'ANALYSIS' = 'OUTFITS'): Promise<ImageUploadResult> => {
-      if (!session?.user) {
-        return {
-          success: false,
-          error: 'User not authenticated',
-        };
-      }
-
-      setIsUploading(true);
-
-      try {
-        const publicUrl = await uploadImageToStorage({
-          userId: session.user.id,
-          path: type,
-          localUri,
-          quality: 0.8,
-          maxWidth: 1200,
-          maxHeight: 1200,
-        });
-
-        return {
-          success: true,
-          url: publicUrl,
-        };
-      } catch (error) {
-        console.error(`Error uploading ${type} image:`, error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Upload failed',
-        };
-      } finally {
-        setIsUploading(false);
-      }
-    },
-    [session]
-  );
-
   return {
     isUploading,
     uploadProfileImage,
-    uploadOutfitImage,
   };
 }

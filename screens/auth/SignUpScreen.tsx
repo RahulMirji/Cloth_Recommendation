@@ -16,7 +16,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
@@ -29,6 +28,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { showCustomAlert } from '@/utils/customAlert';
 
 // Supabase configuration
 const SUPABASE_URL = 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
@@ -74,27 +74,27 @@ export function SignUpScreen() {
   const handleSendOTP = async () => {
     // Validation
     if (!name.trim()) {
-      Alert.alert('Required Field', 'Please enter your name');
+      showCustomAlert('warning', 'Required Field', 'Please enter your name');
       return;
     }
 
     if (!email.trim()) {
-      Alert.alert('Required Field', 'Please enter your email');
+      showCustomAlert('warning', 'Required Field', 'Please enter your email');
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      showCustomAlert('error', 'Invalid Email', 'Please enter a valid email address');
       return;
     }
 
     if (!password) {
-      Alert.alert('Required Field', 'Please enter a password');
+      showCustomAlert('warning', 'Required Field', 'Please enter a password');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters');
+      showCustomAlert('warning', 'Weak Password', 'Password must be at least 6 characters');
       return;
     }
 
@@ -128,7 +128,7 @@ export function SignUpScreen() {
       setTimer(60);
       setIsTimerActive(true);
       
-      Alert.alert('OTP Sent', data.message || 'A verification code has been sent to your email.');
+      showCustomAlert('success', 'OTP Sent', data.message || 'A verification code has been sent to your email.');
       
       // Focus first OTP input
       setTimeout(() => {
@@ -143,7 +143,7 @@ export function SignUpScreen() {
         errorMessage = error.message;
       }
       
-      Alert.alert('Error', errorMessage);
+      showCustomAlert('error', 'Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -176,7 +176,7 @@ export function SignUpScreen() {
     const otpCode = otp.join('');
     
     if (otpCode.length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter the complete 6-digit code.');
+      showCustomAlert('warning', 'Invalid OTP', 'Please enter the complete 6-digit code.');
       return;
     }
 
@@ -208,7 +208,8 @@ export function SignUpScreen() {
       }
 
       // Success! Navigate to sign-in page
-      Alert.alert(
+      showCustomAlert(
+        'success',
         'Success!',
         data.message || 'Your account has been created successfully. Please sign in to continue.',
         [
@@ -227,7 +228,7 @@ export function SignUpScreen() {
         errorMessage = error.message;
       }
       
-      Alert.alert('Verification Error', errorMessage);
+      showCustomAlert('error', 'Verification Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -268,7 +269,7 @@ export function SignUpScreen() {
       setTimer(60);
       setIsTimerActive(true);
       
-      Alert.alert('OTP Resent', data.message || 'A new verification code has been sent to your email.');
+      showCustomAlert('success', 'OTP Resent', data.message || 'A new verification code has been sent to your email.');
       
       // Focus first OTP input
       setTimeout(() => {
@@ -283,7 +284,7 @@ export function SignUpScreen() {
         errorMessage = error.message;
       }
       
-      Alert.alert('Error', errorMessage);
+      showCustomAlert('error', 'Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

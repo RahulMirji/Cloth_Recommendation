@@ -13,7 +13,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,6 +26,7 @@ import { storageService } from '@/AIStylist/utils/storageService';
 import { StreamingResponseHandler } from '@/AIStylist/utils/streamingResponseHandler';
 import { contextManager } from '@/AIStylist/utils/contextManager';
 import { vadDetector } from '@/AIStylist/utils/voiceActivityDetection';
+import { showCustomAlert } from '@/utils/customAlert';
 
 export default function AIStylistScreen() {
   const [facing, setFacing] = useState<CameraType>('front');
@@ -72,7 +72,8 @@ export default function AIStylistScreen() {
         // Then try to initialize
         storageService.initializeBucket().catch(error => {
           console.error('Failed to initialize storage bucket:', error);
-          Alert.alert(
+          showCustomAlert(
+            'warning',
             'Storage Setup',
             'Enhanced vision features may not work properly. Check console for bucket debug info.',
             [{ text: 'OK' }]
@@ -148,7 +149,8 @@ export default function AIStylistScreen() {
     
     if (newMode) {
       console.log('🎤 Hands-free mode ENABLED');
-      Alert.alert(
+      showCustomAlert(
+        'success',
         '🎤 Hands-Free Mode',
         'Just speak naturally! I\'ll listen automatically when you talk.',
         [{ text: 'Got it!' }]
@@ -191,7 +193,7 @@ export default function AIStylistScreen() {
       return null;
     } catch (error) {
       console.error('Error capturing image:', error);
-      Alert.alert('Error', 'Failed to capture image from camera');
+      showCustomAlert('error', 'Error', 'Failed to capture image from camera');
       return null;
     }
   }, []);
@@ -371,7 +373,8 @@ export default function AIStylistScreen() {
           // Check if it's a network error that might be temporary
           if (error.message && error.message.includes('network')) {
             console.error('🎙️ Network error detected - offering retry');
-            Alert.alert(
+            showCustomAlert(
+              'error',
               'Network Error',
               'Speech recognition failed due to network issues. Try the hold-to-speak feature instead (press and hold the microphone).',
               [
@@ -381,7 +384,8 @@ export default function AIStylistScreen() {
             );
           } else {
             console.error('🎙️ Non-network error - showing general error');
-            Alert.alert(
+            showCustomAlert(
+              'error',
               'Speech Recognition Error',
               'Voice recognition is not working properly. Please use the hold-to-speak feature instead (press and hold the microphone).',
               [{ text: 'OK' }]
@@ -397,7 +401,7 @@ export default function AIStylistScreen() {
       console.error('Error starting speech recognition:', error);
       setIsListening(false);
       stopPulse();
-      Alert.alert('Error', 'Failed to start speech recognition. Please try again.');
+      showCustomAlert('error', 'Error', 'Failed to start speech recognition. Please try again.');
     }
   }, [isConversationActive, speechService, startNewConversation, capturedImage]);
 
@@ -451,7 +455,7 @@ export default function AIStylistScreen() {
 
       if (status !== 'granted') {
         console.error('🎵 ❌ Microphone permission denied');
-        Alert.alert('Permission Required', 'Microphone permission is needed for voice input.');
+        showCustomAlert('warning', 'Permission Required', 'Microphone permission is needed for voice input.');
         setIsRecording(false);
         setMessages(prev => prev.slice(0, -1));
         return;
@@ -477,7 +481,7 @@ export default function AIStylistScreen() {
       });
       setIsRecording(false);
       setMessages(prev => prev.slice(0, -1));
-      Alert.alert('Recording Error', 'Failed to start voice recording. Please try again.');
+      showCustomAlert('error', 'Recording Error', 'Failed to start voice recording. Please try again.');
     }
   }, [isConversationActive, startNewConversation]);
 
@@ -596,11 +600,11 @@ export default function AIStylistScreen() {
             ...prev.slice(0, -1),
             createChatMessage('user', 'Voice input (transcription failed)')
           ]);
-          Alert.alert('Transcription Error', 'Could not convert voice to text. Please try again.');
+          showCustomAlert('error', 'Transcription Error', 'Could not convert voice to text. Please try again.');
         }
       } else {
         console.error('🎵 ❌ No recording URI obtained');
-        Alert.alert('Recording Error', 'No audio was recorded. Please try again.');
+        showCustomAlert('error', 'Recording Error', 'No audio was recorded. Please try again.');
       }
 
       console.log('🎵 Cleaning up recording...');
@@ -615,7 +619,7 @@ export default function AIStylistScreen() {
 
       setIsRecording(false);
       setRecording(null);
-      Alert.alert('Recording Error', 'Failed to process voice recording.');
+      showCustomAlert('error', 'Recording Error', 'Failed to process voice recording.');
     }
   }, [recording, isRecording, useEnhancedVision, uploadImageAndGetURL, captureCurrentImage, currentSessionRef]);
 
@@ -685,7 +689,8 @@ export default function AIStylistScreen() {
           const errorMessage = visionError instanceof Error ? visionError.message : 'Unknown error';
           const isTimeout = errorMessage.includes('timed out');
           
-          Alert.alert(
+          showCustomAlert(
+            'error',
             isTimeout ? 'Vision Analysis Timeout' : 'Vision Analysis Error',
             isTimeout 
               ? 'The image analysis is taking longer than expected. This might be due to network issues or high server load.'
@@ -695,7 +700,8 @@ export default function AIStylistScreen() {
                 text: 'Use Basic Vision',
                 onPress: () => {
                   setUseEnhancedVision(false);
-                  Alert.alert(
+                  showCustomAlert(
+                    'info',
                     'Switched to Basic Vision',
                     'Enhanced Vision has been disabled. Please try your request again with the basic vision mode.',
                     [{ text: 'OK' }]
@@ -991,11 +997,11 @@ Keep responses conversational and natural, as if you're talking to them in perso
 
       // Generate and save chat summary
       if (currentSessionRef.current && currentSessionRef.current.messages.length > 0) {
-        Alert.alert(
+        showCustomAlert(
+          'info',
           'Saving Conversation',
           'Creating summary and saving to history...',
           [{ text: 'OK', style: 'default' }],
-          { cancelable: false }
         );
 
         try {
@@ -1017,7 +1023,8 @@ Keep responses conversational and natural, as if you're talking to them in perso
             userId || undefined
           );
 
-          Alert.alert(
+          showCustomAlert(
+            'success',
             'Conversation Saved!',
             `Your chat session has been saved successfully.\n\nSummary:\n${summary.substring(0, 200)}...`,
             [
@@ -1035,7 +1042,8 @@ Keep responses conversational and natural, as if you're talking to them in perso
           );
         } catch (error) {
           console.error('Error saving conversation:', error);
-          Alert.alert(
+          showCustomAlert(
+            'error',
             'Error Saving',
             'Failed to save conversation. Please try again.',
             [{ text: 'OK' }]
@@ -1050,7 +1058,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
       }
     } catch (error) {
       console.error('Error quitting conversation:', error);
-      Alert.alert('Error', 'Failed to quit conversation properly.');
+      showCustomAlert('error', 'Error', 'Failed to quit conversation properly.');
       router.back();
     }
   }, [speechService, stopAllAudio]);

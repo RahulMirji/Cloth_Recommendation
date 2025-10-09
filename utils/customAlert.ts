@@ -61,27 +61,3 @@ export const showCustomAlert = (
     console.warn('Alert system not initialized. Wrap your app with AlertProvider.');
   }
 };
-
-/**
- * Legacy Alert.alert compatible wrapper
- * Automatically determines alert type based on title
- */
-export const legacyAlert = (
-  title: string,
-  message?: string,
-  buttons?: AlertButton[]
-) => {
-  // Determine type from title
-  let type: AlertType = 'info';
-  const lowerTitle = title.toLowerCase();
-  
-  if (lowerTitle.includes('success')) {
-    type = 'success';
-  } else if (lowerTitle.includes('error') || lowerTitle.includes('failed')) {
-    type = 'error';
-  } else if (lowerTitle.includes('warning') || lowerTitle.includes('confirm')) {
-    type = 'warning';
-  }
-  
-  showCustomAlert(type, title, message, buttons);
-};

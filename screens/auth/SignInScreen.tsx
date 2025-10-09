@@ -16,7 +16,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +26,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { showCustomAlert } from '@/utils/customAlert';
 
 export function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -43,17 +43,17 @@ export function SignInScreen() {
   const handleSignIn = async () => {
     // Validation
     if (!email.trim()) {
-      Alert.alert('Required Field', 'Please enter your email');
+      showCustomAlert('warning', 'Required Field', 'Please enter your email');
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      showCustomAlert('error', 'Invalid Email', 'Please enter a valid email address');
       return;
     }
 
     if (!password) {
-      Alert.alert('Required Field', 'Please enter your password');
+      showCustomAlert('warning', 'Required Field', 'Please enter your password');
       return;
     }
 
@@ -98,7 +98,7 @@ export function SignInScreen() {
         errorMessage = error.message;
       }
       
-      Alert.alert('Sign In Error', errorMessage);
+      showCustomAlert('error', 'Sign In Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

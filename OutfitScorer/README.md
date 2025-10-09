@@ -34,23 +34,23 @@ OutfitScorer/
 ### Basic Usage
 
 ```typescript
-import OutfitScorerScreen from '@/OutfitScorer';
+import OutfitScorerScreen from "@/OutfitScorer";
 // or
-import OutfitScorerScreen from '@/app/outfit-scorer';
+import OutfitScorerScreen from "@/app/outfit-scorer";
 ```
 
 ### Navigation
 
 ```typescript
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
 // Navigate to outfit scorer
-router.push('/outfit-scorer');
+router.push("/outfit-scorer");
 
 // Load specific history entry
 router.push({
-  pathname: '/outfit-scorer',
-  params: { historyId: 'abc-123' }
+  pathname: "/outfit-scorer",
+  params: { historyId: "abc-123" },
 });
 ```
 
@@ -59,25 +59,27 @@ router.push({
 ```typescript
 import {
   generateTextWithImage,
-  convertImageToBase64
-} from '@/OutfitScorer/utils/pollinationsAI';
+  convertImageToBase64,
+} from "@/OutfitScorer/utils/pollinationsAI";
 
 import {
   generateProductRecommendations,
-  extractMissingItems
-} from '@/OutfitScorer/utils/productRecommendations';
+  extractMissingItems,
+} from "@/OutfitScorer/utils/productRecommendations";
 
-import { ProductRecommendationsSection } from '@/OutfitScorer/components';
+import { ProductRecommendationsSection } from "@/OutfitScorer/components";
 ```
 
 ## 📦 Module Exports
 
 ### Components
+
 - `ProductRecommendationsSection` - Product recommendation display
 - `OutfitScorerShowcase` - Demo component for onboarding
 - `Footer` - Consistent footer component
 
 ### Utilities
+
 - `pollinationsAI` - AI text/image generation
 - `productRecommendations` - Product search logic
 - `productRecommendationStorage` - Database operations
@@ -86,9 +88,11 @@ import { ProductRecommendationsSection } from '@/OutfitScorer/components';
 - `genderDetection` - Gender-aware filtering
 
 ### Hooks
+
 - `useImageUpload` - Image upload hook with compression
 
 ### Types
+
 - `chatHistory.types` - All TypeScript definitions
 
 ## 🎯 API Reference
@@ -133,11 +137,13 @@ const result = await uploadOutfitImage(
 ## 🔧 Configuration
 
 ### AI Settings
+
 - **Timeout:** 60 seconds (configurable in `pollinationsAI.ts`)
 - **Model:** Gemini via Pollinations AI
 - **Image Format:** Base64 JPEG
 
 ### Storage Settings
+
 - **Bucket:** Supabase Storage
 - **Compression:** 0.8 quality
 - **Max Size:** Handled by API
@@ -173,6 +179,7 @@ Display results + Save to database
 ## 🔐 Dependencies
 
 ### External
+
 - `expo-image-picker` - Image selection
 - `expo-image-manipulator` - Image processing
 - `expo-file-system` - File operations
@@ -181,6 +188,7 @@ Display results + Save to database
 - `lucide-react-native` - Icons
 
 ### Internal (Shared)
+
 - `@/constants/colors` - Color palette
 - `@/constants/themedColors` - Theme system
 - `@/constants/fonts` - Typography
@@ -190,18 +198,23 @@ Display results + Save to database
 ## ⚠️ Important Notes
 
 ### Timeout Handling
+
 The AI analysis has a 60-second timeout. For slow connections:
+
 - Compress images before upload
 - Retry failed requests
 - Show appropriate error messages
 
 ### Gender Detection
+
 Product recommendations are gender-aware:
+
 - Detected from AI analysis text
 - Filters inappropriate items
 - Provides context-specific suggestions
 
 ### Storage Limits
+
 - Supabase Storage has usage limits
 - Implement cleanup for old images
 - Monitor storage usage
@@ -211,18 +224,22 @@ Product recommendations are gender-aware:
 ### Common Issues
 
 **"AbortError: Aborted"**
+
 - Cause: Request timeout (>60s)
 - Solution: Check network, reduce image size
 
 **"Invalid response format"**
+
 - Cause: AI returned non-JSON
 - Solution: Retry request
 
 **Products not loading**
+
 - Cause: Marketplace API issues
 - Solution: Check API status, retry
 
 **Image upload fails**
+
 - Cause: Supabase Storage issue
 - Solution: Check permissions, storage quota
 
@@ -235,6 +252,7 @@ Product recommendations are gender-aware:
 ## 🤝 Contributing
 
 When contributing to this module:
+
 1. Keep changes within `/OutfitScorer` folder
 2. Update exports in `index.ts` files
 3. Maintain backward compatibility

@@ -16,7 +16,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +26,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { showCustomAlert } from '@/utils/customAlert';
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -42,12 +42,12 @@ export function ForgotPasswordScreen() {
   const handleResetPassword = async () => {
     // Validation
     if (!email.trim()) {
-      Alert.alert('Required Field', 'Please enter your email');
+      showCustomAlert('warning', 'Required Field', 'Please enter your email');
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      showCustomAlert('error', 'Invalid Email', 'Please enter a valid email address');
       return;
     }
 
@@ -61,7 +61,8 @@ export function ForgotPasswordScreen() {
       if (error) throw error;
 
       setEmailSent(true);
-      Alert.alert(
+      showCustomAlert(
+        'success',
         'Check Your Email',
         'We have sent you a password reset link. Please check your inbox.',
         [
@@ -72,7 +73,8 @@ export function ForgotPasswordScreen() {
         ]
       );
     } catch (error: any) {
-      Alert.alert(
+      showCustomAlert(
+        'error',
         'Reset Error',
         error.message || 'Something went wrong. Please try again.'
       );
