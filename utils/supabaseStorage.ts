@@ -48,6 +48,7 @@ export interface ImageUploadOptions {
 
 /**
  * Compress and optimize image before upload
+ * Maintains aspect ratio by only setting width constraint
  */
 async function compressImage(
   uri: string,
@@ -62,7 +63,7 @@ async function compressImage(
         {
           resize: {
             width: maxWidth,
-            height: maxHeight,
+            // Height is automatically calculated to maintain aspect ratio
           },
         },
       ],
