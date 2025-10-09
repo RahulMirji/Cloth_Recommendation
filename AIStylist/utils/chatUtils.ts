@@ -4,7 +4,7 @@
 
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
-import { generateTextWithImage } from '@/utils/pollinationsAI';
+import { generateTextWithImage } from '@/AIStylist/utils/pollinationsAI';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';

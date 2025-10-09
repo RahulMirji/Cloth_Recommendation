@@ -7,7 +7,7 @@
  * Features:
  * - Name and email input fields
  * - Email validation
- * - Saves to AsyncStorage via Zustand store
+ * - Saves to user profile via AppContext
  * - Redirects to home screen
  * - Beautiful glassmorphism design
  */
@@ -23,23 +23,23 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassContainer } from '@/components/GlassContainer';
 import { InputField } from '@/components/InputField';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { useAuthStore } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
+import { showCustomAlert } from '@/utils/customAlert';
 
 export function UserInfoScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateUserProfile } = useAuthStore();
+  const { updateUserProfile } = useApp();
   const insets = useSafeAreaInsets();
 
   /**
@@ -57,19 +57,19 @@ export function UserInfoScreen() {
   const handleGetStarted = async () => {
     // Validate name
     if (!name.trim()) {
-      Alert.alert('Required Field', Strings.onboarding.nameRequired);
+      showCustomAlert('warning', 'Required Field', Strings.onboarding.nameRequired);
       return;
     }
 
     // Validate email
     if (!email.trim()) {
-      Alert.alert('Required Field', Strings.onboarding.emailRequired);
+      showCustomAlert('warning', 'Required Field', Strings.onboarding.emailRequired);
       return;
     }
 
     // Validate email format
     if (!validateEmail(email)) {
-      Alert.alert('Invalid Email', Strings.onboarding.emailInvalid);
+      showCustomAlert('error', 'Invalid Email', Strings.onboarding.emailInvalid);
       return;
     }
 
@@ -85,7 +85,8 @@ export function UserInfoScreen() {
       router.replace('/(tabs)' as any);
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert(
+      showCustomAlert(
+        'error',
         Strings.onboarding.errorTitle,
         Strings.onboarding.errorMessage
       );

@@ -11,9 +11,9 @@
  */
 
 import React from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle, useColorScheme } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useIsDarkMode } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 
 interface GlassContainerProps {
   children: React.ReactNode;
@@ -28,7 +28,9 @@ export function GlassContainer({
   style,
   borderRadius = 20,
 }: GlassContainerProps) {
-  const isDarkMode = useIsDarkMode();
+  const { settings } = useApp();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
   return (
     <BlurView

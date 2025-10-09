@@ -3,7 +3,7 @@
  * 
  * First-launch welcome screen where users enter their name and email.
  * Shows only when user is not authenticated.
- * Validates input and saves to AsyncStorage via the auth store.
+ * Validates input and saves to user profile via AppContext.
  * 
  * Features:
  * - Gradient background (purple-pink)
@@ -24,15 +24,15 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassContainer } from '@/components/GlassContainer';
 import { InputField } from '@/components/InputField';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { useAuthStore } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
+import { showCustomAlert } from '@/utils/customAlert';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 
@@ -40,7 +40,7 @@ export function OnboardingScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateUserProfile } = useAuthStore();
+  const { updateUserProfile } = useApp();
   const insets = useSafeAreaInsets();
 
   /**
@@ -58,19 +58,19 @@ export function OnboardingScreen() {
   const handleContinue = async () => {
     // Validate name
     if (!name.trim()) {
-      Alert.alert('Required Field', Strings.onboarding.nameRequired);
+      showCustomAlert('warning', 'Required Field', Strings.onboarding.nameRequired);
       return;
     }
 
     // Validate email
     if (!email.trim()) {
-      Alert.alert('Required Field', Strings.onboarding.emailRequired);
+      showCustomAlert('warning', 'Required Field', Strings.onboarding.emailRequired);
       return;
     }
 
     // Validate email format
     if (!validateEmail(email)) {
-      Alert.alert('Invalid Email', Strings.onboarding.emailInvalid);
+      showCustomAlert('error', 'Invalid Email', Strings.onboarding.emailInvalid);
       return;
     }
 
@@ -86,7 +86,8 @@ export function OnboardingScreen() {
       router.replace('/(tabs)');
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert(
+      showCustomAlert(
+        'error',
         Strings.onboarding.errorTitle,
         Strings.onboarding.errorMessage
       );

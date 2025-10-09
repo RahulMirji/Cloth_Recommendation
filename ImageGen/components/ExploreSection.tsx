@@ -23,7 +23,6 @@ import {
   Animated,
   TextInput,
   TouchableOpacity,
-  Alert,
   Platform,
   Linking,
 } from 'react-native';
@@ -34,13 +33,12 @@ import { Paths, File } from 'expo-file-system';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { useApp } from '@/contexts/AppContext';
-import { useCustomAlert } from '@/hooks/useCustomAlert';
+import { showCustomAlert } from '@/utils/customAlert';
 
 export function ExploreSection() {
   const { settings } = useApp();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
-  const { showAlert } = useCustomAlert();
   
   const [prompt, setPrompt] = useState('');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
@@ -53,7 +51,7 @@ export function ExploreSection() {
    */
   const generateImage = async () => {
     if (!prompt.trim()) {
-      Alert.alert('Empty Prompt', 'Please enter a description for the image you want to generate.');
+      showCustomAlert('warning', 'Empty Prompt', 'Please enter a description for the image you want to generate.');
       return;
     }
 
@@ -85,7 +83,7 @@ export function ExploreSection() {
 
     } catch (error) {
       console.error('Error generating image:', error);
-      Alert.alert('Error', 'Failed to generate image. Please try again.');
+      showCustomAlert('error', 'Error', 'Failed to generate image. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -101,12 +99,12 @@ export function ExploreSection() {
       // For web, open in new tab
       if (Platform.OS === 'web') {
         Linking.openURL(generatedImageUrl);
-        showAlert('success', '✨ Success!', 'Image opened in new tab. Right-click to save.');
+        showCustomAlert('success', '✨ Success!', 'Image opened in new tab. Right-click to save.');
         return;
       }
 
       // For mobile, download directly using File.downloadFileAsync
-      showAlert('info', '⏳ Downloading...', 'Please wait while we save your image.');
+      showCustomAlert('info', '⏳ Downloading...', 'Please wait while we save your image.');
 
       // Create filename with timestamp
       const fileName = `ai-image-${Date.now()}.png`;
@@ -118,7 +116,7 @@ export function ExploreSection() {
         { idempotent: true }
       );
 
-      showAlert(
+      showCustomAlert(
         'success',
         '🎉 Image Saved Successfully!',
         `Your AI-generated image has been saved to your device.\n\nLocation: ${downloadedFile.uri}\n\nYou can find it in your device's file manager under the app's cache folder.`,
@@ -136,7 +134,7 @@ export function ExploreSection() {
       console.error('Error downloading image:', error);
       
       // Fallback: open the URL in browser
-      showAlert(
+      showCustomAlert(
         'warning',
         '⚠️ Alternative Method',
         'Direct download failed. Would you like to open in browser instead?',

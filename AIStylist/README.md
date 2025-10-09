@@ -33,36 +33,42 @@ AIStylist/
 ## ✨ Features
 
 ### 1. **Voice-Activated Conversational AI**
+
 - Real-time speech-to-text using expo-speech and @react-native-voice/voice
 - Natural language understanding for fashion queries
 - Text-to-speech responses for hands-free operation
 - Continuous conversation with context awareness
 
 ### 2. **Image Analysis**
+
 - Camera integration for outfit capture
 - Vision API integration for image analysis
 - Real-time outfit recommendations based on visual input
 - Support for both front and back camera
 
 ### 3. **Streaming Responses**
+
 - Instant acknowledgment of user input
 - Progressive display of AI responses
 - Simulated streaming for better UX
 - Quick response suggestions
 
 ### 4. **Context Management**
+
 - Multi-turn conversation support
 - Context-aware responses
 - Reference resolution (e.g., "that blue shirt")
 - Conversation history tracking
 
 ### 5. **Voice Activity Detection**
+
 - Automatic speech detection
 - Noise cancellation
 - Hands-free mode
 - VAD-based conversation control
 
 ### 6. **Data Persistence**
+
 - Chat history saved to Supabase
 - Image storage in Supabase Storage
 - Session management
@@ -71,42 +77,44 @@ AIStylist/
 ## 🚀 Usage
 
 ### Basic Import
+
 ```typescript
-import { AIStylistScreen } from '@/AIStylist';
+import { AIStylistScreen } from "@/AIStylist";
 ```
 
 ### Using Utilities
+
 ```typescript
-import { 
-  visionAPI, 
-  contextManager, 
-  storageService 
-} from '@/AIStylist/utils';
+import { visionAPI, contextManager, storageService } from "@/AIStylist/utils";
 ```
 
 ### Using Types
+
 ```typescript
-import type { 
-  ChatMessage, 
-  ChatSession, 
-  VisionMessage 
-} from '@/AIStylist/types';
+import type {
+  ChatMessage,
+  ChatSession,
+  VisionMessage,
+} from "@/AIStylist/types";
 ```
 
 ## 🔧 Configuration
 
 ### Required Permissions
+
 - Camera access
 - Microphone access
 - Audio playback
 
 ### Environment Variables
+
 ```env
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### Dependencies
+
 - `expo-av` - Audio recording and playback
 - `expo-camera` - Camera access
 - `expo-speech` - Text-to-speech
@@ -118,12 +126,13 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ```typescript
 // Navigate to AI Stylist
-router.push('/ai-stylist');
+router.push("/ai-stylist");
 ```
 
 ## 🎯 API Reference
 
 ### SpeechToTextService
+
 ```typescript
 const speechService = SpeechToTextService.getInstance();
 
@@ -138,8 +147,9 @@ speechService.stopListening();
 ```
 
 ### Vision API
+
 ```typescript
-import { visionAPI } from '@/AIStylist/utils';
+import { visionAPI } from "@/AIStylist/utils";
 
 // Analyze image
 const response = await visionAPI.analyzeImage(
@@ -149,12 +159,13 @@ const response = await visionAPI.analyzeImage(
 ```
 
 ### Context Manager
+
 ```typescript
-import { contextManager } from '@/AIStylist/utils';
+import { contextManager } from "@/AIStylist/utils";
 
 // Add conversation exchange
 contextManager.addExchange("What about the blue shirt?", [
-  { text: "The blue shirt looks great!", score: 0.9 }
+  { text: "The blue shirt looks great!", score: 0.9 },
 ]);
 
 // Build context prompt
@@ -162,19 +173,21 @@ const contextPrompt = contextManager.buildContextPrompt();
 ```
 
 ### Storage Service
+
 ```typescript
-import { storageService } from '@/AIStylist/utils';
+import { storageService } from "@/AIStylist/utils";
 
 // Upload image
 const uploadResult = await storageService.uploadImage(
   base64Image,
-  'outfit_photo'
+  "outfit_photo"
 );
 ```
 
 ## 🧪 Testing
 
 ### Test Conversation Flow
+
 1. Launch AI Stylist screen
 2. Grant camera and microphone permissions
 3. Tap microphone button to start listening
@@ -183,6 +196,7 @@ const uploadResult = await storageService.uploadImage(
 6. Continue conversation naturally
 
 ### Test Hands-Free Mode
+
 1. Enable hands-free mode toggle
 2. AI automatically starts listening after speaking
 3. Use voice activity detection
@@ -206,6 +220,7 @@ const uploadResult = await storageService.uploadImage(
 ## 🤝 Contributing
 
 This module follows the feature modularization pattern:
+
 1. Keep all AI Stylist code self-contained
 2. Duplicate small shared utilities (< 200 lines)
 3. Use `@/AIStylist/*` import paths

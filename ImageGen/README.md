@@ -27,18 +27,21 @@ ImageGen/
 ## 🚀 Features
 
 ### AI Image Generation
+
 - **Text-to-Image**: Generate custom images from text prompts
 - **Pollinations API**: High-quality AI image generation
 - **Customizable Options**: Width, height, enhancement settings
 - **Instant Generation**: Fast image generation with loading states
 
 ### User Experience
+
 - **Simple Interface**: Clean, intuitive prompt input
 - **Loading Animations**: Smooth fade-in and scale animations
 - **Error Handling**: Graceful error messages and validation
 - **Dark Mode**: Full dark mode support
 
 ### Image Management
+
 - **Download**: Save generated images to device
 - **Platform Support**: Works on Android, iOS, and Web
 - **High Resolution**: Generate up to 1024x1024 images
@@ -49,13 +52,13 @@ ImageGen/
 ### Basic Import
 
 ```typescript
-import { ImageGeneratorScreen } from '@/ImageGen';
+import { ImageGeneratorScreen } from "@/ImageGen";
 ```
 
 ### Using Components
 
 ```typescript
-import { ExploreSection } from '@/ImageGen/components';
+import { ExploreSection } from "@/ImageGen/components";
 ```
 
 ### Route Integration
@@ -64,18 +67,21 @@ The module is integrated into the main app via route wrapper:
 
 ```typescript
 // app/ai-image-generator.tsx
-export { default } from '@/ImageGen/screens/ImageGeneratorScreen';
+export { default } from "@/ImageGen/screens/ImageGeneratorScreen";
 ```
 
 This allows seamless navigation:
+
 ```typescript
-router.push('/ai-image-generator');
+router.push("/ai-image-generator");
 ```
 
 ## 🔧 Configuration
 
 ### API Configuration
+
 The module uses Pollinations API with the following default settings:
+
 - **Base URL**: `https://image.pollinations.ai/prompt/`
 - **Width**: 1024px
 - **Height**: 1024px
@@ -83,7 +89,9 @@ The module uses Pollinations API with the following default settings:
 - **Enhancement**: Enabled
 
 ### Customization
+
 You can modify generation parameters in `ExploreSection.tsx`:
+
 ```typescript
 const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true`;
 ```
@@ -91,14 +99,18 @@ const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=10
 ## 🎯 Key Components
 
 ### ImageGeneratorScreen
+
 The main screen component that provides:
+
 - Screen layout and structure
 - Dark mode support
 - Scroll view for content
 - Integration with ExploreSection
 
 ### ExploreSection
+
 The core image generation component:
+
 - **Prompt Input**: Text input for user prompts
 - **Generate Button**: Trigger image generation
 - **Image Display**: Show generated images with animations
@@ -109,6 +121,7 @@ The core image generation component:
 ## 🧪 Testing
 
 The module has been tested with:
+
 - ✅ Image generation from text prompts
 - ✅ Loading states and animations
 - ✅ Error handling and validation
@@ -120,6 +133,7 @@ The module has been tested with:
 ### Test Cases
 
 #### Basic Image Generation
+
 ```
 Input: "A futuristic cityscape at sunset"
 Expected: Image generated and displayed with smooth animation
@@ -127,6 +141,7 @@ Result: ✅ Pass
 ```
 
 #### Empty Prompt Validation
+
 ```
 Input: "" (empty)
 Expected: Alert message "Please enter a description"
@@ -134,6 +149,7 @@ Result: ✅ Pass
 ```
 
 #### Download Functionality
+
 ```
 Action: Click download button on generated image
 Expected: Image saved to device gallery
@@ -143,18 +159,21 @@ Result: ✅ Pass (platform-dependent)
 ## 📝 API Reference
 
 ### ExploreSection Props
+
 ```typescript
 // No props required - uses internal state management
 <ExploreSection />
 ```
 
 ### Image Generation
+
 ```typescript
 // Automatic URL generation based on prompt
 const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true`;
 ```
 
 ### Download Function
+
 ```typescript
 // Platform-specific download handling
 const downloadImage = async () => {
@@ -166,12 +185,14 @@ const downloadImage = async () => {
 ## 🎨 Styling
 
 The module uses the centralized color scheme from `@/constants/colors`:
+
 - **Primary**: Blue (#007AFF)
 - **Success**: Green (#34C759)
 - **Accent**: Purple/Pink gradients
 - **Background**: Light/Dark mode support
 
 ### Animations
+
 - **Fade In**: 600ms duration
 - **Scale**: Spring animation (tension: 50, friction: 7)
 - **Loading**: Spinner animation
@@ -179,6 +200,7 @@ The module uses the centralized color scheme from `@/constants/colors`:
 ## 🔄 Integration with Main App
 
 The Image Generator module is integrated via:
+
 1. **Route Wrapper**: `app/ai-image-generator.tsx`
 2. **Tab Navigation**: Accessible from main tabs
 3. **Direct Navigation**: `router.push('/ai-image-generator')`
@@ -186,11 +208,13 @@ The Image Generator module is integrated via:
 ## 🐛 Known Issues
 
 1. **Platform-Specific Downloads**: Download functionality varies by platform
+
    - iOS: Uses MediaLibrary
-   - Android: Uses MediaLibrary  
+   - Android: Uses MediaLibrary
    - Web: Uses download link
 
 2. **API Rate Limits**: Pollinations API may have rate limits
+
    - Solution: Implement debouncing or queuing
 
 3. **Large Images**: High-resolution images may take longer
@@ -200,20 +224,23 @@ The Image Generator module is integrated via:
 ## 📚 Dependencies
 
 ### Core Dependencies
+
 - `expo-linear-gradient`: Gradient backgrounds
 - `lucide-react-native`: Icon components
 - `expo-file-system`: File operations
 - `expo-media-library`: Image saving (mobile)
 
 ### Internal Dependencies
+
 - `@/constants/colors`: Color scheme
 - `@/constants/fonts`: Typography
 - `@/contexts/AppContext`: App settings
-- `@/hooks/useCustomAlert`: Alert system
+- `@/utils/customAlert`: Alert system
 
 ## 🎓 Future Enhancements
 
 ### Planned Features
+
 1. **Image History**: Save and view previously generated images
 2. **Style Presets**: Quick-access style templates
 3. **Batch Generation**: Generate multiple variations
@@ -224,25 +251,26 @@ The Image Generator module is integrated via:
 8. **Model Selection**: Choose different AI models
 
 ### Potential Utilities to Extract
+
 1. **imageGenerator.ts**: Core generation logic
+
    ```typescript
-   - generateImageUrl(prompt, options)
-   - validatePrompt(prompt)
-   - encodePromptForUrl(prompt)
+   -generateImageUrl(prompt, options) -
+     validatePrompt(prompt) -
+     encodePromptForUrl(prompt);
    ```
 
 2. **imageDownloader.ts**: Download logic
+
    ```typescript
-   - downloadImage(url, filename)
-   - saveToGallery(imageData)
-   - shareImage(imageData)
+   -downloadImage(url, filename) -
+     saveToGallery(imageData) -
+     shareImage(imageData);
    ```
 
 3. **imageHistory.ts**: History management
    ```typescript
-   - saveToHistory(image)
-   - getHistory()
-   - clearHistory()
+   -saveToHistory(image) - getHistory() - clearHistory();
    ```
 
 ## 🔗 Related Modules
@@ -253,11 +281,13 @@ The Image Generator module is integrated via:
 ## 📊 Statistics
 
 ### Module Size
+
 - **Main Screen**: 61 lines
 - **Core Component**: 525 lines
 - **Total**: ~586 lines of code
 
 ### API Usage
+
 - **Pollinations AI**: Free tier
 - **Image Format**: JPEG/PNG
 - **Max Resolution**: 1024x1024 (configurable)
@@ -269,6 +299,7 @@ Part of the AI Cloth Recommendation App.
 ## 👥 Contributing
 
 When adding new features:
+
 1. Keep utilities in the `utils/` folder
 2. Update the index.ts exports
 3. Add TypeScript types to `types/`
@@ -278,6 +309,7 @@ When adding new features:
 ## 📞 Support
 
 For issues or questions:
+
 - Check the documentation in `docs/`
 - Review the test cases
 - Refer to OutfitScorer/AIStylist patterns
