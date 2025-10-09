@@ -23,10 +23,13 @@ import getThemedColors from '@/constants/themedColors';
 import { useApp } from '@/contexts/AppContext';
 
 // OutfitScorer feature imports
-import { convertImageToBase64, generateTextWithImage } from '@/OutfitScorer/utils/pollinationsAI';
+import { convertImageToBase64 } from '@/OutfitScorer/utils/pollinationsAI';
+import { generateTextWithImageModel } from '@/OutfitScorer/utils/multiModelAI';
+import { AIModel, getDefaultModel } from '@/OutfitScorer/utils/aiModels';
 import { saveChatHistory, getChatHistoryById } from '@/OutfitScorer/utils/chatHistory';
 import { OutfitScoreConversationData, ProductRecommendationData } from '@/OutfitScorer/types/chatHistory.types';
 import { ProductRecommendationsSection } from '@/OutfitScorer/components/ProductRecommendations';
+import { ModelSelector } from '@/OutfitScorer/components/ModelSelector';
 import {
   generateProductRecommendations,
   extractMissingItems,
@@ -58,6 +61,7 @@ export default function OutfitScorerScreen() {
   const [recommendations, setRecommendations] = useState<Map<string, ProductRecommendation[]>>(new Map());
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false);
   const [glowAnim] = useState(new Animated.Value(0));
+  const [selectedModel, setSelectedModel] = useState<AIModel>(getDefaultModel());
   
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
@@ -210,102 +214,76 @@ export default function OutfitScorerScreen() {
 
     try {
       const base64Image = await convertImageToBase64(selectedImage);
-      const contextInfo = context.trim() ? `\n\n🎯 CONTEXT: The user is going to ${context}. This is CRITICAL - evaluate outfit appropriateness specifically for this occasion.` : '';
-      const prompt = `You are an ELITE fashion consultant with expertise in high-fashion, street style, and professional attire. Your job is to perform a METICULOUS, DETAILED analysis of this outfit image.${contextInfo}
+      
+      // Shortened prompt to fit OpenAI Vision 7000 char limit
+      const contextInfo = context.trim() ? ` for "${context}"` : '';
+      const prompt = `Fashion expert analyzing outfit${contextInfo}.
 
-🔍 CRITICAL ANALYSIS REQUIREMENTS:
+ANALYZE:
+1. FIT: Size, sleeve/pant length, shoulder fit, proportions
+2. STYLE: Fabric, pattern, cut, details (tucked/untucked, rolled sleeves)
+3. MISSING: List ALL missing pieces/accessories for context
+4. COLORS: Harmony, contrast, season, skin tone match
 
-1. **VISUAL SCANNING CHECKLIST** - Examine EVERY detail:
-   ✓ HEAD: Hair styling, accessories (headband, hat, clips)
-   ✓ FACE: Makeup coordination, eyewear (glasses/sunglasses)
-   ✓ NECK: Necklace, scarf, tie, collar style
-   ✓ UPPER BODY: Shirt/top (type, fit, pattern, fabric texture), blazer/jacket presence
-   ✓ TORSO: Belt, waistline definition, layering
-   ✓ ARMS: Watch, bracelets, sleeve style and length
-   ✓ HANDS: Rings, nail polish, bag/clutch being held
-   ✓ LOWER BODY: Pants/skirt/dress (fit, length, style, fabric), pockets
-   ✓ FEET: Shoes (type, condition, color match), socks visibility
-   ✓ OVERALL: Bag/purse (type, size, color), umbrella, any other accessories
-
-2. **MICRO-DETAIL EXTRACTION**:
-   • Fabric Analysis: Identify material type (cotton, silk, denim, wool, synthetic), texture (smooth, rough, knit), and quality indicators
-   • Pattern Recognition: Stripes, checks, floral, solid, print details, pattern scale
-   • Color Palette: Exact shades (navy vs royal blue), undertones (warm/cool), saturation levels, color blocking
-   • Fit Assessment: Too tight/loose, proper length, shoulder alignment, waist definition, proportion balance
-   • Condition Check: Wrinkles, stains, pilling, wear and tear, ironing needed
-   • Styling Details: Tucked vs untucked, rolled sleeves, button count, pocket squares, cufflinks
-
-3. **MISSING ITEMS IDENTIFICATION** - Be EXTREMELY thorough:
-   • Essential Items: List EVERY missing clothing piece or accessory
-   • Context Gaps: What's missing specifically for the stated occasion/context?
-   • Completion Items: What would elevate this from incomplete to complete?
-   • Professional Must-Haves: For formal contexts (tie, blazer, dress shoes, belt, watch, briefcase)
-   • Casual Must-Haves: For casual contexts (appropriate footwear, bag, sunglasses, casual jacket)
-   • Accessory Voids: Missing jewelry, belts, scarves, hats, bags that would enhance
-   • Layering Needs: Missing under/over layers (camisole, blazer, cardigan, coat)
-
-4. **COLOR HARMONY ANALYSIS**:
-   • Primary Color: Dominant color and its appropriateness
-   • Secondary Colors: Supporting colors and their harmony
-   • Color Temperature: Warm vs cool tones consistency
-   • Contrast Levels: High/low contrast and its effectiveness
-   • Seasonal Appropriateness: Colors matching the season
-   • Skin Tone Compatibility: How colors complement skin undertones
-
-Respond in EXACTLY this JSON format (ONLY valid JSON, no markdown, no extra text):
+Return ONLY JSON (ALWAYS return JSON even if context mismatch):
 {
-  "score": <number 0-100>,
+  "score": <0-100>,
   "category": "<Outstanding/Excellent/Good/Fair/Needs Work>",
-  "feedback": "<3-4 detailed sentences covering overall impression, key strengths, main issues, and potential>",
-  "strengths": [
-    "<specific strength with detail (e.g., 'Navy blue shirt perfectly matches your skin undertone and creates a professional appearance')>",
-    "<another strength with context>",
-    "<third strength with specifics>"
-  ],
-  "improvements": [
-    "<detailed improvement mentioning SPECIFIC missing item or fix (e.g., 'Add a burgundy silk tie to elevate the professional look and add color contrast')>",
-    "<another detailed improvement with specific item/change>",
-    "<third improvement focusing on fit, color, or missing accessory>",
-    "<fourth improvement if applicable>"
-  ],
-  "missingItems": [
-    "<specific item type: 'tie', 'blazer', 'shoes', 'watch', 'belt', 'necklace', 'earrings', 'bag', 'scarf', 'sunglasses', etc.>",
-    "<another missing item>",
-    "<another missing item>"
-  ]
+  "feedback": "<3-4 sentences: impression, strengths, issues, potential>",
+  "strengths": ["<specific detail>", "<another>", "<third>"],
+  "improvements": ["<specific item needed e.g. Add tie>", "<another>", "<third>", "<fourth>"],
+  "missingItems": ["<tie/blazer/shoes/watch/belt/necklace/earrings/bag/scarf>", "<another>"]
 }
 
-📋 EVALUATION CRITERIA (rate each 0-100, then average):
-• Color Coordination (25%): Harmony, contrast, seasonal appropriateness
-• Fit & Proportions (25%): Proper sizing, length, silhouette balance
-• Completeness (20%): All necessary items present for the occasion
-• Style Appropriateness (15%): Matches context/occasion requirements
-• Fabric & Quality (10%): Material choice, texture, condition
-• Accessories & Details (5%): Finishing touches, jewelry, bags
+SCORING (avg 0-100):
+• Colors 25% • Fit 25% • Complete 20% • Style 15% • Fabric 10% • Accessories 5%
 
-⚠️ CRITICAL RULES:
-• FIRST: Identify the person's GENDER (male/female) from clothing style, jewelry, body shape, hairstyle
-• Be BRUTALLY honest about missing items - if shoes aren't visible, explicitly state "shoes missing"
-• If the context is professional/interview, DEMAND complete formal attire (tie/blazer for men, blazer/necklace for women)
-• For every missing item in "missingItems", mention it specifically in "improvements"
-• GENDER-APPROPRIATE suggestions ONLY:
-  - For MEN: tie, blazer, formal shoes, belt, watch, briefcase, cufflinks, pocket square
-  - For WOMEN: necklace, earrings, heels, handbag, bracelet, blazer, dress, scarf, clutch
-  - UNISEX: watch, sunglasses, bag, jacket, sneakers
-• Look for SUBTLE issues: wrong shoe type, missing belt, no watch, lack of jewelry, etc.
-• Consider LAYERING: missing blazer, cardigan, jacket appropriate for weather/formality
-• Check ACCESSORIES: bag, watch, jewelry, eyewear - note what's absent
-• If anything is incomplete or inappropriate for the context, lower the score significantly
-• NEVER suggest gender-inappropriate items (e.g., no necklace for men, no tie for women)
+RULES:
+• Identify GENDER from clothes/jewelry
+• Honest about missing - if invisible, state missing
+• Professional = formal required
+• List missing in BOTH missingItems AND improvements
+• GENDER-APPROPRIATE:
+  MEN: tie/blazer/shoes/belt/watch/cufflinks
+  WOMEN: necklace/earrings/heels/bag/bracelet
+  UNISEX: watch/sunglasses/bag/jacket
+• Low score for incomplete/inappropriate
+• NEVER wrong-gender suggestions
 
-Be precise, professional, and constructive. Your analysis will directly drive GENDER-APPROPRIATE product recommendations.`;
+If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`;
 
-      const response = await generateTextWithImage(base64Image, prompt);
+      const response = await generateTextWithImageModel(selectedModel, base64Image, prompt);
 
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      console.log('📝 Raw response from AI:', response.substring(0, 200) + '...');
+
+      let jsonMatch = response.match(/\{[\s\S]*\}/);
+      
       if (!jsonMatch) {
-        throw new Error('Invalid response format');
+        console.error('❌ Could not find JSON in response. AI may have refused. Creating fallback response...');
+        
+        // Fallback: AI refused or gave plain text - create a basic response
+        const fallbackResult: ScoringResult = {
+          score: 50,
+          category: 'Fair',
+          feedback: response.trim() || 'The outfit was analyzed but needs improvements. Please try without specifying a context or use a more appropriate outfit for the stated occasion.',
+          strengths: [
+            'Clean and neat appearance',
+            'Appropriate casual wear for everyday activities'
+          ],
+          improvements: [
+            'Consider the context/occasion when selecting your outfit',
+            'Add appropriate accessories to complete the look',
+            'Ensure all outfit elements are visible in the photo for a complete analysis'
+          ],
+          missingItems: []
+        };
+        
+        setResult(fallbackResult);
+        setIsAnalyzing(false);
+        return;
       }
+
+      console.log('✅ Found JSON:', jsonMatch[0].substring(0, 200) + '...');
 
       const parsedResult: ScoringResult = JSON.parse(jsonMatch[0]);
       
@@ -438,17 +416,23 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
       
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('taking too long')) {
-          errorMessage = 'The analysis is taking longer than expected. This might be due to:\n\n' +
+          errorMessage = `⏱️ Analysis timeout with ${selectedModel.name}\n\n` +
+                       'The AI service is taking too long. This might be due to:\n\n' +
                        '• Large image size - try taking a new photo\n' +
                        '• Slow internet connection\n' +
                        '• Server is busy\n\n' +
-                       'Please try again!';
+                       '💡 Try selecting a different AI model above or try again later!';
         } else if (error.message.includes('network') || error.message.includes('connection')) {
-          errorMessage = 'Network connection issue. Please check your internet and try again.';
+          errorMessage = '🌐 Network connection issue\n\nPlease check your internet and try again.';
         } else if (error.message.includes('Invalid response format')) {
-          errorMessage = 'The AI service returned an unexpected response. Please try again.';
+          errorMessage = `⚠️ ${selectedModel.name} returned an unexpected format\n\n` +
+                       '💡 Try selecting a different AI model from the dropdown above!';
+        } else if (error.message.includes('API error') || error.message.includes('failed')) {
+          errorMessage = `❌ ${selectedModel.name} is currently unavailable\n\n` +
+                       '💡 Please select a different AI model from the dropdown above and try again!';
         } else {
-          errorMessage = error.message;
+          errorMessage = `❌ Error with ${selectedModel.name}\n\n${error.message}\n\n` +
+                       '💡 Try selecting a different AI model from the dropdown above!';
         }
       }
       
@@ -547,26 +531,34 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
             </View>
 
             {!result && !isAnalyzing && (
-              <View style={styles.contextContainer}>
-                <Text style={[styles.contextLabel, { color: themedColors.text }]}>
-                  Where are you going? (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.contextInput,
-                    { 
-                      backgroundColor: themedColors.input,
-                      color: themedColors.text,
-                      borderColor: themedColors.inputBorder 
-                    }
-                  ]}
-                  placeholder="e.g., wedding, office, party, casual outing"
-                  placeholderTextColor={themedColors.inputPlaceholder}
-                  value={context}
-                  onChangeText={setContext}
-                  multiline={false}
+              <>
+                {/* AI Model Selector */}
+                <ModelSelector
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
                 />
-              </View>
+
+                <View style={styles.contextContainer}>
+                  <Text style={[styles.contextLabel, { color: themedColors.text }]}>
+                    Where are you going? (Optional)
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.contextInput,
+                      { 
+                        backgroundColor: themedColors.input,
+                        color: themedColors.text,
+                        borderColor: themedColors.inputBorder 
+                      }
+                    ]}
+                    placeholder="e.g., wedding, office, party, casual outing"
+                    placeholderTextColor={themedColors.inputPlaceholder}
+                    value={context}
+                    onChangeText={setContext}
+                    multiline={false}
+                  />
+                </View>
+              </>
             )}
 
             {!result && !isAnalyzing && (
