@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { ExploreSection } from '@/components/ExploreSection';
+import { ExploreSection } from '@/ImageGen/components/ExploreSection';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 
