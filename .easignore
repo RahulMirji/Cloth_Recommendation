@@ -1,19 +1,58 @@
 # Exclude .rorkai directory from EAS builds
+
 # This directory contains React Native private API imports that cause build failures
+
 .rorkai/
 
 # Exclude Android and iOS native folders to use Prebuild/CNG
+
 /android
 /ios
 
-# Exclude other unnecessary files
-*.md
-!README.md
-coverage/
+# ⭐ CRITICAL: Exclude ALL test files from production APK/AAB builds
+
+# This ensures co-located tests are NOT included in the final bundle
+
+# Test files (co-located and centralized)
+
+**/\*.test.ts
+**/_.test.tsx
+\*\*/_.test.js
+**/\*.test.jsx
+**/_.spec.ts
+\*\*/_.spec.tsx
+**/\*.spec.js
+**/\*.spec.jsx
+
+# Test directories
+
 **tests**/
-*.test.ts
-*.test.tsx
-*.spec.ts
-*.spec.tsx
+**/tests/
+**/**mocks**/
+
+# Test configuration files
+
+jest.config.js
+jest.setup.js
+test-fixes.ps1
+
+# Coverage reports
+
+coverage/
+.nyc_output/
+
+# Development documentation (keeps docs out of build for smaller APK)
+
+\*.md
+!README.md
+docs/
+\*\*/docs/
+
+# Development scripts
+
+fix-stt.ps1
+
+# Git files
+
 .git/
 .github/

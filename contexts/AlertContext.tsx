@@ -13,8 +13,9 @@
  * ```
  */
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { CustomAlert, AlertType } from '@/components/CustomAlert';
+import { setGlobalShowAlert } from '@/utils/customAlert';
 
 interface AlertButton {
   text: string;
@@ -77,6 +78,11 @@ export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const hideAlert = useCallback(() => {
     setAlertState(initialState);
   }, []);
+
+  // Connect global alert utility with this provider
+  useEffect(() => {
+    setGlobalShowAlert(showAlert);
+  }, [showAlert]);
 
   return (
     <AlertContext.Provider value={{ showAlert, hideAlert }}>

@@ -20,7 +20,6 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Alert,
   Animated,
   Image,
 } from 'react-native';
@@ -32,7 +31,8 @@ import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
-import { deleteChatHistory } from '@/utils/chatHistory';
+import { deleteChatHistory } from '@/OutfitScorer/utils/chatHistory';
+import { showCustomAlert } from '@/utils/customAlert';
 
 interface OutfitHistoryEntry {
   id: string;
@@ -198,7 +198,8 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
   const handleDelete = () => {
     if (selectedItems.size === 0) return;
 
-    Alert.alert(
+    showCustomAlert(
+      'warning',
       'Delete History',
       `Are you sure you want to delete ${selectedItems.size} ${selectedItems.size === 1 ? 'item' : 'items'}? This action cannot be undone.`,
       [
@@ -241,16 +242,17 @@ export function OutfitHistoryList({ isDarkMode }: OutfitHistoryListProps) {
 
       // Show result
       if (failCount === 0) {
-        Alert.alert('Success', `Successfully deleted ${successCount} ${successCount === 1 ? 'item' : 'items'}`);
+        showCustomAlert('success', 'Success', `Successfully deleted ${successCount} ${successCount === 1 ? 'item' : 'items'}`);
       } else {
-        Alert.alert(
+        showCustomAlert(
+          'warning',
           'Partial Success',
           `Deleted ${successCount} items. ${failCount} items failed to delete.`
         );
       }
     } catch (error) {
       console.error('Error during batch delete:', error);
-      Alert.alert('Error', 'Failed to delete items. Please try again.');
+      showCustomAlert('error', 'Error', 'Failed to delete items. Please try again.');
     } finally {
       setIsDeleting(false);
     }

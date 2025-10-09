@@ -20,8 +20,9 @@ import {
   StyleSheet,
   TextInputProps,
   ViewStyle,
+  useColorScheme,
 } from 'react-native';
-import { useIsDarkMode } from '@/store/authStore';
+import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 
 interface InputFieldProps extends TextInputProps {
@@ -35,7 +36,9 @@ export function InputField({
   style,
   ...textInputProps
 }: InputFieldProps) {
-  const isDarkMode = useIsDarkMode();
+  const { settings } = useApp();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
   return (
     <View
