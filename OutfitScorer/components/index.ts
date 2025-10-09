@@ -3,4 +3,4 @@
 
 export { ProductRecommendationsSection } from './ProductRecommendations';
 export { OutfitScorerShowcase } from './OutfitScorerShowcase';
-export { Footer } from './Footer';
+// Footer removed - use global @/components/Footer

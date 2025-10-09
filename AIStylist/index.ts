@@ -16,7 +16,7 @@
 export { default as AIStylistScreen } from './screens/AIStylistScreen';
 
 // Components
-export { Footer } from './components/Footer';
+// Note: Footer component uses global @/components/Footer
 
 // Utilities
 export { 

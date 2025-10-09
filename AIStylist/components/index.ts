@@ -3,4 +3,4 @@
  * Export all reusable components
  */
 
-export { Footer } from './Footer';
+// Footer removed - use global @/components/Footer
