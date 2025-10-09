@@ -33,7 +33,7 @@ import {
   ProductRecommendation,
   MissingItem,
 } from '@/OutfitScorer/utils/productRecommendations';
-import { Footer } from '@/OutfitScorer/components/Footer';
+import { Footer } from '@/components/Footer';
 import { useImageUpload } from '@/OutfitScorer/hooks/useImageUpload';
 
 interface ScoringResult {

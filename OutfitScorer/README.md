@@ -76,7 +76,8 @@ import { ProductRecommendationsSection } from "@/OutfitScorer/components";
 
 - `ProductRecommendationsSection` - Product recommendation display
 - `OutfitScorerShowcase` - Demo component for onboarding
-- `Footer` - Consistent footer component
+
+**Note:** Footer component uses global `@/components/Footer`
 
 ### Utilities
 

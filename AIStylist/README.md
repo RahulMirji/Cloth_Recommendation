@@ -10,8 +10,7 @@ AIStylist/
 │   ├── AIStylistScreen.tsx       # Main AI stylist screen with voice interaction
 │   └── index.ts                   # Screen exports
 ├── components/
-│   ├── Footer.tsx                 # Reusable footer component
-│   └── index.ts                   # Component exports
+│   └── index.ts                   # Component exports (uses global Footer)
 ├── utils/
 │   ├── audioUtils.ts              # Speech-to-text and text-to-speech
 │   ├── chatHistory.ts             # Chat conversation persistence
