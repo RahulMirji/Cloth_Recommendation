@@ -183,22 +183,7 @@ export function HomeScreen() {
               <Text style={styles.cardDescription}>
                 {Strings.home.aiStylist.description}
               </Text>
-            Running "expo doctor"
-env: load .env
-env: export EXPO_PUBLIC_RORK_API_BASE_URL EXPO_PUBLIC_TOOLKIT_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
-Running 17 checks on your project...
-16/17 checks passed. 1 checks failed. Possible issues detected:
-Use the --verbose flag to see more details about passed checks.
-
-✖ Check Expo config (app.json/ app.config.js) schema
-Errors validating fields in /home/expo/workingdir/build/app.json:
- Field: android - should NOT have additional property 'enableJetifier'.
- Field: android - should NOT have additional property 'useNextNotificationsApi'.
-Advice:
-Resolve schema errors in your app config. Learn more: https://docs.expo.dev/workflow/configuration/
-
-1 check failed, indicating possible issues with the project.
-Command "expo doctor" failed.</LinearGradient>
+            </LinearGradient>
           </TouchableOpacity>
 
           {/* AI Image Generator Card - Third (Beta) */}

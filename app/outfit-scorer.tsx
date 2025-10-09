@@ -429,8 +429,27 @@ Be precise, professional, and constructive. Your analysis will directly drive GE
     } catch (error) {
       console.error('Error analyzing outfit:', error);
       setIsAnalyzing(false);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to analyze outfit: ${errorMessage}. Please try again.`);
+      
+      // Handle different types of errors with user-friendly messages
+      let errorMessage = 'Unknown error';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('taking too long')) {
+          errorMessage = 'The analysis is taking longer than expected. This might be due to:\n\n' +
+                       '• Large image size - try taking a new photo\n' +
+                       '• Slow internet connection\n' +
+                       '• Server is busy\n\n' +
+                       'Please try again!';
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          errorMessage = 'Network connection issue. Please check your internet and try again.';
+        } else if (error.message.includes('Invalid response format')) {
+          errorMessage = 'The AI service returned an unexpected response. Please try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(`Failed to analyze outfit:\n\n${errorMessage}`);
     }
   };
 

@@ -37,8 +37,9 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
     };
 
     // Add timeout to detect service unavailability quickly
+    // Increased timeout for image analysis (outfit scoring with vision takes longer)
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for image analysis
 
     const response = await fetch(initialUrl, {
       method: 'POST',
@@ -160,6 +161,12 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
     }
   } catch (error) {
     console.error('Error generating text:', error);
+    
+    // Check if it's an abort error (timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⚠️ Request timed out - API is taking too long to respond');
+      throw new Error('The AI is taking too long to respond. Please try again with a smaller image or check your internet connection.');
+    }
     
     // Check if it's a 502 Bad Gateway or network error
     const errorMessage = error instanceof Error ? error.message : String(error);
