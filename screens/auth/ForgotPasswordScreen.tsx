@@ -6,6 +6,7 @@
  */
 
 import { router } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Mail, ArrowLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -20,7 +21,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassContainer } from '@/components/GlassContainer';
 import { InputField } from '@/components/InputField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { supabase } from '@/lib/supabase';
@@ -120,7 +120,7 @@ export function ForgotPasswordScreen() {
           </View>
 
           {/* Form */}
-          <GlassContainer style={styles.formContainer}>
+          <View style={styles.formContainer}>
             {!emailSent ? (
               <>
                 <InputField
@@ -168,7 +168,7 @@ export function ForgotPasswordScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-          </GlassContainer>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -208,6 +208,11 @@ const styles = StyleSheet.create({
   formContainer: {
     padding: 24,
     gap: 16,
+    backgroundColor: 'rgba(225, 195, 245, 1)', // Rich vibrant pinkish-lavender
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    overflow: 'hidden',
   },
   resetButton: {
     marginTop: 8,

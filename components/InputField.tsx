@@ -52,10 +52,11 @@ export function InputField({
       <TextInput
         style={[
           styles.input,
-          isDarkMode && styles.inputDark,
           style,
         ]}
-        placeholderTextColor={Colors.textLight}
+        placeholderTextColor={'#6B7280'}
+        selectionColor={'#8B5CF6'}
+        cursorColor={'#000000'}
         {...textInputProps}
       />
     </View>
@@ -83,9 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     fontSize: 16,
-    color: Colors.text,
-  },
-  inputDark: {
-    color: Colors.white,
+    color: '#000000', // Always black text for maximum readability
+    fontWeight: '500', // Medium weight for better visibility
   },
 });

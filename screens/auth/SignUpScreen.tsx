@@ -7,7 +7,7 @@
 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { User, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -21,6 +21,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 
 import { GlassContainer } from '@/components/GlassContainer';
 import { InputField } from '@/components/InputField';
@@ -38,7 +39,9 @@ export function SignUpScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -95,6 +98,11 @@ export function SignUpScreen() {
 
     if (password.length < 6) {
       showCustomAlert('warning', 'Weak Password', 'Password must be at least 6 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showCustomAlert('error', 'Password Mismatch', 'Passwords do not match. Please try again.');
       return;
     }
 
@@ -317,7 +325,7 @@ export function SignUpScreen() {
           </View>
 
           {/* Form */}
-          <GlassContainer style={styles.formContainer}>
+          <View style={styles.formContainer}>
             <InputField
               placeholder="Full Name"
               value={name}
@@ -358,6 +366,35 @@ export function SignUpScreen() {
                   <Eye size={20} color={Colors.textSecondary} />
                 )}
               </TouchableOpacity>
+            </View>
+
+            <View>
+              <InputField
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                icon={<Lock size={20} color={Colors.text} />}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                editable={!isLoading && !otpSent}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={isLoading || otpSent}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff size={20} color={Colors.textSecondary} />
+                ) : (
+                  <Eye size={20} color={Colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+              {/* Green checkmark when passwords match */}
+              {confirmPassword.length > 0 && password === confirmPassword && (
+                <View style={styles.checkmarkIcon}>
+                  <Check size={20} color={Colors.success} strokeWidth={3} />
+                </View>
+              )}
             </View>
 
             {/* OTP Section */}
@@ -432,7 +469,7 @@ export function SignUpScreen() {
                 <Text style={styles.linkBold}>Sign In</Text>
               </Text>
             </TouchableOpacity>
-          </GlassContainer>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -467,10 +504,21 @@ const styles = StyleSheet.create({
   formContainer: {
     padding: 24,
     gap: 16,
+    backgroundColor: 'rgba(225, 195, 245, 1)', // Rich vibrant pinkish-lavender
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    overflow: 'hidden',
   },
   eyeIcon: {
     position: 'absolute',
     right: 16,
+    top: 16,
+    padding: 4,
+  },
+  checkmarkIcon: {
+    position: 'absolute',
+    right: 56, // Position to the left of the eye icon
     top: 16,
     padding: 4,
   },
