@@ -178,7 +178,7 @@ export function ResetPasswordScreen() {
         ]
       );
     } catch (error: any) {
-      console.error('Reset error:', error);
+      console.log('⚠️ Reset error:', error);
       showCustomAlert(
         'error',
         'Reset Failed',

@@ -77,8 +77,8 @@ export function ForgotPasswordScreen() {
       console.log('📦 Response data:', JSON.stringify(data, null, 2));
 
       if (!response.ok) {
-        console.error('❌ Request failed with status:', response.status);
-        console.error('❌ Error data:', data);
+        console.log('⚠️ Request failed with status:', response.status);
+        console.log('⚠️ Error data:', data);
         throw new Error(data.error || 'Failed to send reset email');
       }
 
@@ -96,9 +96,9 @@ export function ForgotPasswordScreen() {
         ]
       );
     } catch (error: any) {
-      console.error('💥 Password reset error:', error);
-      console.error('💥 Error message:', error.message);
-      console.error('💥 Error stack:', error.stack);
+      console.log('⚠️ Password reset error:', error);
+      console.log('⚠️ Error message:', error.message);
+      console.log('⚠️ Error stack:', error.stack);
       showCustomAlert(
         'error',
         'Reset Error',

@@ -66,7 +66,7 @@ export function SignInScreen() {
       });
 
       if (error) {
-        console.error('Sign in error:', error);
+        console.log('⚠️ Sign in error:', error);
         throw error;
       }
 
@@ -79,12 +79,12 @@ export function SignInScreen() {
           try {
             router.replace('/(tabs)' as any);
           } catch (error) {
-            console.error('Navigation error:', error);
+            console.log('⚠️ Navigation error:', error);
           }
         }, 1000);
       }
     } catch (error: any) {
-      console.error('Sign in catch:', error);
+      console.log('⚠️ Sign in catch:', error);
       
       let errorMessage = 'Something went wrong. Please try again.';
       
@@ -221,8 +221,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: FontSizes.body,
-    color: Colors.textSecondary,
+    color: '#1a1a2e', // Deep navy-charcoal - sophisticated and readable
     lineHeight: 22,
+    fontWeight: FontWeights.medium as any,
   },
   formContainer: {
     padding: 24,
