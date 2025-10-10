@@ -392,6 +392,33 @@ function chunkTextIntoSentences(text: string): string[] {
   return chunks.filter(c => c.length > 0);
 }
 
+// Global flag to control TTS cancellation
+let shouldCancelTTS = false;
+
+/**
+ * Stop all TTS immediately and prevent any pending chunks from playing
+ */
+export async function stopAllTTS(): Promise<void> {
+  if (Platform.OS === 'web') {
+    return Promise.resolve();
+  }
+
+  console.log('🛑 Stopping all TTS and setting cancellation flag...');
+  shouldCancelTTS = true;
+  
+  try {
+    // Stop multiple times to ensure all queued speech is stopped
+    await ExpoSpeech.stop();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await ExpoSpeech.stop();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await ExpoSpeech.stop();
+    console.log('✅ All TTS stopped');
+  } catch (error) {
+    console.log('⚠️ Error stopping TTS (might already be stopped):', error);
+  }
+}
+
 /**
  * Speak text locally with sentence chunking for streaming effect
  * @param text - Text to speak
@@ -403,12 +430,22 @@ export async function speakTextLocal(text: string, enableChunking: boolean = tru
   }
 
   try {
+    // Reset cancellation flag at start of new speech
+    shouldCancelTTS = false;
+    
     // Stop any ongoing speech
     await ExpoSpeech.stop();
 
     if (!enableChunking || text.length < 50) {
       // Short text, speak all at once
       return new Promise<void>((resolve) => {
+        // Check cancellation before speaking
+        if (shouldCancelTTS) {
+          console.log('🛑 TTS cancelled before starting short speech');
+          resolve();
+          return;
+        }
+
         ExpoSpeech.speak(text, {
           language: 'en-US',
           pitch: 1.0,
@@ -425,10 +462,24 @@ export async function speakTextLocal(text: string, enableChunking: boolean = tru
     console.log(`🎵 Chunked response into ${chunks.length} parts for streaming TTS`);
 
     for (let i = 0; i < chunks.length; i++) {
+      // Check cancellation flag before each chunk
+      if (shouldCancelTTS) {
+        console.log(`🛑 TTS cancelled at chunk ${i + 1}/${chunks.length}`);
+        await ExpoSpeech.stop();
+        return;
+      }
+
       const chunk = chunks[i];
       console.log(`🎵 Speaking chunk ${i + 1}/${chunks.length}: "${chunk.substring(0, 30)}..."`);
       
       await new Promise<void>((resolve) => {
+        // Double-check cancellation before speaking
+        if (shouldCancelTTS) {
+          console.log('🛑 TTS cancelled before chunk speak');
+          resolve();
+          return;
+        }
+
         ExpoSpeech.speak(chunk, {
           language: 'en-US',
           pitch: 1.0,
@@ -437,7 +488,10 @@ export async function speakTextLocal(text: string, enableChunking: boolean = tru
             console.log(`✅ Chunk ${i + 1} done`);
             resolve();
           },
-          onStopped: () => resolve(),
+          onStopped: () => {
+            console.log(`⏹️ Chunk ${i + 1} stopped`);
+            resolve();
+          },
           onError: (error: any) => {
             console.warn(`⚠️ Chunk ${i + 1} error:`, error);
             resolve();
@@ -445,15 +499,28 @@ export async function speakTextLocal(text: string, enableChunking: boolean = tru
         } as any);
       });
 
-      // Small delay between chunks for natural pacing
+      // Check cancellation after chunk completes
+      if (shouldCancelTTS) {
+        console.log(`🛑 TTS cancelled after chunk ${i + 1}/${chunks.length}`);
+        await ExpoSpeech.stop();
+        return;
+      }
+
+      // Small delay between chunks for natural pacing (also check cancellation)
       if (i < chunks.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 200));
+        if (shouldCancelTTS) {
+          console.log(`🛑 TTS cancelled during delay after chunk ${i + 1}/${chunks.length}`);
+          await ExpoSpeech.stop();
+          return;
+        }
       }
     }
 
     console.log('✅ All TTS chunks complete');
   } catch (error) {
     console.error('❌ TTS error:', error);
+    await ExpoSpeech.stop();
   }
 }
 
