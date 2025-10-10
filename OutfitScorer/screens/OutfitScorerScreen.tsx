@@ -542,7 +542,7 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
 
                 <View style={styles.contextContainer}>
                   <Text style={[styles.contextLabel, { color: themedColors.text }]}>
-                    Where are you going? (Optional)
+                    Where are you going?
                   </Text>
                   <TextInput
                     style={[
@@ -563,7 +563,7 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
               </>
             )}
 
-            {!result && !isAnalyzing && (
+            {!result && !isAnalyzing && context.trim().length > 0 && (
               <TouchableOpacity style={styles.analyzeButton} onPress={analyzeOutfit}>
                 <LinearGradient
                   colors={[Colors.gradient.start, Colors.gradient.end]}
