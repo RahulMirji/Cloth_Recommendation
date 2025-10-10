@@ -221,8 +221,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: FontSizes.body,
-    color: Colors.textSecondary,
+    color: '#1a1a2e', // Deep navy-charcoal - sophisticated and readable
     lineHeight: 22,
+    fontWeight: FontWeights.medium as any,
   },
   formContainer: {
     padding: 24,
