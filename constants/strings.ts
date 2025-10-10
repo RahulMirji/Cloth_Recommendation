@@ -172,7 +172,7 @@ export const Strings = {
       clearError: 'Error',
       clearErrorMessage: 'Failed to clear data',
     },
-    version: 'Version 1.0.0 • AI Fashion Assistant',
+    version: 'Version 1.4.0 • AI Fashion Assistant',
   },
 
   // Common

@@ -18,8 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 import { generateTextWithImage, convertImageToBase64 } from '@/AIStylist/utils/pollinationsAI';
-import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText, speakTextLocal } from '@/AIStylist/utils/audioUtils';
-import { ChatMessage, ChatSession, generateChatSummary, saveChatSession, generateSessionId, createChatMessage } from '@/AIStylist/utils/chatUtils';
+import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText, speakTextLocal, stopAllTTS } from '@/AIStylist/utils/audioUtils';
+import { ChatMessage, ChatSession, generateSessionId, createChatMessage } from '@/AIStylist/utils/chatUtils';
 import { supabase } from '@/lib/supabase';
 import { visionAPI } from '@/AIStylist/utils/visionAPI';
 import { storageService } from '@/AIStylist/utils/storageService';
@@ -54,6 +54,7 @@ export default function AIStylistScreen() {
   const currentSessionRef = useRef<ChatSession | null>(null);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current; // For AI speaking glow effect
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   // Toggle this to false if you don't want the microphone to auto-start after
@@ -87,9 +88,9 @@ export default function AIStylistScreen() {
   // Cleanup on unmount - CRITICAL: Stop all audio immediately
   useEffect(() => {
     return () => {
-      // Stop TTS immediately
+      // Stop TTS immediately using the new cancellable function
       if (Platform.OS !== 'web') {
-        Speech.stop().catch(err => console.log('Error stopping TTS:', err));
+        stopAllTTS().catch(err => console.log('Error stopping TTS:', err));
       }
       
       if (sound) {
@@ -277,6 +278,31 @@ export default function AIStylistScreen() {
   const stopPulse = () => {
     pulseAnim.stopAnimation();
     pulseAnim.setValue(1);
+  };
+
+  // 🎨 AI Speaking Glow Animation
+  const startGlowAnimation = () => {
+    console.log('✨ Starting AI speaking glow animation');
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: false, // We need to animate colors/shadows
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  };
+
+  const stopGlowAnimation = () => {
+    console.log('🌑 Stopping AI speaking glow animation');
+    glowAnim.stopAnimation();
+    glowAnim.setValue(0);
   };
 
   const toggleCameraFacing = () => {
@@ -798,7 +824,9 @@ Keep responses conversational and natural, as if you're talking to them in perso
           // 🚀 ALWAYS use native TTS on mobile for instant playback (0 latency!)
           if (Platform.OS !== 'web') {
             setMicrophoneDisabled(true);
+            startGlowAnimation(); // 🎨 Start glow when AI starts speaking
             await speakTextLocal(response);
+            stopGlowAnimation(); // 🌑 Stop glow when AI finishes speaking
             setMicrophoneDisabled(false);
 
             // Remove placeholder audio message since local TTS doesn't need a URI
@@ -897,6 +925,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
     try {
       console.log('Playing audio:', uri);
       setIsPlayingAudio(true);
+      startGlowAnimation(); // 🎨 Start glow when AI starts speaking
 
       if (sound) {
         try {
@@ -918,6 +947,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
         console.log('Audio playback status:', status);
         if (status.isLoaded && status.didJustFinish) {
           console.log('Audio finished playing - re-enabling microphone');
+          stopGlowAnimation(); // 🌑 Stop glow when AI finishes speaking
           setIsPlayingAudio(false);
           setMicrophoneDisabled(false); // Re-enable microphone when audio finishes
         }
@@ -928,6 +958,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
       console.log('Audio playback started successfully');
     } catch (error) {
       console.error('Error playing audio:', error);
+      stopGlowAnimation(); // 🌑 Stop glow on error
       setIsPlayingAudio(false);
       setMicrophoneDisabled(false); // Re-enable microphone if audio fails
     }
@@ -935,6 +966,9 @@ Keep responses conversational and natural, as if you're talking to them in perso
 
   const stopAllAudio = useCallback(async () => {
     console.log('🛑 Stopping all audio...');
+    
+    // Stop glow animation
+    stopGlowAnimation();
     
     // Stop current sound playback
     if (sound) {
@@ -947,11 +981,12 @@ Keep responses conversational and natural, as if you're talking to them in perso
       }
     }
     
-    // Stop native TTS if on mobile (use the imported Speech module)
+    // Stop native TTS using the new stopAllTTS function (use the imported Speech module)
     if (Platform.OS !== 'web') {
       try {
-        await Speech.stop();
-        console.log('✅ Native TTS stopped');
+        // Use the new stopAllTTS function that handles cancellation flag
+        await stopAllTTS();
+        console.log('✅ Native TTS stopped via stopAllTTS');
       } catch (err) {
         console.log('Error stopping native TTS:', err);
       }
@@ -995,73 +1030,17 @@ Keep responses conversational and natural, as if you're talking to them in perso
       contextManager.clearContext();
       console.log('🗑️ Context cleared on conversation quit');
 
-      // Generate and save chat summary
-      if (currentSessionRef.current && currentSessionRef.current.messages.length > 0) {
-        showCustomAlert(
-          'info',
-          'Saving Conversation',
-          'Creating summary and saving to history...',
-          [{ text: 'OK', style: 'default' }],
-        );
-
-        try {
-          const summary = await generateChatSummary(currentSessionRef.current);
-          console.log('Chat summary generated:', summary);
-
-          // Get current user (you might need to adjust this based on your auth setup)
-          const { data: { user } } = await supabase.auth.getUser();
-          const userId = user?.id;
-
-          // Save to Supabase
-          await saveChatSession(
-            {
-              ...currentSessionRef.current,
-              messages: currentSessionRef.current.messages,
-              imageBase64: currentSessionRef.current.imageBase64,
-              createdAt: currentSessionRef.current.createdAt
-            },
-            userId || undefined
-          );
-
-          showCustomAlert(
-            'success',
-            'Conversation Saved!',
-            `Your chat session has been saved successfully.\n\nSummary:\n${summary.substring(0, 200)}...`,
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // Reset everything
-                  setMessages([]);
-                  setCapturedImage(null);
-                  currentSessionRef.current = null;
-                  router.back();
-                }
-              }
-            ]
-          );
-        } catch (error) {
-          console.error('Error saving conversation:', error);
-          showCustomAlert(
-            'error',
-            'Error Saving',
-            'Failed to save conversation. Please try again.',
-            [{ text: 'OK' }]
-          );
-        }
-      } else {
-        // No conversation to save
-        setMessages([]);
-        setCapturedImage(null);
-        currentSessionRef.current = null;
-        router.back();
-      }
+      // Reset everything and go back
+      setMessages([]);
+      setCapturedImage(null);
+      currentSessionRef.current = null;
+      router.back();
     } catch (error) {
       console.error('Error quitting conversation:', error);
-      showCustomAlert('error', 'Error', 'Failed to quit conversation properly.');
+      // Still navigate back even if there's an error
       router.back();
     }
-  }, [speechService, stopAllAudio]);
+  }, [speechService, stopAllAudio, isHandsFreeMode]);
 
   if (!permission) {
     return (
@@ -1219,30 +1198,97 @@ Keep responses conversational and natural, as if you're talking to them in perso
             <View style={styles.controls}>
 
               <View style={{ paddingBottom: insets.bottom + 20 }}>
-                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                  <TouchableOpacity
+                {/* 🎨 Animated Glow Rings for AI Speaking */}
+                <View style={styles.micButtonContainer}>
+                  {/* Outer Glow Ring */}
+                  <Animated.View
                     style={[
-                      styles.micButton,
-                      isListening && styles.micButtonActive,
-                      isRecording && styles.micButtonActive,
-                      !isConversationActive && styles.micButtonInactive,
-                      (microphoneDisabled || isPlayingAudio) && isConversationActive && styles.micButtonDisabled,
+                      styles.glowRing,
+                      styles.glowRingOuter,
+                      {
+                        opacity: glowAnim,
+                        transform: [
+                          {
+                            scale: glowAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.4],
+                            }),
+                          },
+                        ],
+                      },
                     ]}
-                    onPress={handleVoicePress}
-                    onPressIn={startHoldToSpeak}
-                    onPressOut={stopHoldToSpeak}
-                    disabled={microphoneDisabled || isPlayingAudio}
-                    activeOpacity={0.8}
-                  >
-                    {isListening || isRecording ? (
-                      <MicOff size={32} color={Colors.white} />
-                    ) : isConversationActive ? (
-                      <Mic size={32} color={Colors.white} />
-                    ) : (
+                  />
+                  {/* Middle Glow Ring */}
+                  <Animated.View
+                    style={[
+                      styles.glowRing,
+                      styles.glowRingMiddle,
+                      {
+                        opacity: glowAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 0.7],
+                        }),
+                        transform: [
+                          {
+                            scale: glowAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.25],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
+                  {/* Inner Glow Ring */}
+                  <Animated.View
+                    style={[
+                      styles.glowRing,
+                      styles.glowRingInner,
+                      {
+                        opacity: glowAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 0.5],
+                        }),
+                        transform: [
+                          {
+                            scale: glowAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.15],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
+                  
+                  {/* Main Mic Button with Pulse Animation */}
+                  <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.micButton,
+                        isListening && styles.micButtonActive,
+                        isRecording && styles.micButtonActive,
+                        !isConversationActive && styles.micButtonInactive,
+                        (microphoneDisabled || isPlayingAudio) && isConversationActive && styles.micButtonDisabled,
+                      ]}
+                      onPress={handleVoicePress}
+                      onPressIn={startHoldToSpeak}
+                      onPressOut={stopHoldToSpeak}
+                      disabled={microphoneDisabled || isPlayingAudio}
+                      activeOpacity={0.8}
+                    >
+                      {isListening || isRecording ? (
+                        <MicOff size={32} color={Colors.white} />
+                      ) : isConversationActive ? (
+                        <Mic size={32} color={Colors.white} />
+                      ) : (
                       <Square size={32} color={Colors.white} />
                     )}
                   </TouchableOpacity>
                 </Animated.View>
+                </View>
+                {/* End of micButtonContainer */}
+                
                 <Text style={styles.micLabel}>
                   {microphoneDisabled || isPlayingAudio
                     ? 'AI is speaking...'
@@ -1444,6 +1490,40 @@ const styles = StyleSheet.create({
   controls: {
     alignItems: 'center',
     paddingHorizontal: 20,
+  },
+  micButtonContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowRing: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: Colors.primary,
+  },
+  glowRingOuter: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: '#6366f1', // Indigo color for AI effect
+  },
+  glowRingMiddle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 2.5,
+    borderColor: '#818cf8', // Lighter indigo
+  },
+  glowRingInner: {
+    width: 85,
+    height: 85,
+    borderRadius: 42.5,
+    borderWidth: 2,
+    borderColor: '#a5b4fc', // Even lighter indigo
   },
   micButton: {
     width: 80,

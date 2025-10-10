@@ -1,11 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { AppProvider } from '@/contexts/AppContext';
+import { AlertProvider } from '@/contexts/AlertContext';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 
 describe('SettingsScreen', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <AppProvider>{children}</AppProvider>
+    <AlertProvider>
+      <AppProvider>{children}</AppProvider>
+    </AlertProvider>
   );
 
   it('renders correctly', () => {
