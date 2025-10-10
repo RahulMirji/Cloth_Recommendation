@@ -12,17 +12,20 @@
  */
 
 import React from 'react';
-import { StyleSheet, Text, View, Switch, ScrollView, useColorScheme } from 'react-native';
-import { Cloud, Shield, Info, Moon } from 'lucide-react-native';
+import { StyleSheet, Text, View, Switch, ScrollView, useColorScheme, TouchableOpacity, Image } from 'react-native';
+import { Cloud, Shield, Info, Moon, LogOut, User } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
+import { router } from 'expo-router';
 
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { Strings } from '@/constants/strings';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 
 export function SettingsScreen() {
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings, logout, userProfile } = useApp();
+  const { showAlert } = useAlert();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
@@ -45,6 +48,31 @@ export function SettingsScreen() {
    */
   const handleDarkModeToggle = (value: boolean) => {
     updateSettings({ isDarkMode: value });
+  };
+
+  /**
+   * Handle logout
+   */
+  const handleLogout = async () => {
+    showAlert(
+      'warning',
+      'Logout',
+      'Are you sure you want to sign out of your account?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/auth/sign-in');
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -161,6 +189,43 @@ export function SettingsScreen() {
           </BlurView>
         </View>
 
+        {/* Logout Section */}
+        <View style={styles.section}>
+          <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
+            <BlurView
+              intensity={80}
+              tint={isDarkMode ? 'dark' : 'light'}
+              style={[styles.settingCard, styles.logoutCard, isDarkMode && styles.settingCardDark]}
+            >
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.profileImageContainer, { backgroundColor: Colors.error + '20' }]}>
+                    {userProfile.profileImage ? (
+                      <Image 
+                        source={{ uri: userProfile.profileImage }} 
+                        style={styles.profileImage}
+                      />
+                    ) : (
+                      <View style={styles.profileImagePlaceholder}>
+                        <User size={24} color={Colors.error} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.settingText}>
+                    <Text style={[styles.settingTitle, styles.logoutText]}>
+                      Logout
+                    </Text>
+                    <Text style={[styles.settingDescription, isDarkMode && styles.descriptionDark]}>
+                      Sign out of your account
+                    </Text>
+                  </View>
+                </View>
+                <LogOut size={22} color={Colors.error} />
+              </View>
+            </BlurView>
+          </TouchableOpacity>
+        </View>
+
         {/* App Info Section */}
         <View style={styles.infoSection}>
           <Info size={16} color={isDarkMode ? Colors.textLight : Colors.textLight} />
@@ -262,5 +327,32 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: FontSizes.small,
     color: Colors.textSecondary,
+  },
+  logoutCard: {
+    borderColor: Colors.error + '30',
+  },
+  logoutText: {
+    color: Colors.error,
+  },
+  profileImageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: Colors.error + '40',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  profileImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.error + '20',
   },
 });
