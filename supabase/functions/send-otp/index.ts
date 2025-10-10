@@ -27,8 +27,8 @@ const corsHeaders = {
 };
 
 /**
- * Sends an email using Gmail SMTP via raw socket connection
- * Compatible with Deno v2.x runtime
+ * Sends an email using Gmail SMTP via STARTTLS (port 587)
+ * More reliable than implicit TLS for Edge Functions
  */
 async function sendEmailViaGmail(
   to: string,
@@ -47,45 +47,64 @@ async function sendEmailViaGmail(
     };
   }
 
-  let conn: Deno.TlsConn | null = null;
+  let conn: Deno.Conn | null = null;
+  let tlsConn: Deno.TlsConn | null = null;
 
   try {
-    console.log(`📧 Connecting to Gmail SMTP for: ${to}`);
+    console.log(`📧 Connecting to Gmail SMTP (port 587) for: ${to}`);
     
-    // Connect to Gmail SMTP with TLS
-    conn = await Deno.connectTls({
+    // First connect without TLS (port 587 - STARTTLS)
+    conn = await Deno.connect({
       hostname: "smtp.gmail.com",
-      port: 465,
+      port: 587,
     });
 
-    console.log('✅ Connected to Gmail SMTP');
+    console.log('✅ Connected to Gmail SMTP, starting STARTTLS...');
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
-    // Helper function to send command and read response
-    async function sendCommand(command: string): Promise<string> {
-      await conn!.write(encoder.encode(command + '\r\n'));
-      const buffer = new Uint8Array(1024);
-      const n = await conn!.read(buffer);
+    // Helper to read response
+    async function readResponse(connection: Deno.Conn | Deno.TlsConn): Promise<string> {
+      const buffer = new Uint8Array(4096);
+      const n = await connection.read(buffer);
       if (n === null) throw new Error('Connection closed');
-      return decoder.decode(buffer.subarray(0, n));
+      const response = decoder.decode(buffer.subarray(0, n));
+      console.log('←', response.trim());
+      return response;
+    }
+
+    // Helper to send command
+    async function sendCommand(connection: Deno.Conn | Deno.TlsConn, command: string): Promise<string> {
+      console.log('→', command);
+      await connection.write(encoder.encode(command + '\r\n'));
+      return await readResponse(connection);
     }
 
     // Read initial greeting
-    const buffer = new Uint8Array(1024);
-    await conn.read(buffer);
+    await readResponse(conn);
     
-    // SMTP conversation
-    await sendCommand(`EHLO ${gmailUser}`);
-    await sendCommand(`AUTH LOGIN`);
-    await sendCommand(btoa(gmailUser));
-    await sendCommand(btoa(gmailAppPassword));
-    await sendCommand(`MAIL FROM:<${gmailUser}>`);
-    await sendCommand(`RCPT TO:<${to}>`);
-    await sendCommand(`DATA`);
+    // SMTP conversation before STARTTLS
+    await sendCommand(conn, `EHLO gmail.com`);
+    await sendCommand(conn, `STARTTLS`);
     
-    // Build email message
+    // Upgrade to TLS
+    tlsConn = await Deno.startTls(conn, { hostname: "smtp.gmail.com" });
+    console.log('✅ TLS upgrade successful');
+    
+    // Continue SMTP conversation over TLS
+    await sendCommand(tlsConn, `EHLO gmail.com`);
+    await sendCommand(tlsConn, `AUTH LOGIN`);
+    await sendCommand(tlsConn, btoa(gmailUser));
+    await sendCommand(tlsConn, btoa(gmailAppPassword));
+    
+    console.log('✅ Authenticated with Gmail');
+    
+    await sendCommand(tlsConn, `MAIL FROM:<${gmailUser}>`);
+    await sendCommand(tlsConn, `RCPT TO:<${to}>`);
+    await sendCommand(tlsConn, `DATA`);
+    
+    // Build and send email message
     const boundary = `----=_Part_${Date.now()}`;
     const emailMessage = [
       `From: ${gmailFromName} <${gmailUser}>`,
@@ -105,16 +124,13 @@ async function sendEmailViaGmail(
       htmlContent,
       '',
       `--${boundary}--`,
-      '.'
     ].join('\r\n');
 
-    await conn.write(encoder.encode(emailMessage + '\r\n'));
-    
-    // Read DATA response
-    await conn.read(buffer);
+    await tlsConn.write(encoder.encode(emailMessage + '\r\n.\r\n'));
+    await readResponse(tlsConn);
     
     // QUIT
-    await sendCommand('QUIT');
+    await sendCommand(tlsConn, 'QUIT');
 
     console.log('✅ Email sent successfully via Gmail SMTP');
     return { success: true };
@@ -125,7 +141,13 @@ async function sendEmailViaGmail(
       error: error instanceof Error ? error.message : 'Failed to send email',
     };
   } finally {
-    if (conn) {
+    if (tlsConn) {
+      try {
+        tlsConn.close();
+      } catch (e) {
+        // Ignore close errors
+      }
+    } else if (conn) {
       try {
         conn.close();
       } catch (e) {
