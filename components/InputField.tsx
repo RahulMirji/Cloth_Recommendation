@@ -27,11 +27,13 @@ import Colors from '@/constants/colors';
 
 interface InputFieldProps extends TextInputProps {
   icon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   containerStyle?: ViewStyle;
 }
 
 export function InputField({
   icon,
+  rightIcon,
   containerStyle,
   style,
   ...textInputProps
@@ -59,6 +61,7 @@ export function InputField({
         cursorColor={'#000000'}
         {...textInputProps}
       />
+      {rightIcon && <View style={styles.rightIconContainer}>{rightIcon}</View>}
     </View>
   );
 }
@@ -79,6 +82,9 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginRight: 12,
+  },
+  rightIconContainer: {
+    marginLeft: 12,
   },
   input: {
     flex: 1,
