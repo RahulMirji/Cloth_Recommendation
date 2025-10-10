@@ -20,7 +20,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +27,8 @@ const corsHeaders = {
 };
 
 /**
- * Sends an email using Gmail SMTP
+ * Sends an email using Gmail SMTP via raw socket connection
+ * Compatible with Deno v2.x runtime
  */
 async function sendEmailViaGmail(
   to: string,
@@ -47,29 +47,74 @@ async function sendEmailViaGmail(
     };
   }
 
+  let conn: Deno.TlsConn | null = null;
+
   try {
     console.log(`📧 Connecting to Gmail SMTP for: ${to}`);
     
-    const client = new SmtpClient();
-
-    await client.connectTLS({
+    // Connect to Gmail SMTP with TLS
+    conn = await Deno.connectTls({
       hostname: "smtp.gmail.com",
       port: 465,
-      username: gmailUser,
-      password: gmailAppPassword,
     });
 
     console.log('✅ Connected to Gmail SMTP');
 
-    await client.send({
-      from: `${gmailFromName} <${gmailUser}>`,
-      to: to,
-      subject: subject,
-      content: htmlContent,
-      html: htmlContent,
-    });
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    await client.close();
+    // Helper function to send command and read response
+    async function sendCommand(command: string): Promise<string> {
+      await conn!.write(encoder.encode(command + '\r\n'));
+      const buffer = new Uint8Array(1024);
+      const n = await conn!.read(buffer);
+      if (n === null) throw new Error('Connection closed');
+      return decoder.decode(buffer.subarray(0, n));
+    }
+
+    // Read initial greeting
+    const buffer = new Uint8Array(1024);
+    await conn.read(buffer);
+    
+    // SMTP conversation
+    await sendCommand(`EHLO ${gmailUser}`);
+    await sendCommand(`AUTH LOGIN`);
+    await sendCommand(btoa(gmailUser));
+    await sendCommand(btoa(gmailAppPassword));
+    await sendCommand(`MAIL FROM:<${gmailUser}>`);
+    await sendCommand(`RCPT TO:<${to}>`);
+    await sendCommand(`DATA`);
+    
+    // Build email message
+    const boundary = `----=_Part_${Date.now()}`;
+    const emailMessage = [
+      `From: ${gmailFromName} <${gmailUser}>`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      '',
+      'Please view this email in an HTML-capable email client.',
+      '',
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      '',
+      htmlContent,
+      '',
+      `--${boundary}--`,
+      '.'
+    ].join('\r\n');
+
+    await conn.write(encoder.encode(emailMessage + '\r\n'));
+    
+    // Read DATA response
+    await conn.read(buffer);
+    
+    // QUIT
+    await sendCommand('QUIT');
 
     console.log('✅ Email sent successfully via Gmail SMTP');
     return { success: true };
@@ -79,6 +124,14 @@ async function sendEmailViaGmail(
       success: false,
       error: error instanceof Error ? error.message : 'Failed to send email',
     };
+  } finally {
+    if (conn) {
+      try {
+        conn.close();
+      } catch (e) {
+        // Ignore close errors
+      }
+    }
   }
 }
 
