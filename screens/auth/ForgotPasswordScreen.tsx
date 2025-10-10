@@ -23,10 +23,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InputField } from '@/components/InputField';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { supabase } from '@/lib/supabase';
 import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { showCustomAlert } from '@/utils/customAlert';
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 
 export function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -54,17 +55,39 @@ export function ForgotPasswordScreen() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: 'aidryer://reset-password', // Deep link for mobile app
+      console.log('🔄 Starting password reset request...');
+      console.log('📧 Email:', email.trim());
+      console.log('🌐 Supabase URL:', SUPABASE_URL);
+      
+      const url = `${SUPABASE_URL}/functions/v1/send-password-reset`;
+      console.log('🔗 Full URL:', url);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
       });
 
-      if (error) throw error;
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
 
+      const data = await response.json();
+      console.log('📦 Response data:', JSON.stringify(data, null, 2));
+
+      if (!response.ok) {
+        console.error('❌ Request failed with status:', response.status);
+        console.error('❌ Error data:', data);
+        throw new Error(data.error || 'Failed to send reset email');
+      }
+
+      console.log('✅ Password reset email request successful');
       setEmailSent(true);
       showCustomAlert(
         'success',
         'Check Your Email',
-        'We have sent you a password reset link. Please check your inbox.',
+        data.message || 'We have sent you a password reset link. Please check your inbox.',
         [
           {
             text: 'OK',
@@ -73,6 +96,9 @@ export function ForgotPasswordScreen() {
         ]
       );
     } catch (error: any) {
+      console.error('💥 Password reset error:', error);
+      console.error('💥 Error message:', error.message);
+      console.error('💥 Error stack:', error.stack);
       showCustomAlert(
         'error',
         'Reset Error',
@@ -152,6 +178,32 @@ export function ForgotPasswordScreen() {
                   onPress={() => router.replace('/auth/sign-in' as any)}
                   style={styles.backToSignInButton}
                 />
+              </View>
+            )}
+
+            {/* TEMPORARY: Test Reset Password Screen Button */}
+            {emailSent && (
+              <View style={styles.testButtonContainer}>
+                <Text style={styles.testButtonLabel}>
+                  🧪 Testing: Email sent but deep link not working in Expo Go?
+                </Text>
+                <PrimaryButton
+                  title="Open Reset Password Screen"
+                  onPress={() => {
+                    // Get token from Supabase logs or use a test token
+                    router.push({
+                      pathname: '/auth/reset-password' as any,
+                      params: {
+                        token: 'test-token-check-supabase-logs',
+                        email: email.trim(),
+                      },
+                    });
+                  }}
+                  style={styles.testButton}
+                />
+                <Text style={styles.testButtonNote}>
+                  ⚠️ Get the real token from Supabase Edge Function logs and paste it in the code
+                </Text>
               </View>
             )}
 
@@ -247,5 +299,28 @@ const styles = StyleSheet.create({
   linkBold: {
     fontWeight: FontWeights.bold as any,
     color: Colors.primary,
+  },
+  // Temporary test button styles
+  testButtonContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    gap: 12,
+  },
+  testButtonLabel: {
+    fontSize: FontSizes.small,
+    color: Colors.text,
+    fontWeight: FontWeights.semibold as any,
+    textAlign: 'center',
+  },
+  testButton: {
+    backgroundColor: Colors.secondary,
+  },
+  testButtonNote: {
+    fontSize: FontSizes.small,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
