@@ -143,7 +143,7 @@ export function SignUpScreen() {
         otpInputRefs.current[0]?.focus();
       }, 500);
     } catch (error: any) {
-      console.error('Send OTP error:', error);
+      console.log('⚠️ Send OTP error:', error);
       
       let errorMessage = 'Failed to send OTP. Please try again.';
       
@@ -228,7 +228,7 @@ export function SignUpScreen() {
         ]
       );
     } catch (error: any) {
-      console.error('Sign up error:', error);
+      console.log('⚠️ Sign up error:', error);
       
       let errorMessage = 'Failed to verify OTP. Please try again.';
       
@@ -284,7 +284,7 @@ export function SignUpScreen() {
         otpInputRefs.current[0]?.focus();
       }, 500);
     } catch (error: any) {
-      console.error('Resend OTP error:', error);
+      console.log('⚠️ Resend OTP error:', error);
       
       let errorMessage = 'Failed to resend OTP. Please try again.';
       
@@ -498,8 +498,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: FontSizes.body,
-    color: Colors.textSecondary,
+    color: '#1a1a2e', // Deep navy-charcoal - sophisticated and readable
     lineHeight: 22,
+    fontWeight: FontWeights.medium as any,
   },
   formContainer: {
     padding: 24,
