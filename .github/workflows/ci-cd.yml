@@ -100,9 +100,32 @@ jobs:
           echo "🏷️ Build Type: APK"
           echo ""
           
+          # Verify EAS is authenticated
+          echo "🔐 Verifying EAS authentication..."
+          npx eas whoami || echo "Not authenticated (using EXPO_TOKEN from secrets)"
+          
+          echo "🔍 Checking EAS configuration..."
+          npx eas build:configure --platform android --non-interactive || true
+          
+          echo ""
+          echo "🏗️ Starting EAS build (this will take 15-25 minutes)..."
+          echo ""
+          
           # Start the build and capture the output
+          set +e  # Don't exit on error
           BUILD_OUTPUT=$(npx eas build --platform android --profile production --non-interactive --wait 2>&1)
+          BUILD_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
           echo "$BUILD_OUTPUT"
+          echo ""
+          
+          # Check if build failed
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "❌ EAS build failed with exit code: $BUILD_EXIT_CODE"
+            echo "::error::EAS build failed. Check the logs above for details."
+            exit 1
+          fi
           
           # Extract build ID and URL from output
           BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'Build ID: \K[a-f0-9-]+' || echo "unknown")
@@ -112,7 +135,7 @@ jobs:
           echo "apk-url=$APK_URL" >> $GITHUB_OUTPUT
           
           echo ""
-          echo "✅ Build completed!"
+          echo "✅ Build completed successfully!"
           echo "🆔 Build ID: $BUILD_ID"
           echo "🔗 APK URL: $APK_URL"
 
