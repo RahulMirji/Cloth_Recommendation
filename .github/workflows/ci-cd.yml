@@ -92,28 +92,30 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: 📦 Install EAS CLI globally
+        run: npm install -g eas-cli
+
+      - name: 🔐 Verify EAS Authentication
+        run: eas whoami
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: 🏗️ Build Android APK with EAS
         id: build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           echo "🚀 Starting EAS build for Android..."
           echo "📦 Build Profile: production"
           echo "🏷️ Build Type: APK"
           echo ""
           
-          # Verify EAS is authenticated
-          echo "🔐 Verifying EAS authentication..."
-          npx eas whoami || echo "Not authenticated (using EXPO_TOKEN from secrets)"
-          
-          echo "🔍 Checking EAS configuration..."
-          npx eas build:configure --platform android --non-interactive || true
-          
-          echo ""
           echo "🏗️ Starting EAS build (this will take 15-25 minutes)..."
           echo ""
           
           # Start the build and capture the output
           set +e  # Don't exit on error
-          BUILD_OUTPUT=$(npx eas build --platform android --profile production --non-interactive --wait 2>&1)
+          BUILD_OUTPUT=$(eas build --platform android --profile production --non-interactive --wait 2>&1)
           BUILD_EXIT_CODE=$?
           set -e  # Re-enable exit on error
           
