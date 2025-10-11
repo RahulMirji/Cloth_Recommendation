@@ -171,23 +171,28 @@ jobs:
           
           echo "🆔 Using Build ID: $BUILD_ID"
           
-          # Get the build details and download URL using EAS CLI
+          # Get the build details using EAS CLI (human-readable format)
           echo "📋 Fetching build details..."
-          BUILD_DETAILS=$(eas build:view $BUILD_ID --json 2>&1)
+          echo "Running: eas build:view $BUILD_ID"
           
-          # Check if command succeeded
-          if [ $? -ne 0 ]; then
-            echo "❌ Failed to fetch build details"
-            echo "$BUILD_DETAILS"
-            exit 1
-          fi
+          BUILD_VIEW=$(eas build:view $BUILD_ID 2>&1)
           
-          # Extract download URL from JSON
-          DOWNLOAD_URL=$(echo "$BUILD_DETAILS" | jq -r '.artifacts.buildUrl // empty')
+          echo "Build details:"
+          echo "$BUILD_VIEW"
+          echo ""
+          
+          # Extract download URL from the output
+          # EAS outputs the URL in format: "Download URL: https://..."
+          DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -oP 'https://[^\s]+\.apk' | head -1)
           
           if [ -z "$DOWNLOAD_URL" ]; then
-            echo "⚠️ Could not extract download URL from JSON, trying alternative method..."
-            DOWNLOAD_URL=$(eas build:view $BUILD_ID 2>&1 | grep -oP 'https://[^\s]+\.apk' | head -1 || echo "")
+            # Try alternative pattern for EAS output
+            DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -i "artifact" | grep -oP 'https://[^\s]+' | head -1)
+          fi
+          
+          if [ -z "$DOWNLOAD_URL" ]; then
+            # Try to find any expo.dev URL
+            DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -oP 'https://expo-artifacts[^\s]+' | head -1)
           fi
           
           if [ -n "$DOWNLOAD_URL" ] && [ "$DOWNLOAD_URL" != "null" ]; then
