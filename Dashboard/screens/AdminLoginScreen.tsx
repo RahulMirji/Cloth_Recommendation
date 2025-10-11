@@ -3,6 +3,7 @@
  * 
  * Login screen for admin dashboard access.
  * Shown after 3-second long press on settings button.
+ * Redesigned to match main app aesthetic with gradient background and glassmorphism.
  */
 
 import React, { useState } from 'react';
@@ -16,9 +17,12 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdminAuthContext } from '../contexts/AdminAuthContext';
 import { ADMIN_CONFIG } from '../constants/config';
 import { useApp } from '@/contexts/AppContext';
@@ -32,6 +36,7 @@ export default function AdminLoginScreen() {
   const { login, isLoading } = useAdminAuthContext();
   const { settings } = useApp();
   const isDarkMode = settings.isDarkMode;
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -93,189 +98,135 @@ export default function AdminLoginScreen() {
     router.back();
   };
 
-  const colors = isDarkMode ? ADMIN_CONFIG.COLORS : ADMIN_CONFIG.COLORS;
+  const colors = ADMIN_CONFIG.COLORS;
 
   return (
-    <KeyboardAvoidingView
-      style={[
-        styles.container,
-        { backgroundColor: isDarkMode ? colors.backgroundDark : colors.background },
-      ]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleCancel}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name="close"
-              size={28}
-              color={isDarkMode ? colors.textDark : colors.text}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Logo/Icon */}
-        <View style={styles.iconContainer}>
-          <View
-            style={[
-              styles.iconCircle,
-              { backgroundColor: colors.primary + '20' },
-            ]}
-          >
-            <Ionicons name="shield-checkmark" size={50} color={colors.primary} />
-          </View>
-        </View>
-
-        {/* Title */}
-        <Text
-          style={[
-            styles.title,
-            { color: isDarkMode ? colors.textDark : colors.text },
-          ]}
+    <View style={styles.container}>
+      {/* Gradient Background - Matching Main App */}
+      <LinearGradient
+        colors={[colors.gradientStart, colors.gradientEnd]}
+        style={StyleSheet.absoluteFill}
+      />
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          Admin Access
-        </Text>
-        <Text
-          style={[
-            styles.subtitle,
-            { color: isDarkMode ? colors.textSecondaryDark : colors.textSecondary },
-          ]}
-        >
-          Enter your admin credentials to continue
-        </Text>
-
-        {/* Form */}
-        <View style={styles.form}>
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text
-              style={[
-                styles.label,
-                { color: isDarkMode ? colors.textDark : colors.text },
-              ]}
-            >
-              Admin Email
+          {/* Header Section */}
+          <View style={styles.header}>
+            {/* Title */}
+            <Text style={styles.title}>Admin Access</Text>
+            <Text style={styles.subtitle}>
+              Secure admin portal for AI Fashion Assistant
             </Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: isDarkMode ? colors.cardDark : colors.card,
-                  borderColor: isDarkMode ? colors.borderDark : colors.border,
-                },
-              ]}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={isDarkMode ? colors.textSecondaryDark : colors.textSecondary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: isDarkMode ? colors.textDark : colors.text },
-                ]}
-                placeholder="admin@example.com"
-                placeholderTextColor={
-                  isDarkMode ? colors.textSecondaryDark : colors.textSecondary
-                }
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-            </View>
           </View>
 
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text
-              style={[
-                styles.label,
-                { color: isDarkMode ? colors.textDark : colors.text },
-              ]}
-            >
-              Password
-            </Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: isDarkMode ? colors.cardDark : colors.card,
-                  borderColor: isDarkMode ? colors.borderDark : colors.border,
-                },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={isDarkMode ? colors.textSecondaryDark : colors.textSecondary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={[
-                  styles.input,
-                  { color: isDarkMode ? colors.textDark : colors.text },
-                ]}
-                placeholder="Enter password"
-                placeholderTextColor={
-                  isDarkMode ? colors.textSecondaryDark : colors.textSecondary
-                }
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
+          {/* Form Container - Glassmorphic Design */}
+          <View style={[
+            styles.formContainer,
+            { 
+              backgroundColor: colors.formContainer,
+              borderColor: colors.formContainerBorder,
+            }
+          ]}>
+            {/* Email Input */}
+            <View style={styles.inputGroup}>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.input }]}>
                 <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  name="mail-outline"
                   size={20}
-                  color={isDarkMode ? colors.textSecondaryDark : colors.textSecondary}
+                  color={colors.text}
+                  style={styles.inputIcon}
                 />
-              </TouchableOpacity>
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="Admin Email"
+                  placeholderTextColor={colors.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.input }]}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={colors.text}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="Password"
+                  placeholderTextColor={colors.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.eyeIcon}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                { backgroundColor: colors.primary },
+                isLoading && styles.loginButtonDisabled,
+              ]}
+              onPress={handleLogin}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>Login to Dashboard</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Warning Badge */}
+            <View style={styles.warningBadge}>
+              <Ionicons name="shield-checkmark-outline" size={14} color={colors.warning} />
+              <Text style={[styles.warningText, { color: colors.warning }]}>
+                Authorized Personnel Only
+              </Text>
             </View>
           </View>
 
-          {/* Login Button */}
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              { backgroundColor: colors.primary },
-              isLoading && styles.loginButtonDisabled,
-            ]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.loginButtonText}>Login</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Warning */}
-        <View style={styles.warning}>
-          <Ionicons name="warning-outline" size={16} color={colors.warning} />
-          <Text style={[styles.warningText, { color: colors.warning }]}>
-            Authorized access only
-          </Text>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+          {/* Footer Info */}
+          <View style={styles.footer}>
+            <Ionicons name="information-circle-outline" size={16} color="#1a1a2e" />
+            <Text style={styles.footerText}>
+              This is a protected admin area. All access is logged.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -283,64 +234,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  keyboardView: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   header: {
-    position: 'absolute',
-    top: 50,
-    right: 24,
-    zIndex: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
     alignItems: 'center',
-  },
-  iconContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
     textAlign: 'center',
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    color: '#1a1a2e',
     textAlign: 'center',
-    marginBottom: 32,
+    lineHeight: 22,
+    fontWeight: '500',
+    paddingHorizontal: 20,
   },
-  form: {
+  formContainer: {
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  inputGroup: {
     width: '100%',
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 54,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputIcon: {
     marginRight: 12,
@@ -349,13 +297,22 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     height: '100%',
+    fontWeight: '500',
+  },
+  eyeIcon: {
+    padding: 4,
   },
   loginButton: {
     height: 54,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 8,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   loginButtonDisabled: {
     opacity: 0.6,
@@ -363,17 +320,38 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  warning: {
+  warningBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    gap: 8,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
   warningText: {
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
+    paddingHorizontal: 20,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#1a1a2e',
+    textAlign: 'center',
     fontWeight: '500',
+    flex: 1,
   },
 });

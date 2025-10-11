@@ -82,7 +82,7 @@ export default function ResetPasswordRedirect() {
             </TouchableOpacity>
 
             <View style={styles.instructions}>
-              <Text style={styles.instructionTitle}>App didn't open?</Text>
+              <Text style={styles.instructionTitle}>App didn&apos;t open?</Text>
               <Text style={styles.instructionText}>
                 1. Make sure the AI Dresser app is installed on your device
               </Text>
