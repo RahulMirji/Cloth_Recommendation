@@ -39,7 +39,7 @@ export const verifyAdminCredentials = async (
       .from('admin_users')
       .select('email')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🟡 DATABASE QUERY RESULT');
@@ -115,7 +115,7 @@ export const isCurrentUserAdmin = async (): Promise<boolean> => {
       .from('admin_users')
       .select('email')
       .eq('email', user.email)
-      .single();
+      .maybeSingle();
 
     return !error && !!data;
   } catch (error) {
