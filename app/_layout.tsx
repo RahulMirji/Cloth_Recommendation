@@ -112,6 +112,11 @@ function RootLayoutNav() {
           presentation: 'modal',
         }}
       />
+      
+      {/* Admin Routes */}
+      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+      <Stack.Screen name="admin-login" options={{ headerShown: false }} />
+      <Stack.Screen name="admin-dashboard" options={{ headerShown: false }} />
     </Stack>
   );
 }

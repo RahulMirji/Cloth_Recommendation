@@ -1,12 +1,13 @@
 /**
  * UserListItem Component
  * 
- * Individual user card in the user list.
+ * Individual user card in the user list with modern styling.
  */
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { DashboardUser } from '../types';
 import { ADMIN_CONFIG } from '../constants/config';
 
@@ -153,29 +154,38 @@ export const UserListItem: React.FC<UserListItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 14,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   avatarContainer: {
-    marginRight: 12,
+    marginRight: 14,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
   },
   avatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
   },
   avatarText: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
   },
   content: {
@@ -185,28 +195,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   name: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     flex: 1,
+    letterSpacing: 0.2,
   },
   email: {
     fontSize: 14,
-    marginBottom: 6,
+    marginBottom: 8,
+    fontWeight: '500',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
-    gap: 4,
+    marginTop: 3,
+    gap: 6,
   },
   date: {
     fontSize: 12,
+    fontWeight: '500',
   },
   deleteButton: {
-    padding: 8,
+    padding: 10,
     marginLeft: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 10,
   },
 });
