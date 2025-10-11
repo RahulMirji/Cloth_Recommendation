@@ -2,6 +2,7 @@
  * AdminDashboardScreen Component
  * 
  * Main admin dashboard for monitoring users and app statistics.
+ * Redesigned with modern UI matching main app aesthetic.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -19,12 +20,14 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAdminAuthContext } from '../contexts/AdminAuthContext';
 import { useUserManagement, useAdminStats } from '../hooks';
-import { StatsCard, UserListItem, DeleteUserModal } from '../components';
+import { StatsCard, UserListItem, DeleteUserModal, UserDetailsModal, LogoutConfirmModal } from '../components';
 import type { DashboardUser } from '../types';
 import { ADMIN_CONFIG } from '../constants/config';
 import { useApp } from '@/contexts/AppContext';
+import { Footer } from '@/components/Footer';
 
 export default function AdminDashboardScreen() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -53,6 +56,8 @@ export default function AdminDashboardScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -107,17 +112,13 @@ export default function AdminDashboardScreen() {
   }, [selectedUser, removeUser]);
 
   const handleLogout = useCallback(() => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(tabs)' as any);
-        },
-      },
-    ]);
+    setShowLogoutModal(true);
+  }, []);
+
+  const confirmLogout = useCallback(async () => {
+    setShowLogoutModal(false);
+    await logout();
+    router.replace('/(tabs)' as any);
   }, [logout, router]);
 
   const renderStats = () => {
@@ -359,7 +360,12 @@ export default function AdminDashboardScreen() {
               key={user.id}
               user={user}
               onPress={() => {
-                Alert.alert('User Details', `Name: ${user.name}\nEmail: ${user.email}\nPhone: ${user.phone || 'N/A'}\nAge: ${user.age || 'N/A'}\nGender: ${user.gender || 'N/A'}\nBio: ${user.bio || 'N/A'}`);
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('👤 User Clicked:', user.name);
+                console.log('User Data:', JSON.stringify(user, null, 2));
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                setSelectedUser(user);
+                setShowDetailsModal(true);
               }}
               onDelete={() => handleDeleteUser(user)}
               isDarkMode={isDarkMode}
@@ -386,54 +392,54 @@ export default function AdminDashboardScreen() {
   };
 
   return (
-    <SafeAreaView
+    <View
       style={[
         styles.container,
         { backgroundColor: isDarkMode ? colors.backgroundDark : colors.background },
       ]}
-      edges={['top']}
     >
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: isDarkMode ? colors.cardDark : colors.card,
-            borderBottomColor: isDarkMode ? colors.borderDark : colors.border,
-          },
-        ]}
-      >
-        <View style={styles.headerLeft}>
-          <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
-          <Text
-            style={[
-              styles.headerTitle,
-              { color: isDarkMode ? colors.textDark : colors.text },
-            ]}
-          >
-            Admin Dashboard
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      {/* Header with Gradient Accent */}
+      <View style={styles.headerContainer}>
+        <LinearGradient
+          colors={[colors.gradientStart, colors.gradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
         >
-          <Ionicons
-            name="log-out-outline"
-            size={24}
-            color={colors.danger}
-          />
-        </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconCircle, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                <Ionicons name="shield-checkmark" size={24} color="#FFFFFF" />
+              </View>
+              <View>
+                <Text style={styles.headerTitle}>Admin Dashboard</Text>
+                <Text style={styles.headerSubtitle}>System Management</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View style={styles.logoutButtonCircle}>
+                <Ionicons
+                  name="log-out-outline"
+                  size={22}
+                  color={colors.danger}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </View>
 
-      {/* Tabs */}
+      {/* Tabs with Modern Design */}
       <View
         style={[
           styles.tabs,
           {
             backgroundColor: isDarkMode ? colors.cardDark : colors.card,
-            borderBottomColor: isDarkMode ? colors.borderDark : colors.border,
+            borderBottomColor: isDarkMode ? colors.borderDark : colors.borderLight,
           },
         ]}
       >
@@ -521,6 +527,9 @@ export default function AdminDashboardScreen() {
         {activeTab === 'stats' && renderStats()}
         {activeTab === 'users' && renderUsers()}
         {activeTab === 'activity' && renderActivity()}
+        
+        {/* Footer */}
+        <Footer showSocialLinks={false} showQuickLinks={true} />
       </ScrollView>
 
       {/* Delete Modal */}
@@ -535,7 +544,26 @@ export default function AdminDashboardScreen() {
         }}
         isDarkMode={isDarkMode}
       />
-    </SafeAreaView>
+
+      {/* User Details Modal */}
+      <UserDetailsModal
+        visible={showDetailsModal}
+        user={selectedUser}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedUser(null);
+        }}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        visible={showLogoutModal}
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        isDarkMode={isDarkMode}
+      />
+    </View>
   );
 }
 
@@ -543,44 +571,87 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  // Modern Header Styles
+  headerContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  headerGradient: {
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
+  headerIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 2,
+    fontWeight: '500',
   },
   logoutButton: {
-    padding: 8,
+    padding: 4,
   },
+  logoutButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  // Tabs
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     gap: 6,
-    borderBottomWidth: 2,
+    borderBottomWidth: 3,
     borderBottomColor: 'transparent',
   },
   tabActive: {},
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   content: {
     flex: 1,
@@ -595,9 +666,10 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
+    letterSpacing: 0.3,
   },
   sectionTitleSpaced: {
     marginTop: 24,
@@ -612,43 +684,61 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   demographicValue: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     marginTop: 8,
   },
   demographicLabel: {
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
+    fontWeight: '500',
   },
   averageAgeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   usersContainer: {},
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
+    fontWeight: '500',
   },
   userCount: {
     fontSize: 14,
     marginBottom: 12,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
@@ -658,6 +748,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     marginTop: 16,
+    fontWeight: '500',
   },
   activityContainer: {
     alignItems: 'center',
