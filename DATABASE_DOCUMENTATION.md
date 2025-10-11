@@ -29,6 +29,7 @@ This document provides a complete technical overview of your AI DressUp applicat
 ### What is Supabase?
 
 **Supabase** is an open-source Firebase alternative that provides:
+
 - **PostgreSQL Database**: Industry-standard relational database
 - **Authentication**: Built-in user management with JWT tokens
 - **Storage**: File storage with CDN
@@ -136,11 +137,13 @@ Your app uses **Supabase Authentication** which manages users in the `auth.users
 #### How Authentication Works:
 
 1. **User Signs Up**:
+
    ```
    User Email → OTP Sent → OTP Verified → auth.users created → user_profiles created
    ```
 
 2. **User Logs In**:
+
    ```
    Email + Password → JWT Token Generated → Token Stored in Client → Auto-refresh
    ```
@@ -152,6 +155,7 @@ Your app uses **Supabase Authentication** which manages users in the `auth.users
    - **Validation**: Every API call validates the token
 
 #### auth.users Table (Managed by Supabase)
+
 ```sql
 -- You don't create this table, Supabase manages it
 auth.users
@@ -190,12 +194,14 @@ CREATE TABLE user_profiles (
 ```
 
 **Fields Explained**:
+
 - `id`: Unique identifier for the profile (different from user_id)
 - `user_id`: **Foreign Key** linking to `auth.users.id` (the authenticated user)
 - `email`: Duplicate of auth email for quick access
 - `profile_image`: URL like `https://wmhiwieooqfwkrdcvqvb.supabase.co/storage/v1/object/public/user-images/...`
 
 **RLS Policies**:
+
 - ✅ Users can SELECT their own profile (`auth.uid() = user_id`)
 - ✅ Users can INSERT their own profile
 - ✅ Users can UPDATE their own profile
@@ -224,6 +230,7 @@ CREATE TABLE app_settings (
 **Key Concept**: `user_id UNIQUE` ensures each user has only one settings row.
 
 **RLS Policies**:
+
 - ✅ Users can SELECT/INSERT/UPDATE their own settings
 
 **Current Data**: 4 rows (one per user)
@@ -250,6 +257,7 @@ CREATE TABLE analysis_history (
 ```
 
 **JSONB Fields**:
+
 - `feedback`: Stores structured data like:
   ```json
   {
@@ -271,6 +279,7 @@ CREATE TABLE analysis_history (
   ```
 
 **RLS Policies**:
+
 - ✅ Users can SELECT/INSERT/UPDATE/DELETE their own history
 
 **Current Data**: 8 analyses
@@ -300,10 +309,12 @@ CREATE TABLE product_recommendations (
 ```
 
 **Foreign Keys**:
+
 - `analysis_id` → Links to specific analysis
 - `user_id` → Links to user who got the recommendation
 
 **RLS Policies**:
+
 - ✅ Users can SELECT/INSERT/DELETE their own recommendations
 
 **Current Data**: 76 product recommendations
@@ -325,6 +336,7 @@ CREATE TABLE activity_logs (
 ```
 
 **Example Metadata**:
+
 ```json
 {
   "screen": "home",
@@ -335,6 +347,7 @@ CREATE TABLE activity_logs (
 ```
 
 **RLS Policies**:
+
 - ✅ Users can SELECT/INSERT their own logs
 
 **Current Data**: 12 activity logs
@@ -358,6 +371,7 @@ CREATE TABLE otp_verifications (
 ```
 
 **Security Features**:
+
 - OTP is **hashed** before storage (never stored in plain text)
 - Expires after 10 minutes
 - Limited to 5 verification attempts
@@ -383,6 +397,7 @@ CREATE TABLE otp_rate_limits (
 ```
 
 **How It Works**:
+
 - Tracks how many OTP requests per email
 - Window: 15 minutes
 - Limit: 3 requests per window
@@ -410,6 +425,7 @@ CREATE TABLE password_reset_tokens (
 ```
 
 **Security Flow**:
+
 1. User requests reset → Token generated → Hashed → Stored
 2. Email sent with plain token (one-time use)
 3. User clicks link → Token verified → Password reset
@@ -451,6 +467,7 @@ CREATE TABLE admin_users (
 **Current Admins**: 1 user (`devprahulmirji@gmail.com`)
 
 **RLS Policies**:
+
 - ✅ Anyone can SELECT (to check if they're admin)
 - ✅ Only service role can INSERT/UPDATE/DELETE
 
@@ -480,7 +497,9 @@ analysis_history (id)
 ### Relationship Types
 
 #### 1️⃣ One-to-One (1:1)
+
 **Example**: `auth.users` ↔ `user_profiles`
+
 - Each user has exactly ONE profile
 - Each profile belongs to exactly ONE user
 
@@ -490,7 +509,9 @@ user_profiles.user_id REFERENCES auth.users(id)
 ```
 
 #### 2️⃣ One-to-Many (1:many)
+
 **Example**: `auth.users` ↔ `analysis_history`
+
 - Each user can have MANY analyses
 - Each analysis belongs to ONE user
 
@@ -499,7 +520,9 @@ analysis_history.user_id REFERENCES auth.users(id)
 ```
 
 #### 3️⃣ Many-to-Many (many:many)
+
 **Example**: Not currently used in your schema
+
 - Would require a "junction table"
 - Example: Users ↔ Tags (users can have many tags, tags can have many users)
 
@@ -539,11 +562,13 @@ User → JWT Token → Supabase API → PostgreSQL
 ### RLS Concepts
 
 #### auth.uid()
+
 - Built-in function that returns the currently authenticated user's ID
 - Extracted from the JWT token
 - Returns `NULL` if not authenticated
 
 #### Policy Structure
+
 ```sql
 CREATE POLICY "policy_name"
 ON table_name
@@ -555,6 +580,7 @@ WITH CHECK (condition); -- When can you modify rows?
 ### Your RLS Policies
 
 #### user_profiles
+
 ```sql
 -- SELECT Policy
 CREATE POLICY "Users can view their own profile"
@@ -576,6 +602,7 @@ USING (auth.uid() = user_id);
 ```
 
 #### analysis_history
+
 ```sql
 -- SELECT
 CREATE POLICY "Users can view their own history"
@@ -600,6 +627,7 @@ USING (auth.uid() = user_id);
 ```
 
 #### admin_users
+
 ```sql
 -- Anyone can check if they're admin
 CREATE POLICY "Allow authenticated users to check admin status"
@@ -614,7 +642,9 @@ WITH CHECK (true);
 ```
 
 #### Service Role Tables
+
 These tables are **only accessible via Edge Functions** (using service_role key):
+
 - `otp_verifications`
 - `otp_rate_limits`
 - `password_reset_tokens`
@@ -628,18 +658,18 @@ USING (auth.role() = 'service_role');
 
 ### RLS Status
 
-| Table | RLS Enabled | Public Access |
-|-------|-------------|---------------|
-| user_profiles | ✅ Yes | Own data only |
-| app_settings | ✅ Yes | Own data only |
-| analysis_history | ✅ Yes | Own data only |
-| activity_logs | ✅ Yes | Own data only |
-| product_recommendations | ✅ Yes | Own data only |
-| otp_verifications | ✅ Yes | Service role only |
-| otp_rate_limits | ✅ Yes | Service role only |
-| password_reset_tokens | ✅ Yes | Service role only |
-| password_reset_rate_limits | ✅ Yes | Service role only |
-| admin_users | ✅ Yes | Read: All, Write: Service role |
+| Table                      | RLS Enabled | Public Access                  |
+| -------------------------- | ----------- | ------------------------------ |
+| user_profiles              | ✅ Yes      | Own data only                  |
+| app_settings               | ✅ Yes      | Own data only                  |
+| analysis_history           | ✅ Yes      | Own data only                  |
+| activity_logs              | ✅ Yes      | Own data only                  |
+| product_recommendations    | ✅ Yes      | Own data only                  |
+| otp_verifications          | ✅ Yes      | Service role only              |
+| otp_rate_limits            | ✅ Yes      | Service role only              |
+| password_reset_tokens      | ✅ Yes      | Service role only              |
+| password_reset_rate_limits | ✅ Yes      | Service role only              |
+| admin_users                | ✅ Yes      | Read: All, Write: Service role |
 
 ---
 
@@ -650,6 +680,7 @@ USING (auth.role() = 'service_role');
 **Edge Functions** are serverless functions that run on Supabase's infrastructure. Think of them as mini-backend APIs.
 
 **Benefits**:
+
 - Run on Deno (secure TypeScript runtime)
 - Auto-scaling (handles any load)
 - Built-in authentication
@@ -658,11 +689,13 @@ USING (auth.role() = 'service_role');
 ### Your Edge Functions
 
 #### 1. send-otp
+
 **Purpose**: Send OTP email for signup verification
 
 **Endpoint**: `https://wmhiwieooqfwkrdcvqvb.supabase.co/functions/v1/send-otp`
 
 **Flow**:
+
 ```
 POST /send-otp
 Body: { email: "user@example.com" }
@@ -676,6 +709,7 @@ Body: { email: "user@example.com" }
 ```
 
 **Security**:
+
 - Rate limiting per email
 - OTP expires in 10 minutes
 - Maximum 5 verification attempts
@@ -684,11 +718,13 @@ Body: { email: "user@example.com" }
 ---
 
 #### 2. verify-otp-signup
+
 **Purpose**: Verify OTP and create user account
 
 **Endpoint**: `https://wmhiwieooqfwkrdcvqvb.supabase.co/functions/v1/verify-otp-signup`
 
 **Flow**:
+
 ```
 POST /verify-otp-signup
 Body: {
@@ -711,11 +747,13 @@ Body: {
 ---
 
 #### 3. send-password-reset
+
 **Purpose**: Send password reset email
 
 **Endpoint**: `https://wmhiwieooqfwkrdcvqvb.supabase.co/functions/v1/send-password-reset`
 
 **Flow**:
+
 ```
 POST /send-password-reset
 Body: { email: "user@example.com" }
@@ -732,11 +770,13 @@ Body: { email: "user@example.com" }
 ---
 
 #### 4. verify-password-reset
+
 **Purpose**: Verify reset token and update password
 
 **Endpoint**: `https://wmhiwieooqfwkrdcvqvb.supabase.co/functions/v1/verify-password-reset`
 
 **Flow**:
+
 ```
 POST /verify-password-reset
 Body: {
@@ -757,11 +797,13 @@ Body: {
 ---
 
 #### 5. admin-delete-user
+
 **Purpose**: Delete user (admin only)
 
 **Endpoint**: `https://wmhiwieooqfwkrdcvqvb.supabase.co/functions/v1/admin-delete-user`
 
 **Flow**:
+
 ```
 POST /admin-delete-user
 Headers: { x-admin-email: "admin@example.com" }
@@ -773,17 +815,20 @@ Body: { userId: "uuid" }
 ```
 
 **Why Edge Function?**
+
 - Needs service_role to delete from auth.users
 - Client can't access auth schema directly
 
 ---
 
 #### 6. admin-get-users
+
 **Purpose**: Fetch all users (bypassing RLS for admin)
 
 **Endpoint**: `https://wmhiwieooqfwkrdcvqvb.supabase.co/functions/v1/admin-get-users`
 
 **Flow**:
+
 ```
 POST /admin-get-users
 Headers: { x-admin-email: "admin@example.com" }
@@ -802,6 +847,7 @@ Body: {
 ```
 
 **Why Edge Function?**
+
 - RLS blocks admins from seeing all users
 - Service role bypasses RLS
 - Validates admin before allowing access
@@ -842,9 +888,11 @@ File storage service similar to AWS S3. Stores images, videos, documents with CD
 ### Your Buckets
 
 #### user-images
+
 **Purpose**: Store user profile images
 
 **Structure**:
+
 ```
 user-images/
 └── profiles/
@@ -853,11 +901,13 @@ user-images/
 ```
 
 **Example URL**:
+
 ```
 https://wmhiwieooqfwkrdcvqvb.supabase.co/storage/v1/object/public/user-images/profiles/bc039738-89d5-4d73-bb70-67312ea7cf65/bc039738-89d5-4d73-bb70-67312ea7cf65_1760108698729_mipq7ud.jpg
 ```
 
 **RLS Policies** (Storage has its own RLS):
+
 ```sql
 -- Anyone can read
 CREATE POLICY "Public Access"
@@ -881,17 +931,20 @@ WITH CHECK (
 ### 1. Never Expose Service Role Key
 
 ❌ **NEVER DO THIS**:
+
 ```javascript
 const supabase = createClient(url, SERVICE_ROLE_KEY); // In client code!
 ```
 
 ✅ **DO THIS**:
+
 ```javascript
 const supabase = createClient(url, ANON_KEY); // Client uses anon key
 // Use Edge Functions with service role when needed
 ```
 
 **Why?**
+
 - Service role bypasses ALL security
 - Anyone with service role key can access/delete ANYTHING
 - Keep it in Edge Functions only (server-side)
@@ -923,17 +976,17 @@ Never store plain text passwords or tokens:
 
 ```javascript
 // ❌ BAD
-await supabase.from('otp_verifications').insert({
-  email: 'user@example.com',
-  otp: '123456' // Plain text!
+await supabase.from("otp_verifications").insert({
+  email: "user@example.com",
+  otp: "123456", // Plain text!
 });
 
 // ✅ GOOD
-import bcrypt from 'bcrypt';
-const hashedOTP = await bcrypt.hash('123456', 10);
-await supabase.from('otp_verifications').insert({
-  email: 'user@example.com',
-  otp_hash: hashedOTP // Hashed!
+import bcrypt from "bcrypt";
+const hashedOTP = await bcrypt.hash("123456", 10);
+await supabase.from("otp_verifications").insert({
+  email: "user@example.com",
+  otp_hash: hashedOTP, // Hashed!
 });
 ```
 
@@ -946,13 +999,13 @@ Prevent abuse with rate limit tables:
 ```javascript
 // Check rate limit before allowing action
 const { data: rateLimit } = await supabase
-  .from('otp_rate_limits')
-  .select('*')
-  .eq('email', email)
+  .from("otp_rate_limits")
+  .select("*")
+  .eq("email", email)
   .single();
 
 if (rateLimit && rateLimit.request_count >= 3) {
-  throw new Error('Too many requests. Try again later.');
+  throw new Error("Too many requests. Try again later.");
 }
 ```
 
@@ -969,11 +1022,11 @@ const { email, password } = req.body;
 
 // ✅ GOOD
 const { email, password } = req.body;
-if (!email || !email.includes('@')) {
-  throw new Error('Invalid email');
+if (!email || !email.includes("@")) {
+  throw new Error("Invalid email");
 }
 if (!password || password.length < 8) {
-  throw new Error('Password must be at least 8 characters');
+  throw new Error("Password must be at least 8 characters");
 }
 ```
 
@@ -1013,15 +1066,17 @@ WHERE used = true AND used_at < NOW() - INTERVAL '7 days';
 ### Query Examples
 
 #### Get User Profile
+
 ```javascript
 const { data, error } = await supabase
-  .from('user_profiles')
-  .select('*')
-  .eq('user_id', userId)
+  .from("user_profiles")
+  .select("*")
+  .eq("user_id", userId)
   .single();
 ```
 
 #### Create Analysis with Products
+
 ```javascript
 // Start transaction
 const { data: analysis, error: analysisError } = await supabase
@@ -1056,36 +1111,39 @@ const { error: productsError } = await supabase
 ```
 
 #### Search Users (Admin)
+
 ```javascript
 // Via Edge Function
-const { data, error } = await supabase.functions.invoke('admin-get-users', {
+const { data, error } = await supabase.functions.invoke("admin-get-users", {
   body: {
-    searchQuery: 'john',
-    gender: 'male',
-    sortField: 'created_at',
-    sortOrder: 'desc'
+    searchQuery: "john",
+    gender: "male",
+    sortField: "created_at",
+    sortOrder: "desc",
   },
   headers: {
-    'x-admin-email': adminEmail
-  }
+    "x-admin-email": adminEmail,
+  },
 });
 ```
 
 #### Update User Settings
+
 ```javascript
 const { error } = await supabase
-  .from('app_settings')
+  .from("app_settings")
   .update({ is_dark_mode: true, use_cloud_ai: false })
-  .eq('user_id', userId);
+  .eq("user_id", userId);
 ```
 
 #### Delete Analysis History
+
 ```javascript
 const { error } = await supabase
-  .from('analysis_history')
+  .from("analysis_history")
   .delete()
-  .eq('id', analysisId)
-  .eq('user_id', userId); // Security: only delete own data
+  .eq("id", analysisId)
+  .eq("user_id", userId); // Security: only delete own data
 ```
 
 ---
@@ -1095,9 +1153,11 @@ const { error } = await supabase
 ### Common Errors
 
 #### 1. "permission denied for table X"
+
 **Cause**: RLS is blocking your query
 
 **Solutions**:
+
 ```javascript
 // Check if user is authenticated
 const { data: { session } } = await supabase.auth.getSession();
@@ -1111,28 +1171,34 @@ SELECT * FROM pg_policies WHERE tablename = 'your_table';
 ```
 
 #### 2. "new row violates row-level security policy"
+
 **Cause**: Trying to insert data for another user
 
 **Solution**:
+
 ```javascript
 // ❌ BAD
-await supabase.from('user_profiles').insert({
-  user_id: 'some-other-user-id', // Not your ID!
-  name: 'John'
+await supabase.from("user_profiles").insert({
+  user_id: "some-other-user-id", // Not your ID!
+  name: "John",
 });
 
 // ✅ GOOD
-const { data: { user } } = await supabase.auth.getUser();
-await supabase.from('user_profiles').insert({
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+await supabase.from("user_profiles").insert({
   user_id: user.id, // Your own ID
-  name: 'John'
+  name: "John",
 });
 ```
 
 #### 3. "Foreign key constraint violation"
+
 **Cause**: Referenced row doesn't exist
 
 **Solution**:
+
 ```javascript
 // Make sure parent record exists first
 const { data: user } = await supabase
@@ -1153,32 +1219,37 @@ await supabase.from('analysis_history').insert({
 ```
 
 #### 4. "JWT expired"
+
 **Cause**: Session token expired
 
 **Solution**:
+
 ```javascript
 // Supabase auto-refreshes, but you can manually refresh:
 const { data, error } = await supabase.auth.refreshSession();
 if (error) {
   // Re-authenticate user
-  router.push('/auth/sign-in');
+  router.push("/auth/sign-in");
 }
 ```
 
 #### 5. "duplicate key value violates unique constraint"
+
 **Cause**: Trying to insert duplicate value in UNIQUE column
 
 **Solution**:
+
 ```javascript
 // Use upsert instead of insert
-const { error } = await supabase
-  .from('app_settings')
-  .upsert({
+const { error } = await supabase.from("app_settings").upsert(
+  {
     user_id: userId,
-    is_dark_mode: true
-  }, {
-    onConflict: 'user_id' // Update if exists
-  });
+    is_dark_mode: true,
+  },
+  {
+    onConflict: "user_id", // Update if exists
+  }
+);
 ```
 
 ---
@@ -1196,10 +1267,10 @@ Indexes speed up queries on commonly searched columns:
 - Unique columns (email)
 
 -- Create custom indexes if needed:
-CREATE INDEX idx_analysis_created_at 
+CREATE INDEX idx_analysis_created_at
 ON analysis_history(created_at DESC);
 
-CREATE INDEX idx_products_marketplace 
+CREATE INDEX idx_products_marketplace
 ON product_recommendations(marketplace);
 ```
 
@@ -1209,15 +1280,13 @@ Always limit queries when you don't need all rows:
 
 ```javascript
 // ❌ Slow (returns all rows)
-const { data } = await supabase
-  .from('analysis_history')
-  .select('*');
+const { data } = await supabase.from("analysis_history").select("*");
 
 // ✅ Fast (returns only 10)
 const { data } = await supabase
-  .from('analysis_history')
-  .select('*')
-  .order('created_at', { ascending: false })
+  .from("analysis_history")
+  .select("*")
+  .order("created_at", { ascending: false })
   .limit(10);
 ```
 
@@ -1225,14 +1294,12 @@ const { data } = await supabase
 
 ```javascript
 // ❌ Wasteful
-const { data } = await supabase
-  .from('analysis_history')
-  .select('*'); // Returns all columns including large JSONB
+const { data } = await supabase.from("analysis_history").select("*"); // Returns all columns including large JSONB
 
 // ✅ Efficient
 const { data } = await supabase
-  .from('analysis_history')
-  .select('id, type, score, created_at'); // Only what you need
+  .from("analysis_history")
+  .select("id, type, score, created_at"); // Only what you need
 ```
 
 ### 4. Use JSONB Operators
@@ -1242,9 +1309,9 @@ Query inside JSONB fields efficiently:
 ```javascript
 // Find analyses with specific feedback
 const { data } = await supabase
-  .from('analysis_history')
-  .select('*')
-  .contains('feedback', { category: 'color' });
+  .from("analysis_history")
+  .select("*")
+  .contains("feedback", { category: "color" });
 ```
 
 ---
@@ -1252,22 +1319,26 @@ const { data } = await supabase
 ## 📝 Database Maintenance Checklist
 
 ### Daily
+
 - [ ] Monitor error logs in Supabase Dashboard
 - [ ] Check storage usage
 - [ ] Review Edge Function invocations
 
 ### Weekly
+
 - [ ] Clean up expired OTP records
 - [ ] Clean up used password reset tokens
 - [ ] Review rate limit records
 
 ### Monthly
+
 - [ ] Backup database (Supabase auto-backups, but verify)
 - [ ] Review and optimize slow queries
 - [ ] Check for orphaned records
 - [ ] Review user growth and storage needs
 
 ### Quarterly
+
 - [ ] Audit RLS policies
 - [ ] Review Edge Function code for security updates
 - [ ] Check for unused indexes
@@ -1277,34 +1348,36 @@ const { data } = await supabase
 
 ## 🎓 Key Terms Glossary
 
-| Term | Definition | Example |
-|------|------------|---------|
-| **RLS** | Row Level Security - Database-level access control | `auth.uid() = user_id` |
-| **Foreign Key** | Column linking to another table's primary key | `user_id → auth.users.id` |
-| **Primary Key** | Unique identifier for each row | `id uuid PRIMARY KEY` |
-| **JSONB** | JSON data type that can be queried efficiently | `feedback jsonb` |
-| **UUID** | Universally Unique Identifier (36-char string) | `550e8400-e29b-41d4-a716-446655440000` |
-| **JWT** | JSON Web Token - Encrypted authentication token | `eyJhbGciOiJIUzI1NiIs...` |
-| **Service Role** | Admin key that bypasses all RLS | Use in Edge Functions only! |
-| **Anon Key** | Public key with RLS enforced | Use in client apps |
-| **Edge Function** | Serverless function on Supabase infrastructure | `/functions/v1/send-otp` |
-| **Cascade** | Automatic deletion of related records | Delete user → delete profiles |
-| **Policy** | RLS rule defining access permissions | `USING (auth.uid() = user_id)` |
-| **Transaction** | Group of operations that succeed/fail together | `BEGIN; ... COMMIT;` |
-| **Index** | Database structure speeding up queries | `CREATE INDEX idx_email` |
-| **Migration** | SQL script to change database schema | `ALTER TABLE ADD COLUMN` |
+| Term              | Definition                                         | Example                                |
+| ----------------- | -------------------------------------------------- | -------------------------------------- |
+| **RLS**           | Row Level Security - Database-level access control | `auth.uid() = user_id`                 |
+| **Foreign Key**   | Column linking to another table's primary key      | `user_id → auth.users.id`              |
+| **Primary Key**   | Unique identifier for each row                     | `id uuid PRIMARY KEY`                  |
+| **JSONB**         | JSON data type that can be queried efficiently     | `feedback jsonb`                       |
+| **UUID**          | Universally Unique Identifier (36-char string)     | `550e8400-e29b-41d4-a716-446655440000` |
+| **JWT**           | JSON Web Token - Encrypted authentication token    | `eyJhbGciOiJIUzI1NiIs...`              |
+| **Service Role**  | Admin key that bypasses all RLS                    | Use in Edge Functions only!            |
+| **Anon Key**      | Public key with RLS enforced                       | Use in client apps                     |
+| **Edge Function** | Serverless function on Supabase infrastructure     | `/functions/v1/send-otp`               |
+| **Cascade**       | Automatic deletion of related records              | Delete user → delete profiles          |
+| **Policy**        | RLS rule defining access permissions               | `USING (auth.uid() = user_id)`         |
+| **Transaction**   | Group of operations that succeed/fail together     | `BEGIN; ... COMMIT;`                   |
+| **Index**         | Database structure speeding up queries             | `CREATE INDEX idx_email`               |
+| **Migration**     | SQL script to change database schema               | `ALTER TABLE ADD COLUMN`               |
 
 ---
 
 ## 🚀 Next Steps
 
 ### For Development
+
 1. **Test RLS Policies**: Create test users and verify they can't access others' data
 2. **Monitor Performance**: Use Supabase Dashboard to track slow queries
 3. **Set Up Alerts**: Configure email alerts for errors in Edge Functions
 4. **Document Changes**: Update this file when adding new tables/functions
 
 ### For Production
+
 1. **Enable Point-in-Time Recovery**: Supabase Dashboard → Database → Backups
 2. **Set Up Custom Domain**: For Edge Functions (optional)
 3. **Configure Email Templates**: Customize OTP and password reset emails
@@ -1334,7 +1407,7 @@ You now have a complete understanding of your database architecture! This docume
 ✅ Storage buckets and file management  
 ✅ Security best practices  
 ✅ Common operations and troubleshooting  
-✅ Performance optimization tips  
+✅ Performance optimization tips
 
 **Remember**: Your database is the heart of your application. Understanding it deeply will help you build better features, debug faster, and scale confidently!
 
