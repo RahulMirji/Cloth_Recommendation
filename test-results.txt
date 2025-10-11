@@ -1,0 +1,521 @@
+﻿
+> ai-cloth-recommendation@1.0.0 test
+> jest --verbose
+
+node.exe : PASS OutfitScorer/components/ProductRecommendations.test.tsx
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS OutfitScor...ations.test.tsx:String) [], Remote 
+   Exception
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  OutfitScorer - ProductRecommendations
+    ΓêÜ component exports correctly (22 ms)
+
+PASS Dashboard/__tests__/services/adminService.simple.test.tsx
+  Admin Service
+    Configuration
+      ΓêÜ should have admin configuration defined (22 ms)
+      ΓêÜ should have session timeout configured (3 ms)
+      ΓêÜ should have colors configured (2 ms)
+    Service Functions
+      ΓêÜ should have required service functions available (81 ms)
+
+PASS ImageGen/components/ExploreSection.test.tsx
+  ImageGen - ExploreSection
+    ΓêÜ component exports correctly (25 ms)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+PASS __tests__/contexts/AppContext.test.tsx
+  AppContext
+    ΓêÜ provides initial values (218 ms)
+    ΓêÜ updates user profile (29 ms)
+    ΓêÜ updates settings (21 ms)
+    ΓêÜ persists data to AsyncStorage (18 ms)
+
+PASS Dashboard/__tests__/hooks/useUserManagement.simple.test.tsx
+  User Management Hook
+    ΓêÜ should initialize with empty users (110 ms)
+    ΓêÜ should have required management functions (72 ms)
+    ΓêÜ should handle filters object (65 ms)
+    ΓêÜ should call fetchAllUsers on mount (60 ms)
+
+  console.log
+    ≡ƒöì Checking admin session...
+
+      at log (Dashboard/contexts/AdminAuthContext.tsx:41:15)
+
+  console.log
+    Γ¥î No admin session found
+
+      at log (Dashboard/contexts/AdminAuthContext.tsx:64:17)
+
+  console.log
+    ≡ƒöì Checking admin session...
+
+      at log (Dashboard/contexts/AdminAuthContext.tsx:41:15)
+
+  console.log
+    Γ¥î No admin session found
+
+      at log (Dashboard/contexts/AdminAuthContext.tsx:64:17)
+
+  console.log
+    ≡ƒöì Checking admin session...
+
+      at log (Dashboard/contexts/AdminAuthContext.tsx:41:15)
+
+  console.log
+    Γ¥î No admin session found
+
+      at log (Dashboard/contexts/AdminAuthContext.tsx:64:17)
+
+PASS Dashboard/__tests__/contexts/AdminAuthContext.simple.test.tsx
+  Admin Authentication
+    ΓêÜ should start with loading state (188 ms)
+    ΓêÜ should have login and logout functions (75 ms)
+    ΓêÜ should have resetSessionTimeout function (64 ms)
+
+PASS __tests__/components/PrimaryButton.test.tsx
+  PrimaryButton
+    ΓêÜ renders correctly (535 ms)
+    ΓêÜ calls onPress when pressed (8 ms)
+    ΓêÜ shows loading state (35 ms)
+    ΓêÜ is disabled when disabled prop is true (5 ms)
+    ΓêÜ renders with custom variant (6 ms)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+PASS Dashboard/__tests__/components/Dashboard.simple.test.tsx
+  Dashboard Components
+    StatsCard
+      ΓêÜ should render with required props (140 ms)
+      ΓêÜ should handle dark mode (9 ms)
+    Dashboard Types
+      ΓêÜ should have Dashboard User type defined (3 ms)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+  console.log
+    ≡ƒöä AppContext - Starting initialization...
+
+      at log (contexts/AppContext.tsx:48:15)
+
+PASS __tests__/screens/HomeScreen.test.tsx
+  HomeScreen
+    ΓêÜ renders correctly (716 ms)
+    ΓêÜ displays the correct subtitle (35 ms)
+    ΓêÜ shows all three feature cards in correct order (33 ms)
+    ΓêÜ shows Outfit Scorer card (first card) (26 ms)
+    ΓêÜ shows AI Stylist card with BETA tag (second card) (30 ms)
+    ΓêÜ shows AI Image Generator card with BETA tag (third card) (29 ms)
+    ΓêÜ navigates to Outfit Scorer when card is pressed (28 ms)
+    ΓêÜ navigates to AI Stylist when card is pressed (32 ms)
+    ΓêÜ navigates to AI Image Generator when card is pressed (29 ms)
+    ΓêÜ renders in dark mode correctly (33 ms)
+
+  console.log
+    ≡ƒöÉ AppContext - Checking auth session...
+
+      at log (contexts/AppContext.tsx:58:15)
+
+  console.log
+    ≡ƒöÉ AppContext - Auth state: { hasSession: false, isAuthenticated: false }
+
+      at log (contexts/AppContext.tsx:64:15)
+
+  console.log
+    Γ£à AppContext - Initialization complete
+
+      at log (contexts/AppContext.tsx:50:15)
+
+PASS __tests__/screens/SettingsScreen.test.tsx
+  SettingsScreen
+    ΓêÜ renders correctly (989 ms)
+    ΓêÜ shows dark mode toggle (25 ms)
+    ΓêÜ shows cloud AI toggle (29 ms)
+    ΓêÜ shows save history toggle (28 ms)
+    ΓêÜ toggles cloud AI when switch is pressed (27 ms)
+    ΓêÜ displays correct settings sections (21 ms)
+
+Test Suites: 10 passed, 10 total
+Tests:       41 passed, 41 total
+Snapshots:   0 total
+Time:        5.592 s
+Ran all test suites.
