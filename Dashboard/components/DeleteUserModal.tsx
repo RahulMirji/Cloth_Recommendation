@@ -1,7 +1,7 @@
 /**
  * DeleteUserModal Component
  * 
- * Confirmation modal for user deletion.
+ * Confirmation modal for user deletion with modern styling.
  */
 
 import React from 'react';
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import type { DashboardUser } from '../types';
 import { ADMIN_CONFIG } from '../constants/config';
 
@@ -140,7 +141,7 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -148,35 +149,48 @@ const styles = StyleSheet.create({
   modal: {
     width: '100%',
     maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 14,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   message: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 22,
+    marginBottom: 14,
+    lineHeight: 24,
+    fontWeight: '500',
   },
   warning: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+    marginBottom: 28,
+    lineHeight: 21,
+    fontWeight: '600',
   },
   buttons: {
     flexDirection: 'row',
@@ -185,20 +199,29 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    height: 48,
+    height: 52,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cancelButton: {
-    borderWidth: 1,
+    borderWidth: 2,
   },
-  deleteButton: {},
+  deleteButton: {
+    shadowColor: '#EF4444',
+    shadowOpacity: 0.3,
+  },
   deleteButtonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

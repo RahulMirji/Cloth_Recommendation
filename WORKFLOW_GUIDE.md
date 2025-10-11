@@ -12,24 +12,28 @@
 ### Branch Purposes
 
 #### 🔧 `dev-test` - Daily Development
+
 - **Purpose:** Your daily workspace for all changes
 - **Frequency:** Multiple commits throughout the day
 - **Testing:** Automated CI runs on every push
 - **Rules:** Fast iteration, can have WIP commits
 
 #### 🎯 `master` - Stable Release
+
 - **Purpose:** Production-ready code only
 - **Frequency:** End of day merge from dev-test
 - **Testing:** Full CI/CD pipeline with strict checks
 - **Rules:** All tests must pass, no breaking changes
 
 #### 🚀 `production` - Live App
+
 - **Purpose:** What users see
 - **Frequency:** Manual APK builds when ready
 - **Testing:** Already tested in master
 - **Rules:** Never commit directly, only deploy from master
 
 #### 🎨 Feature branches (e.g., `admin-dashboard`)
+
 - **Purpose:** Major features or refactoring
 - **Merge to:** dev-test first, then master
 - **Rules:** Create PR, get tested, then merge
@@ -39,6 +43,7 @@
 ## 📋 Daily Workflow
 
 ### Morning Setup
+
 ```bash
 # Start your day
 git checkout dev-test
@@ -48,6 +53,7 @@ git pull origin dev-test
 ```
 
 ### Throughout the Day
+
 ```bash
 # Make changes, then commit frequently
 git add .
@@ -59,6 +65,7 @@ git push origin dev-test
 ```
 
 ### End of Day (Merge to Master)
+
 ```bash
 # 1. Make sure all tests pass on dev-test
 npm test
@@ -86,17 +93,20 @@ git checkout dev-test
 ### Creating a PR from dev-test to master
 
 1. **On GitHub:**
+
    - Go to: https://github.com/RahulMirji/Cloth_Recommendation
    - Click "Pull requests" → "New pull request"
    - Base: `master` ← Compare: `dev-test`
    - Click "Create pull request"
 
 2. **PR Title Examples:**
+
    - "✨ Daily update: Added user profile enhancements"
    - "🐛 Fix: Login authentication issue"
    - "📱 Update: UI improvements and bug fixes"
 
 3. **Wait for CI:**
+
    - ✅ All tests must pass
    - ✅ Linting must pass
    - ✅ Build verification must pass
@@ -110,6 +120,7 @@ git checkout dev-test
 ## 🧪 CI/CD Pipeline Overview
 
 ### Dev-Test Pipeline (Fast & Permissive)
+
 ```yaml
 File: .github/workflows/dev-test-ci.yml
 Triggers: Every push to dev-test
@@ -122,8 +133,9 @@ Goal: Quick feedback on daily changes
 ```
 
 ### Master Pipeline (Your Existing CI/CD - Strict & Comprehensive)
+
 ```yaml
-Files: 
+Files:
   - .github/workflows/ci-cd.yml (main pipeline)
   - .github/workflows/pr-checks.yml (PR validation)
   - .github/workflows/security-scan.yml (security)
@@ -145,6 +157,7 @@ Goal: Ensure production readiness & security
 ## 🎯 Quick Reference Commands
 
 ### Daily Commands
+
 ```bash
 # Morning start
 git checkout dev-test && git pull
@@ -161,6 +174,7 @@ git diff
 ```
 
 ### End of Day Commands
+
 ```bash
 # Merge to master (Option 1: Direct merge)
 git checkout master
@@ -173,6 +187,7 @@ git push origin master
 ```
 
 ### Emergency Rollback
+
 ```bash
 # If something breaks on master
 git checkout master
@@ -191,11 +206,13 @@ git push origin dev-test
 ## 🚀 Building APK (Manual Process)
 
 ### When to Build
+
 - ✅ Master branch has all tests passing
 - ✅ You've tested the app locally
 - ✅ Ready for users to test/use
 
 ### Build Commands
+
 ```bash
 # Make sure you're on master
 git checkout master
@@ -216,13 +233,16 @@ npm run build:android
 ## 📊 Viewing CI/CD Results
 
 ### On GitHub
+
 1. Go to repository: https://github.com/RahulMirji/Cloth_Recommendation
 2. Click "Actions" tab
 3. See all workflow runs
 4. Click any run to see details
 
 ### Status Badges (Optional)
+
 Add to README.md:
+
 ```markdown
 ![Dev-Test CI](https://github.com/RahulMirji/Cloth_Recommendation/workflows/Dev-Test%20CI/badge.svg?branch=dev-test)
 ![Master CI](https://github.com/RahulMirji/Cloth_Recommendation/workflows/Master%20CI/badge.svg?branch=master)
@@ -244,6 +264,7 @@ Use prefixes for clarity:
 - `🔧 Config:` Configuration changes
 
 Examples:
+
 ```bash
 git commit -m "✨ Add: Dark mode toggle in settings"
 git commit -m "🐛 Fix: Login button not responding"
@@ -256,6 +277,7 @@ git commit -m "🧪 Test: Add tests for admin dashboard"
 ## 🛡️ Best Practices
 
 ### DO ✅
+
 - Commit frequently to dev-test (even small changes)
 - Run `npm test` before pushing to master
 - Write descriptive commit messages
@@ -264,6 +286,7 @@ git commit -m "🧪 Test: Add tests for admin dashboard"
 - Merge to master at end of day
 
 ### DON'T ❌
+
 - Don't commit directly to master (always via dev-test)
 - Don't merge to master with failing tests
 - Don't skip CI checks
@@ -275,6 +298,7 @@ git commit -m "🧪 Test: Add tests for admin dashboard"
 ## 🆘 Troubleshooting
 
 ### "Tests failing on CI but pass locally"
+
 ```bash
 # Clear cache and reinstall
 rm -rf node_modules package-lock.json
@@ -283,11 +307,13 @@ npm test
 ```
 
 ### "CI is stuck or taking too long"
+
 - Check GitHub Actions tab
 - Cancel workflow and re-run
 - Check if dependencies are cached
 
 ### "Merge conflicts between dev-test and master"
+
 ```bash
 git checkout dev-test
 git pull origin master  # Bring master changes to dev-test
