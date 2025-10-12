@@ -6,10 +6,6 @@
  */
 
 export const ADMIN_CONFIG = {
-  // Admin credentials (change these to your actual credentials)
-  ADMIN_EMAIL: 'devprahulmirji@gmail.com', // Change this to your email
-  ADMIN_PASSWORD: 'Rahul@Admin44$.', // Change this to a secure password
-  
   // Session configuration
   SESSION_TIMEOUT_MS: 10 * 60 * 1000, // 10 minutes
   
