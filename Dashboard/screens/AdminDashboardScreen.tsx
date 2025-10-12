@@ -14,7 +14,6 @@ import {
   RefreshControl,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator,
   Modal,
   Image,
@@ -31,10 +30,11 @@ import { PaymentStatsCard } from '../components/PaymentStatsCard';
 import type { DashboardUser } from '../types';
 import { PaymentSubmission, PaymentStats, STATUS_COLORS, STATUS_LABELS } from '../types/payment.types';
 import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, formatCurrency, formatDate } from '../services/paymentAdminService';
-import { ADMIN_CONFIG } from '../constants/config';
+import { getThemedAdminColors } from '../constants/config';
 import { Footer } from '@/components/Footer';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { showCustomAlert } from '@/utils/customAlert';
+import { useApp } from '@/contexts/AppContext';
 
 // Local lightweight components (kept inside screen to avoid missing external imports)
 const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ payment, onPress }) => {
@@ -49,7 +49,13 @@ const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ p
       />
       
       <View style={styles.paymentCardLeft}>
-        <Image source={{ uri: payment.screenshot_url }} style={styles.paymentThumb} />
+        {payment.user_profile_image ? (
+          <Image source={{ uri: payment.user_profile_image }} style={styles.paymentUserAvatar} />
+        ) : (
+          <View style={styles.paymentUserAvatarPlaceholder}>
+            <Ionicons name="person" size={24} color="#9ca3af" />
+          </View>
+        )}
       </View>
       <View style={styles.paymentCardBody}>
         <Text style={styles.paymentCardName}>{payment.user_name}</Text>
@@ -66,10 +72,14 @@ const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ p
   );
 };
 
-const UserProfilePreview: React.FC<{ userName?: string; userEmail?: string; userPhone?: string; userId?: string }> = ({ userName, userEmail, userPhone, userId }) => (
+const UserProfilePreview: React.FC<{ userName?: string; userEmail?: string; userPhone?: string; userId?: string; userProfileImage?: string | null }> = ({ userName, userEmail, userPhone, userId, userProfileImage }) => (
   <View style={styles.userPreviewCard}>
     <View style={styles.userAvatar}>
-      <Ionicons name="person" size={28} color="#fff" />
+      {userProfileImage ? (
+        <Image source={{ uri: userProfileImage }} style={styles.userAvatarImage} />
+      ) : (
+        <Ionicons name="person" size={28} color="#fff" />
+      )}
     </View>
     <View style={{ marginLeft: 12 }}>
       <Text style={styles.userPreviewName}>{userName}</Text>
@@ -149,6 +159,8 @@ const RejectReasonModal: React.FC<{ visible: boolean; onClose: () => void; onCon
 export default function AdminDashboardScreen() {
   const router = useRouter();
   const { isAuthenticated, logout } = useAdminAuthContext();
+  const { settings } = useApp();
+  const isDarkMode = settings.isDarkMode;
   
   console.log('Dashboard auth state:', { isAuthenticated });
   
@@ -161,9 +173,8 @@ export default function AdminDashboardScreen() {
   } = useUserManagement();
   const { stats, isLoading: statsLoading, refresh: refreshStats } = useAdminStats();
 
-  // Use ADMIN_CONFIG colors and default to light mode
-  const colors = ADMIN_CONFIG.COLORS;
-  const isDarkMode = false; // Default to light mode
+  // Get themed colors based on user's app theme
+  const colors = getThemedAdminColors(isDarkMode);
 
   const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'payments'>('stats');
   const [searchQuery, setSearchQuery] = useState('');
@@ -346,9 +357,9 @@ export default function AdminDashboardScreen() {
     if (result.success) {
       setShowDeleteModal(false);
       setSelectedUser(null);
-      Alert.alert('Success', 'User deleted successfully');
+      showCustomAlert('success', 'Success', 'User deleted successfully');
     } else {
-      Alert.alert('Error', result.error || 'Failed to delete user');
+      showCustomAlert('error', 'Error', result.error || 'Failed to delete user');
     }
   }, [selectedUser, removeUser]);
 
@@ -966,6 +977,7 @@ export default function AdminDashboardScreen() {
                   userEmail={selectedPayment.user_email}
                   userPhone={selectedPayment.user_phone}
                   userId={selectedPayment.user_id}
+                  userProfileImage={selectedPayment.user_profile_image}
                 />
 
                 {/* Transaction Details */}
@@ -1626,6 +1638,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#f3f4f6',
   },
+  paymentUserAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 2,
+    borderColor: '#8B5CF6',
+  },
+  paymentUserAvatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   paymentCardBody: {
     flex: 1,
   },
@@ -1676,6 +1706,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#8B5CF6',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  userAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 24,
   },
   userPreviewName: {
     fontSize: 15,
