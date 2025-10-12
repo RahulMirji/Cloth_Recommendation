@@ -23,29 +23,132 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useAdminAuthContext } from '../contexts/AdminAuthContext';
 import { useUserManagement, useAdminStats } from '../hooks';
-import { StatsCard, UserListItem, DeleteUserModal, UserDetailsModal, LogoutConfirmModal, PaymentStatsCard, PaymentRequestCard, UserProfilePreview, ScreenshotPreviewModal, RejectReasonModal, ApprovalActionSheet } from '../components';
+import { StatsCard, UserListItem, DeleteUserModal, UserDetailsModal, LogoutConfirmModal } from '../components';
+import { PaymentStatsCard } from '../components/PaymentStatsCard';
 import type { DashboardUser } from '../types';
 import { PaymentSubmission, PaymentStats, STATUS_COLORS, STATUS_LABELS } from '../types/payment.types';
 import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, formatCurrency, formatDate } from '../services/paymentAdminService';
 import { ADMIN_CONFIG } from '../constants/config';
-import { useApp } from '@/contexts/AppContext';
 import { Footer } from '@/components/Footer';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { showCustomAlert } from '@/utils/customAlert';
 
-export default function AdminDashboardScreen() {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🟣 ADMIN DASHBOARD SCREEN RENDERED');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
-  const router = useRouter();
-  const { settings } = useApp();
-  const isDarkMode = settings.isDarkMode;
-  const colors = ADMIN_CONFIG.COLORS;
+// Local lightweight components (kept inside screen to avoid missing external imports)
+const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ payment, onPress }) => {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.paymentCard} activeOpacity={0.9}>
+      {/* Subtle gradient overlay */}
+      <LinearGradient
+        colors={['rgba(139, 92, 246, 0.03)', 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={StyleSheet.absoluteFill}
+      />
+      
+      <View style={styles.paymentCardLeft}>
+        <Image source={{ uri: payment.screenshot_url }} style={styles.paymentThumb} />
+      </View>
+      <View style={styles.paymentCardBody}>
+        <Text style={styles.paymentCardName}>{payment.user_name}</Text>
+        <View style={styles.paymentCardMeta}> 
+          <Text style={styles.paymentAmount}>₹ {payment.amount}</Text>
+          <Text style={styles.paymentUTR}> · UTR: {String(payment.utr_number).slice(0, 6)}...</Text>
+        </View>
+        <Text style={styles.paymentCardSub}>{new Date(payment.submitted_at).toLocaleString()}</Text>
+      </View>
+      <View style={styles.paymentCardRight}>
+        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+      </View>
+    </TouchableOpacity>
+  );
+};
 
-  const { logout, isAuthenticated } = useAdminAuthContext();
+const UserProfilePreview: React.FC<{ userName?: string; userEmail?: string; userPhone?: string; userId?: string }> = ({ userName, userEmail, userPhone, userId }) => (
+  <View style={styles.userPreviewCard}>
+    <View style={styles.userAvatar}>
+      <Ionicons name="person" size={28} color="#fff" />
+    </View>
+    <View style={{ marginLeft: 12 }}>
+      <Text style={styles.userPreviewName}>{userName}</Text>
+      <Text style={styles.userPreviewInfo}>{userEmail}</Text>
+      <Text style={styles.userPreviewInfo}>{userPhone}</Text>
+    </View>
+  </View>
+);
+
+const ScreenshotPreviewModal: React.FC<{ visible: boolean; imageUrl: string; onClose: () => void }> = ({ visible, imageUrl, onClose }) => (
+  <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+    <View style={styles.screenshotOverlayFull}>
+      <BlurView intensity={80} style={StyleSheet.absoluteFill} tint="dark">
+        <TouchableOpacity style={styles.screenshotCloseArea} onPress={onClose} activeOpacity={1} />
+      </BlurView>
+      
+      {/* Close Button - Positioned at top right */}
+      <TouchableOpacity 
+        style={styles.screenshotCloseButton} 
+        onPress={onClose}
+        activeOpacity={0.8}
+      >
+        <View style={styles.screenshotCloseButtonCircle}>
+          <Ionicons name="close" size={28} color="#1f2937" />
+        </View>
+      </TouchableOpacity>
+      
+      <Image source={{ uri: imageUrl }} style={styles.screenshotFull} resizeMode="contain" />
+    </View>
+  </Modal>
+);
+
+const ApprovalActionSheet: React.FC<{ visible: boolean; onClose: () => void; onConfirm: (notes?: string) => void; loading?: boolean; amount?: number }> = ({ visible, onClose, onConfirm, loading }) => {
+  const [notes, setNotes] = React.useState('');
+  return (
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+      <View style={styles.sheetOverlay}>
+        <View style={styles.sheetContainer}>
+          <Text style={styles.sheetTitle}>Confirm Approval</Text>
+          <TextInput placeholder="Admin notes (optional)" value={notes} onChangeText={setNotes} style={styles.sheetInput} />
+          <View style={styles.sheetButtons}>
+            <TouchableOpacity onPress={onClose} style={[styles.sheetBtn, styles.sheetCancel]}>
+              <Text style={[styles.sheetBtnText, styles.sheetBtnTextCancel]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onConfirm(notes)} style={[styles.sheetBtn, styles.sheetConfirm]} disabled={loading}>
+              <Text style={[styles.sheetBtnText, styles.sheetBtnTextConfirm]}>{loading ? 'Processing...' : 'Approve'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const RejectReasonModal: React.FC<{ visible: boolean; onClose: () => void; onConfirm: (reason: string) => void; loading?: boolean }> = ({ visible, onClose, onConfirm, loading }) => {
+  const [reason, setReason] = React.useState('');
+  return (
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+      <View style={styles.sheetOverlay}>
+        <View style={styles.sheetContainer}>
+          <Text style={styles.sheetTitle}>Reject Payment</Text>
+          <TextInput placeholder="Rejection reason" value={reason} onChangeText={setReason} style={styles.sheetInput} />
+          <View style={styles.sheetButtons}>
+            <TouchableOpacity onPress={onClose} style={[styles.sheetBtn, styles.sheetCancel]}>
+              <Text style={[styles.sheetBtnText, styles.sheetBtnTextCancel]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onConfirm(reason)} style={[styles.sheetBtn, styles.sheetConfirm]} disabled={loading || !reason.trim()}>
+              <Text style={[styles.sheetBtnText, styles.sheetBtnTextConfirm]}>{loading ? 'Processing...' : 'Reject'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+export default function AdminDashboardScreen() {
+  const router = useRouter();
+  const { isAuthenticated, logout } = useAdminAuthContext();
   
   console.log('Dashboard auth state:', { isAuthenticated });
   
@@ -57,6 +160,10 @@ export default function AdminDashboardScreen() {
     searchUsers,
   } = useUserManagement();
   const { stats, isLoading: statsLoading, refresh: refreshStats } = useAdminStats();
+
+  // Use ADMIN_CONFIG colors and default to light mode
+  const colors = ADMIN_CONFIG.COLORS;
+  const isDarkMode = false; // Default to light mode
 
   const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'payments'>('stats');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1228,6 +1335,7 @@ const styles = StyleSheet.create({
   // Payment styles (matching usersContainer structure)
   paymentsContainer: {
     position: 'relative',
+    marginHorizontal: -16, // Negative margin to counteract contentContainer padding
   },
   paymentsBackgroundGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -1237,10 +1345,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10, // reduced height to match users search
+    paddingVertical: 10,
     borderRadius: 16,
     borderWidth: 1.5,
     marginBottom: 16,
+    marginHorizontal: 16, // Add horizontal margin for search bar
     gap: 10,
     shadowColor: '#8B5CF6',
     shadowOffset: { width: 0, height: 4 },
@@ -1254,21 +1363,27 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   paymentTabsContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
+    marginHorizontal: 16, // Add horizontal margin for tabs
   },
   paymentTabsContent: {
     gap: 8,
+    paddingHorizontal: 2,
   },
   paymentTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     gap: 6,
-    backgroundColor: 'transparent',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   paymentTabActive: {
-    // active state will be highlighted via text color only
+    backgroundColor: '#EDE9FE',
+    borderColor: '#8B5CF6',
   },
   paymentTabText: {
     fontSize: 14,
@@ -1276,16 +1391,18 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   paymentTabTextActive: {
-    color: '#6b7280',
+    color: '#7C3AED',
   },
   paymentBadge: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
   },
   paymentBadgeActive: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#8B5CF6',
   },
   paymentBadgeText: {
     fontSize: 12,
@@ -1293,7 +1410,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   paymentBadgeTextActive: {
-    color: '#374151',
+    color: '#fff',
   },
   paymentListContainer: {
     flex: 1,
@@ -1480,5 +1597,191 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  // Payment Request Card Styles - Beautiful Glass Container
+  paymentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    marginHorizontal: 16, // Add horizontal margin to match user cards
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  paymentCardLeft: {
+    marginRight: 12,
+  },
+  paymentThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+  },
+  paymentCardBody: {
+    flex: 1,
+  },
+  paymentCardName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  paymentCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  paymentAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#8B5CF6',
+  },
+  paymentUTR: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  paymentCardSub: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  paymentCardRight: {
+    marginLeft: 8,
+  },
+  // User Preview Card Styles
+  userPreviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userPreviewName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 2,
+  },
+  userPreviewInfo: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  // Screenshot Modal Styles
+  screenshotOverlayFull: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  screenshotCloseArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  screenshotCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+  },
+  screenshotCloseButtonCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  screenshotFull: {
+    width: '90%',
+    height: '80%',
+    zIndex: 1,
+  },
+  // Action Sheet Styles
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheetContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  sheetInput: {
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: '#1f2937',
+    marginBottom: 20,
+    backgroundColor: '#f9fafb',
+  },
+  sheetButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  sheetBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetCancel: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+  },
+  sheetConfirm: {
+    backgroundColor: '#8B5CF6',
+  },
+  sheetBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  sheetBtnTextConfirm: {
+    color: '#fff',
+  },
+  sheetBtnTextCancel: {
+    color: '#1f2937',
   },
 });

@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/lib/supabase';
 import { verifyAdminCredentials } from '../services/adminService';
 import { ADMIN_CONFIG } from '../constants/config';
 import type { AdminAuthState } from '../types';
@@ -188,6 +189,20 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
    */
   const logout = useCallback(async () => {
     console.log('🚪 Admin logout...');
+    
+    // Sign out from Supabase
+    try {
+      console.log('🔓 Signing out from Supabase...');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Supabase sign out error:', error);
+      } else {
+        console.log('✅ Signed out from Supabase');
+      }
+    } catch (error) {
+      console.error('❌ Exception during Supabase sign out:', error);
+    }
+    
     await clearSession();
     setAuthState({
       isAuthenticated: false,

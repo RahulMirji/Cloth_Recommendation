@@ -21,6 +21,7 @@ const ADMIN_EMAIL_KEY = '@admin_email';
 
 /**
  * Verify if the provided credentials match admin credentials
+ * AND sign in to Supabase to authenticate for RPC calls
  */
 export const verifyAdminCredentials = async (
   email: string,
@@ -86,8 +87,34 @@ export const verifyAdminCredentials = async (
       };
     }
 
+    // CRITICAL: Sign in to Supabase to authenticate for RPC calls
+    console.log('🔐 Signing in to Supabase with admin credentials...');
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (authError) {
+      console.log('❌ Supabase auth sign-in failed:', authError.message);
+      return { 
+        success: false, 
+        error: 'Authentication failed. Please ensure your admin account exists in Supabase Auth.' 
+      };
+    }
+
+    if (!authData.user) {
+      console.log('❌ No user returned from Supabase auth');
+      return { 
+        success: false, 
+        error: 'Authentication failed. No user found.' 
+      };
+    }
+
+    console.log('✅ Supabase auth sign-in successful!');
+    console.log('User ID:', authData.user.id);
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✅ ALL CHECKS PASSED - CREDENTIALS VERIFIED');
+    console.log('✅ ALL CHECKS PASSED - CREDENTIALS VERIFIED & AUTHENTICATED');
     console.log('✅ Admin credentials verified successfully for:', email);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     return { success: true };
