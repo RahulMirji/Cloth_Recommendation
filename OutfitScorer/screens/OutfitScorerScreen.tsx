@@ -39,6 +39,16 @@ import {
 } from '@/OutfitScorer/utils/productRecommendations';
 import { Footer } from '@/components/Footer';
 import { useImageUpload } from '@/OutfitScorer/hooks/useImageUpload';
+import { CreditDisplay } from '@/OutfitScorer/components/CreditDisplay';
+import { OutOfCreditsModal } from '@/OutfitScorer/components/OutOfCreditsModal';
+import { PaymentUploadScreen } from '@/OutfitScorer/components/PaymentUploadScreen';
+import { 
+  getUserCredits, 
+  deductCredit, 
+  hasCreditsAvailable, 
+  getMaxCredits,
+  UserCredits 
+} from '@/OutfitScorer/services/creditService';
 
 interface ScoringResult {
   score: number;
@@ -63,6 +73,11 @@ export default function OutfitScorerScreen() {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false);
   const [glowAnim] = useState(new Animated.Value(0));
   const [selectedModel, setSelectedModel] = useState<AIModel>(getDefaultModel());
+  
+  // Credit system state
+  const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
+  const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
+  const [showPaymentScreen, setShowPaymentScreen] = useState(false);
   
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
@@ -94,6 +109,35 @@ export default function OutfitScorerScreen() {
       ])
     ).start();
   }, []);
+
+  // Load user credits on mount and when screen is focused
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadUserCredits();
+    }
+  }, [session?.user?.id]);
+
+  const loadUserCredits = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const credits = await getUserCredits(session.user.id);
+      setUserCredits(credits);
+    } catch (error) {
+      console.error('Error loading user credits:', error);
+    }
+  };
+
+  const handleUpgradePress = () => {
+    setShowOutOfCreditsModal(false);
+    setShowPaymentScreen(true);
+  };
+
+  const handlePaymentClose = () => {
+    setShowPaymentScreen(false);
+    // Reload credits after payment submission
+    loadUserCredits();
+  };
 
   // Load from history if historyId is provided
   useEffect(() => {
@@ -211,6 +255,19 @@ export default function OutfitScorerScreen() {
   const analyzeOutfit = async () => {
     if (!selectedImage) return;
 
+    // Check if user has credits
+    if (!session?.user?.id) {
+      showAlert('error', 'Authentication Required', 'Please login to analyze outfits.');
+      return;
+    }
+
+    // Check credits availability
+    const hasCredits = await hasCreditsAvailable(session.user.id);
+    if (!hasCredits) {
+      setShowOutOfCreditsModal(true);
+      return;
+    }
+
     setIsAnalyzing(true);
     setResult(null);
 
@@ -291,6 +348,15 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
       
       setResult(parsedResult);
       setIsAnalyzing(false);
+
+      // Deduct one credit after successful analysis
+      if (session?.user?.id) {
+        const creditDeducted = await deductCredit(session.user.id);
+        if (creditDeducted) {
+          // Reload credits to update UI
+          await loadUserCredits();
+        }
+      }
 
       // Generate product recommendations based on missing items
       // Enhanced with gender detection and context-aware filtering
@@ -458,6 +524,30 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
             <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
               <X size={24} color={themedColors.text} />
             </TouchableOpacity>
+          ),
+          headerRight: () => (
+            selectedImage && userCredits && session?.user ? (
+              <View style={styles.headerRightContainer}>
+                <View style={styles.headerCreditBadge}>
+                  <Sparkles size={14} color="#8B5CF6" />
+                  <Text style={styles.headerCreditText}>
+                    {userCredits.credits_remaining}/{userCredits.credits_cap}
+                  </Text>
+                  {userCredits.credits_cap === 100 ? (
+                    <View style={styles.headerProBadge}>
+                      <Text style={styles.headerProText}>PRO</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity 
+                      onPress={() => setShowPaymentScreen(true)}
+                      style={styles.headerUpgradeButton}
+                    >
+                      <Text style={styles.headerUpgradeText}>Upgrade</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ) : null
           ),
         }}
       />
@@ -710,6 +800,19 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
         {/* Footer */}
         {result && <Footer />}
       </ScrollView>
+
+      {/* Out of Credits Modal */}
+      <OutOfCreditsModal
+        visible={showOutOfCreditsModal}
+        onClose={() => setShowOutOfCreditsModal(false)}
+        onUpgrade={handleUpgradePress}
+      />
+
+      {/* Payment Upload Screen */}
+      <PaymentUploadScreen
+        visible={showPaymentScreen}
+        onClose={handlePaymentClose}
+      />
     </View>
   );
 }
@@ -720,6 +823,51 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+  },
+  // Header credit display styles
+  headerRightContainer: {
+    marginRight: 8,
+  },
+  headerCreditBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+  },
+  headerCreditText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8B5CF6',
+  },
+  headerProBadge: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.4)',
+  },
+  headerProText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFD700',
+    letterSpacing: 0.5,
+  },
+  headerUpgradeButton: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  headerUpgradeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
   },
   scrollView: {
     flex: 1,
