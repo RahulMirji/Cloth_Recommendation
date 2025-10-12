@@ -1,7 +1,6 @@
--- Update get_payment_submissions RPC to include user profile image
--- This adds the user's profile_image from user_profiles table
+-- Restore get_payment_submissions RPC function (basic version without profile images)
+-- This will get your payment requests working again
 
--- Drop existing function first (required when changing return type)
 DROP FUNCTION IF EXISTS get_payment_submissions(text);
 
 CREATE OR REPLACE FUNCTION get_payment_submissions(filter_status text DEFAULT NULL)
@@ -11,9 +10,8 @@ RETURNS TABLE (
   user_name text,
   user_email text,
   user_phone text,
-  user_profile_image text,
   amount numeric,
-  utr_number text,
+  utr_number varchar(32),
   submitted_at timestamptz,
   reviewed_at timestamptz,
   reviewer_name text,
@@ -31,13 +29,12 @@ BEGIN
     up.name as user_name,
     up.email as user_email,
     up.phone as user_phone,
-    up.profile_image as user_profile_image,
     29::numeric as amount,
     ps.utr as utr_number,
     ps.created_at as submitted_at,
     ps.reviewed_at,
-    ps.admin_note as admin_notes,
     ps.admin_note as reviewer_name,
+    ps.admin_note as admin_notes,
     ps.screenshot_path as screenshot_url,
     ps.status,
     ps.plan_id,
@@ -60,5 +57,5 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant execute permission to authenticated users (admins will check via RLS)
+-- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION get_payment_submissions TO authenticated;
