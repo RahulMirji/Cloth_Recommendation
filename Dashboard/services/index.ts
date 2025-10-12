@@ -5,3 +5,4 @@
  */
 
 export * from './adminService';
+export * from './paymentAdminService';

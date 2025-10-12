@@ -109,44 +109,44 @@ jobs:
           echo "📦 Build Profile: production"
           echo "🏷️ Build Type: APK"
           echo ""
-          
+
           echo "🏗️ Starting EAS build (this will take 15-25 minutes)..."
           echo ""
-          
+
           # Start the build and capture the output
           set +e  # Don't exit on error
           BUILD_OUTPUT=$(eas build --platform android --profile production --non-interactive --wait 2>&1)
           BUILD_EXIT_CODE=$?
           set -e  # Re-enable exit on error
-          
+
           echo "$BUILD_OUTPUT"
           echo ""
-          
+
           # Check if build failed
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
             echo "❌ EAS build failed with exit code: $BUILD_EXIT_CODE"
             echo "::error::EAS build failed. Check the logs above for details."
             exit 1
           fi
-          
+
           # Extract build ID (UUID format) and URL from output
           # EAS Build IDs are UUIDs like: 12345678-1234-1234-1234-123456789abc
           BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || echo "unknown")
           APK_URL=$(echo "$BUILD_OUTPUT" | grep -oP 'https://expo\.dev/[^\s]+' | head -1 || echo "")
-          
+
           # If we couldn't extract Build ID, try alternative patterns
           if [ "$BUILD_ID" == "unknown" ]; then
             BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -i "build" | grep -oP '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || echo "unknown")
           fi
-          
+
           echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "apk-url=$APK_URL" >> $GITHUB_OUTPUT
-          
+
           echo ""
           echo "✅ Build completed successfully!"
           echo "🆔 Build ID: $BUILD_ID"
           echo "🔗 APK URL: $APK_URL"
-          
+
           # Fail if we couldn't extract Build ID
           if [ "$BUILD_ID" == "unknown" ]; then
             echo "❌ Could not extract Build ID from EAS output"
@@ -159,42 +159,42 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           echo "📥 Downloading APK from EAS..."
-          
+
           BUILD_ID="${{ steps.build.outputs.build-id }}"
-          
+
           # Check if we have a valid Build ID
           if [ "$BUILD_ID" == "unknown" ] || [ -z "$BUILD_ID" ]; then
             echo "❌ No valid Build ID available. Cannot download APK."
             echo "::error::Build ID extraction failed. Check the build logs."
             exit 1
           fi
-          
+
           echo "🆔 Using Build ID: $BUILD_ID"
-          
+
           # Get the build details using EAS CLI (human-readable format)
           echo "📋 Fetching build details..."
           echo "Running: eas build:view $BUILD_ID"
-          
+
           BUILD_VIEW=$(eas build:view $BUILD_ID 2>&1)
-          
+
           echo "Build details:"
           echo "$BUILD_VIEW"
           echo ""
-          
+
           # Extract download URL from the output
           # EAS outputs the URL in format: "Download URL: https://..."
           DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -oP 'https://[^\s]+\.apk' | head -1)
-          
+
           if [ -z "$DOWNLOAD_URL" ]; then
             # Try alternative pattern for EAS output
             DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -i "artifact" | grep -oP 'https://[^\s]+' | head -1)
           fi
-          
+
           if [ -z "$DOWNLOAD_URL" ]; then
             # Try to find any expo.dev URL
             DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -oP 'https://expo-artifacts[^\s]+' | head -1)
           fi
-          
+
           if [ -n "$DOWNLOAD_URL" ] && [ "$DOWNLOAD_URL" != "null" ]; then
             echo "🔗 Download URL: $DOWNLOAD_URL"
             echo "⬇️ Downloading APK..."
@@ -280,43 +280,43 @@ jobs:
         run: |
           # Get commit messages since last release
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+
           if [ -n "$LAST_TAG" ]; then
             COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
           else
             COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -n 10)
           fi
-          
+
           # Create release notes
           cat << EOF > release-notes.md
           ## 🚀 AI Dresser - Release v${{ github.run_number }}
-          
+
           **Build Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')
           **Branch:** master
           **Commit:** ${{ github.sha }}
-          
+
           ### 📱 Downloads
-          
+
           - **Android APK:** ai-dresser-${{ github.run_number }}.apk
-          
+
           ### 📝 Changes in this Release
-          
+
           $COMMITS
-          
+
           ### 🔗 Links
-          
+
           - [Expo Build Details](${{ needs.build-android.outputs.apk-url }})
           - [Commit History](https://github.com/${{ github.repository }}/commits/master)
-          
+
           ---
-          
+
           **Installation Instructions:**
           1. Download the APK file
           2. Enable "Install from Unknown Sources" on your Android device
           3. Install the APK
           4. Enjoy! 🎉
           EOF
-          
+
           echo "Release notes generated!"
 
       - name: 🏷️ Create GitHub Release
@@ -374,7 +374,7 @@ jobs:
           echo "- **Branch:** master" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.deploy-production.result }}" == "success" ]; then
             echo "## ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY

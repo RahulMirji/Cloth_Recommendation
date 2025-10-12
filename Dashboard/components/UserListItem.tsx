@@ -154,7 +154,7 @@ export const UserListItem: React.FC<UserListItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 18,
+    padding: 14,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 14,
@@ -164,6 +164,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+    borderLeftWidth: 6,
+    borderLeftColor: 'rgba(139,92,246,0.9)', // subtle accent matching theme
   },
   avatarContainer: {
     marginRight: 14,
