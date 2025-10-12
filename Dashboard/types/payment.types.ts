@@ -12,6 +12,7 @@ export interface PaymentSubmission {
   user_name?: string;
   user_email?: string;
   user_phone?: string;
+  user_profile_image?: string | null;
   amount?: number;
   utr_number?: string;
   submitted_at?: string | Date;
