@@ -8,20 +8,60 @@ import {
   PaymentActionResult,
 } from '../types/payment.types';
 
+// @ts-nocheck - Supabase types not regenerated yet, ignoring type errors for payment functions
+
 export const getPaymentSubmissions = async (
   status: PaymentStatus | null = null
 ): Promise<PaymentSubmission[]> => {
   try {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔍 FETCHING PAYMENTS');
+    console.log('Filter status:', status);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     const { data, error } = await supabase.rpc('get_payment_submissions', {
       filter_status: status,
     });
 
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📊 RPC RESPONSE');
+    console.log('Has error:', !!error);
     if (error) {
+      console.log('Error details:', JSON.stringify(error, null, 2));
+      console.log('Error message:', error.message);
+      console.log('Error code:', (error as any).code);
+      console.log('Error hint:', (error as any).hint);
+      console.log('Error details:', (error as any).details);
+    }
+    console.log('Has data:', !!data);
+    if (data) {
+      console.log('Data type:', typeof data);
+      console.log('Data is array:', Array.isArray(data));
+      console.log('Data length:', Array.isArray(data) ? (data as any).length : 'N/A');
+      if (Array.isArray(data) && (data as any).length > 0) {
+        console.log('First payment:', JSON.stringify((data as any)[0], null, 2));
+        console.log('First payment keys:', Object.keys((data as any)[0]));
+      }
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    if (error) {
+      console.log('❌ Throwing error:', error.message);
       throw new Error(error.message);
     }
 
+    console.log('✅ Returning data, count:', (data || []).length);
     return data || [];
   } catch (error) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('❌ CATCH BLOCK ERROR');
+    console.log('Error type:', typeof error);
+    console.log('Error:', error);
+    if (error instanceof Error) {
+      console.log('Error message:', error.message);
+      console.log('Error stack:', error.stack);
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     throw error;
   }
 };
@@ -98,6 +138,34 @@ export const rejectPayment = async ({
       success: true,
       message: 'Payment rejected. User has been notified.',
       data: data as PaymentSubmission,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'An unexpected error occurred',
+    };
+  }
+};
+
+export const deletePayment = async (
+  paymentId: string
+): Promise<PaymentActionResult> => {
+  try {
+    // @ts-ignore - payment_submissions not in generated types yet
+    const { data, error } = await supabase.rpc('delete_payment_submission', {
+      payment_id: paymentId,
+    });
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to delete payment',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Payment deleted successfully. User credits have been reverted.',
     };
   } catch (error: any) {
     return {

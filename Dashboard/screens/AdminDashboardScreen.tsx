@@ -29,7 +29,7 @@ import { StatsCard, UserListItem, DeleteUserModal, UserDetailsModal, LogoutConfi
 import { PaymentStatsCard } from '../components/PaymentStatsCard';
 import type { DashboardUser } from '../types';
 import { PaymentSubmission, PaymentStats, STATUS_COLORS, STATUS_LABELS } from '../types/payment.types';
-import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, formatCurrency, formatDate } from '../services/paymentAdminService';
+import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, deletePayment, formatCurrency, formatDate } from '../services/paymentAdminService';
 import { getThemedAdminColors } from '../constants/config';
 import { Footer } from '@/components/Footer';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -49,13 +49,7 @@ const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ p
       />
       
       <View style={styles.paymentCardLeft}>
-        {payment.user_profile_image ? (
-          <Image source={{ uri: payment.user_profile_image }} style={styles.paymentUserAvatar} />
-        ) : (
-          <View style={styles.paymentUserAvatarPlaceholder}>
-            <Ionicons name="person" size={24} color="#9ca3af" />
-          </View>
-        )}
+        <Image source={{ uri: payment.screenshot_url }} style={styles.paymentThumb} />
       </View>
       <View style={styles.paymentCardBody}>
         <Text style={styles.paymentCardName}>{payment.user_name}</Text>
@@ -72,14 +66,10 @@ const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ p
   );
 };
 
-const UserProfilePreview: React.FC<{ userName?: string; userEmail?: string; userPhone?: string; userId?: string; userProfileImage?: string | null }> = ({ userName, userEmail, userPhone, userId, userProfileImage }) => (
+const UserProfilePreview: React.FC<{ userName?: string; userEmail?: string; userPhone?: string; userId?: string }> = ({ userName, userEmail, userPhone, userId }) => (
   <View style={styles.userPreviewCard}>
     <View style={styles.userAvatar}>
-      {userProfileImage ? (
-        <Image source={{ uri: userProfileImage }} style={styles.userAvatarImage} />
-      ) : (
-        <Ionicons name="person" size={28} color="#fff" />
-      )}
+      <Ionicons name="person" size={28} color="#fff" />
     </View>
     <View style={{ marginLeft: 12 }}>
       <Text style={styles.userPreviewName}>{userName}</Text>
@@ -197,6 +187,7 @@ export default function AdminDashboardScreen() {
   const [showScreenshot, setShowScreenshot] = useState(false);
   const [showApproveSheet, setShowApproveSheet] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDeletePaymentModal, setShowDeletePaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
 
   // Redirect if not authenticated
@@ -229,10 +220,17 @@ export default function AdminDashboardScreen() {
     try {
       if (showLoading) setPaymentsLoading(true);
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔄 LOADING PAYMENT DATA');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       const [statsData, paymentsData] = await Promise.all([
         getPaymentStats(),
         getPaymentSubmissions(null),
       ]);
+
+      console.log('✅ Loaded payments:', paymentsData.length);
+      console.log('Payment IDs:', paymentsData.map(p => p.id));
 
       setPaymentStats(statsData);
       setAllPayments(paymentsData);
@@ -329,6 +327,48 @@ export default function AdminDashboardScreen() {
     } catch (error: any) {
       console.error('❌ Rejection failed:', error);
       showCustomAlert('error', 'Error', error.message || 'Failed to reject payment');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
+  // Handle delete payment
+  const handleDeletePayment = async () => {
+    if (!selectedPayment) return;
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🗑️ DELETING PAYMENT');
+    console.log('Payment ID:', selectedPayment.id);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    try {
+      setProcessingPayment(true);
+      const result = await deletePayment(selectedPayment.id);
+
+      console.log('Delete result:', result);
+
+      if (result.success) {
+        // Close modals first
+        setShowDeletePaymentModal(false);
+        setShowPaymentDetail(false);
+        setSelectedPayment(null);
+        
+        console.log('✅ Payment deleted, reloading data...');
+        
+        // Show success message
+        showCustomAlert('success', 'Deleted', result.message);
+        
+        // Reload payment data to update UI
+        await loadPaymentData(false);
+        
+        console.log('✅ Data reloaded after delete');
+      } else {
+        console.log('❌ Delete failed:', result.message);
+        showCustomAlert('error', 'Failed', result.message);
+      }
+    } catch (error: any) {
+      console.error('❌ Delete failed:', error);
+      showCustomAlert('error', 'Error', error.message || 'Failed to delete payment');
     } finally {
       setProcessingPayment(false);
     }
@@ -977,7 +1017,6 @@ export default function AdminDashboardScreen() {
                   userEmail={selectedPayment.user_email}
                   userPhone={selectedPayment.user_phone}
                   userId={selectedPayment.user_id}
-                  userProfileImage={selectedPayment.user_profile_image}
                 />
 
                 {/* Transaction Details */}
@@ -1093,6 +1132,24 @@ export default function AdminDashboardScreen() {
                   </TouchableOpacity>
                 </View>
               )}
+
+              {/* Delete Button (only for approved/rejected) */}
+              {(selectedPayment.status === 'approved' || selectedPayment.status === 'rejected') && (
+                <View style={styles.paymentActionsContainer}>
+                  <TouchableOpacity
+                    onPress={() => setShowDeletePaymentModal(true)}
+                    disabled={processingPayment}
+                    style={[
+                      styles.paymentActionButton,
+                      styles.paymentDeleteButton,
+                      processingPayment && styles.buttonDisabled,
+                    ]}
+                  >
+                    <MaterialCommunityIcons name="delete" size={20} color="#fff" />
+                    <Text style={styles.paymentActionButtonText}>Delete Payment</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </>
           )}
           </View>
@@ -1126,6 +1183,51 @@ export default function AdminDashboardScreen() {
         onConfirm={handleRejectPayment}
         loading={processingPayment}
       />
+
+      {/* Delete Payment Confirmation Modal */}
+      <Modal
+        visible={showDeletePaymentModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowDeletePaymentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalPopup, { backgroundColor: isDarkMode ? colors.backgroundDark : colors.background, width: '85%', maxWidth: 400 }]}>
+            <View style={styles.deleteModalHeader}>
+              <MaterialCommunityIcons name="alert-circle" size={48} color="#ef4444" />
+              <Text style={[styles.deleteModalTitle, { color: isDarkMode ? '#f9fafb' : '#111827' }]}>
+                Delete Payment?
+              </Text>
+              <Text style={[styles.deleteModalMessage, { color: isDarkMode ? '#d1d5db' : '#6b7280' }]}>
+                This will permanently delete the payment record and revert the user's subscription status. 
+                {selectedPayment?.status === 'approved' && ' The user will lose their premium credits and be shown as "Out of Credits".'}
+              </Text>
+            </View>
+
+            <View style={styles.deleteModalActions}>
+              <TouchableOpacity
+                onPress={() => setShowDeletePaymentModal(false)}
+                disabled={processingPayment}
+                style={[styles.deleteModalButton, styles.cancelButton]}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleDeletePayment}
+                disabled={processingPayment}
+                style={[styles.deleteModalButton, styles.deleteButton]}
+              >
+                {processingPayment ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1602,6 +1704,9 @@ const styles = StyleSheet.create({
   paymentApproveButton: {
     backgroundColor: '#10B981',
   },
+  paymentDeleteButton: {
+    backgroundColor: '#DC2626',
+  },
   paymentActionButtonText: {
     fontSize: 16,
     fontWeight: '700',
@@ -1609,6 +1714,51 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  // Delete Payment Modal Styles
+  deleteModalHeader: {
+    alignItems: 'center',
+    padding: 24,
+  },
+  deleteModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  deleteModalMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  deleteModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 16,
+    paddingTop: 0,
+  },
+  deleteModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  deleteButton: {
+    backgroundColor: '#DC2626',
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
   // Payment Request Card Styles - Beautiful Glass Container
   paymentCard: {
