@@ -16,7 +16,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -26,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdminAuthContext } from '../contexts/AdminAuthContext';
 import { ADMIN_CONFIG } from '../constants/config';
 import { useApp } from '@/contexts/AppContext';
+import { showCustomAlert } from '@/utils/customAlert';
 
 export default function AdminLoginScreen() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -34,8 +34,6 @@ export default function AdminLoginScreen() {
   
   const router = useRouter();
   const { login, isLoading } = useAdminAuthContext();
-  const { settings } = useApp();
-  const isDarkMode = settings.isDarkMode;
   const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
@@ -57,7 +55,7 @@ export default function AdminLoginScreen() {
     
     if (!email.trim() || !password.trim()) {
       console.log('❌ Validation failed: Email or password is empty');
-      Alert.alert('Error', 'Please enter both email and password');
+      showCustomAlert('error', 'Error', 'Please enter both email and password');
       return;
     }
 
@@ -83,14 +81,14 @@ export default function AdminLoginScreen() {
         console.log('✅ Router.replace called successfully');
       } else {
         console.log('❌ Login failed with error:', result.error);
-        Alert.alert('Login Failed', result.error || 'Invalid credentials');
+        showCustomAlert('error', 'Login Failed', result.error || 'Invalid credentials');
       }
     } catch (error) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('❌ EXCEPTION IN LOGIN HANDLER');
       console.log('Error:', error);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      Alert.alert('Error', 'An unexpected error occurred');
+      showCustomAlert('error', 'Error', 'An unexpected error occurred');
     }
   };
 
@@ -98,6 +96,7 @@ export default function AdminLoginScreen() {
     router.back();
   };
 
+  // Always use light theme for admin login
   const colors = ADMIN_CONFIG.COLORS;
 
   return (

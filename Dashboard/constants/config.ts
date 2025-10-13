@@ -6,10 +6,6 @@
  */
 
 export const ADMIN_CONFIG = {
-  // Admin credentials (change these to your actual credentials)
-  ADMIN_EMAIL: 'devprahulmirji@gmail.com', // Change this to your email
-  ADMIN_PASSWORD: 'connect', // Change this to a secure password
-  
   // Session configuration
   SESSION_TIMEOUT_MS: 10 * 60 * 1000, // 10 minutes
   
@@ -79,6 +75,47 @@ export const ADMIN_CONFIG = {
     iconBackground: 'rgba(139, 92, 246, 0.2)', // primary with 20% opacity
   },
 } as const;
+
+/**
+ * Get themed colors based on dark mode setting
+ */
+export const getThemedAdminColors = (isDarkMode: boolean) => {
+  const base = ADMIN_CONFIG.COLORS;
+  
+  return {
+    ...base,
+    // Gradient - darker in dark mode
+    gradientStart: isDarkMode ? '#6D28D9' : base.gradientStart,
+    gradientEnd: isDarkMode ? '#BE185D' : base.gradientEnd,
+    
+    // Backgrounds
+    background: isDarkMode ? '#111827' : base.background,
+    backgroundSecondary: isDarkMode ? '#1F2937' : base.backgroundSecondary,
+    backgroundTertiary: isDarkMode ? '#374151' : base.backgroundTertiary,
+    
+    // Cards
+    card: isDarkMode ? '#1F2937' : base.card,
+    cardSecondary: isDarkMode ? '#374151' : base.cardSecondary,
+    
+    // Form container - adjusted for dark mode
+    formContainer: isDarkMode ? 'rgba(55, 65, 81, 0.95)' : base.formContainer,
+    formContainerBorder: isDarkMode ? 'rgba(75, 85, 99, 0.5)' : base.formContainerBorder,
+    
+    // Text
+    text: isDarkMode ? base.textDark : base.text,
+    textSecondary: isDarkMode ? base.textSecondaryDark : base.textSecondary,
+    
+    // Borders
+    border: isDarkMode ? base.borderDark : base.border,
+    
+    // Input fields
+    input: isDarkMode ? '#374151' : base.input,
+    inputBorder: isDarkMode ? base.inputBorderDark : base.inputBorder,
+    
+    // Overlays
+    overlay: isDarkMode ? 'rgba(0, 0, 0, 0.7)' : base.overlay,
+  };
+};
 
 // Warning message shown in dev mode
 export const DEV_WARNING = `
