@@ -40,27 +40,46 @@ import { useApp } from '@/contexts/AppContext';
 const PaymentRequestCard: React.FC<{ payment: any; onPress: () => void }> = ({ payment, onPress }) => {
   return (
     <TouchableOpacity onPress={onPress} style={styles.paymentCard} activeOpacity={0.9}>
-      {/* Subtle gradient overlay */}
+      {/* Liquid Prism Glass Effect */}
       <LinearGradient
-        colors={['rgba(139, 92, 246, 0.03)', 'transparent']}
+        colors={['rgba(139, 92, 246, 0.08)', 'rgba(236, 72, 153, 0.04)', 'transparent']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
       
+      {/* Prism orbs */}
+      <View style={styles.prismOrb1} />
+      <View style={styles.prismOrb2} />
+      
       <View style={styles.paymentCardLeft}>
-        <Image source={{ uri: payment.screenshot_url }} style={styles.paymentThumb} />
+        <View style={styles.thumbnailWrapper}>
+          <LinearGradient
+            colors={['rgba(139, 92, 246, 0.2)', 'rgba(236, 72, 153, 0.2)']}
+            style={styles.thumbnailGradient}
+          />
+          <Image source={{ uri: payment.screenshot_url }} style={styles.paymentThumb} />
+        </View>
       </View>
       <View style={styles.paymentCardBody}>
         <Text style={styles.paymentCardName}>{payment.user_name}</Text>
         <View style={styles.paymentCardMeta}> 
-          <Text style={styles.paymentAmount}>₹ {payment.amount}</Text>
+          <LinearGradient
+            colors={['#8B5CF6', '#EC4899']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.amountGradient}
+          >
+            <Text style={styles.paymentAmount}>₹ {payment.amount}</Text>
+          </LinearGradient>
           <Text style={styles.paymentUTR}> · UTR: {String(payment.utr_number).slice(0, 6)}...</Text>
         </View>
         <Text style={styles.paymentCardSub}>{new Date(payment.submitted_at).toLocaleString()}</Text>
       </View>
       <View style={styles.paymentCardRight}>
-        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+        <View style={styles.chevronWrapper}>
+          <Ionicons name="chevron-forward" size={20} color="#8B5CF6" />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -935,8 +954,10 @@ export default function AdminDashboardScreen() {
         {activeTab === 'users' && renderUsers()}
         {activeTab === 'payments' && renderPayments()}
         
-        {/* Footer */}
-        <Footer showSocialLinks={false} showQuickLinks={true} />
+        {/* Footer with adjusted margins */}
+        <View style={styles.footerWrapper}>
+          <Footer showSocialLinks={false} showQuickLinks={true} />
+        </View>
       </ScrollView>
 
       {/* Delete Modal */}
@@ -1344,6 +1365,10 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+  },
+  footerWrapper: {
+    marginHorizontal: -16,
+    marginTop: 24,
   },
   loadingContainer: {
     flex: 1,
@@ -1764,28 +1789,64 @@ const styles = StyleSheet.create({
   paymentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-    marginHorizontal: 16, // Add horizontal margin to match user cards
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
+    marginHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.15)',
     shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
     overflow: 'hidden',
     position: 'relative',
   },
-  paymentCardLeft: {
-    marginRight: 12,
+  prismOrb1: {
+    position: 'absolute',
+    top: -20,
+    right: 40,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
   },
-  paymentThumb: {
+  prismOrb2: {
+    position: 'absolute',
+    bottom: -15,
+    left: 60,
     width: 60,
     height: 60,
-    borderRadius: 12,
+    borderRadius: 30,
+    backgroundColor: 'rgba(236, 72, 153, 0.06)',
+  },
+  paymentCardLeft: {
+    marginRight: 14,
+  },
+  thumbnailWrapper: {
+    position: 'relative',
+    borderRadius: 14,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  thumbnailGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  paymentThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
     backgroundColor: '#f3f4f6',
   },
   paymentUserAvatar: {
@@ -1810,33 +1871,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   paymentCardName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#1f2937',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   paymentCardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
+  amountGradient: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 6,
+  },
   paymentAmount: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#8B5CF6',
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.3,
   },
   paymentUTR: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#6b7280',
   },
   paymentCardSub: {
     fontSize: 12,
     color: '#9ca3af',
-    fontWeight: '500',
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
   paymentCardRight: {
     marginLeft: 8,
+  },
+  chevronWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // User Preview Card Styles
   userPreviewCard: {

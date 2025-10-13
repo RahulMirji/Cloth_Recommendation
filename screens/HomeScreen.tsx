@@ -14,8 +14,8 @@
 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Sparkles, Shirt, User, Wand2 } from 'lucide-react-native';
-import React from 'react';
+import { Camera, Sparkles, Shirt, User, Wand2, X } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -24,6 +24,7 @@ import {
   ScrollView,
   useColorScheme,
   Image,
+  Modal,
 } from 'react-native';
 
 import { useApp } from '@/contexts/AppContext';
@@ -36,9 +37,39 @@ export function HomeScreen() {
   const { settings, userProfile } = useApp();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
+  const [showGuidance, setShowGuidance] = useState(false);
 
   // Get user name or default to 'Guest'
   const userName = userProfile?.name || 'Guest';
+
+  // Check if user needs guidance (no profile photo)
+  useEffect(() => {
+    const checkFirstTimeUser = async () => {
+      try {
+        const hasProfileImage = userProfile?.profileImage && 
+          (userProfile.profileImage.startsWith('http://') || userProfile.profileImage.startsWith('https://'));
+        
+        // Show guidance if user doesn't have a profile image
+        if (!hasProfileImage) {
+          // Small delay to let the screen mount
+          setTimeout(() => setShowGuidance(true), 1000);
+        }
+      } catch (error) {
+        console.error('Error checking first time user:', error);
+      }
+    };
+
+    checkFirstTimeUser();
+  }, [userProfile?.profileImage]);
+
+  const handleCloseGuidance = async () => {
+    setShowGuidance(false);
+  };
+
+  const handleGoToProfile = async () => {
+    setShowGuidance(false);
+    router.push('/profile' as any);
+  };
 
   const ProfileButton = () => {
     // Validate that profile image is a valid URL (Supabase Storage or other valid URL)
@@ -89,6 +120,94 @@ export function HomeScreen() {
           style={StyleSheet.absoluteFill}
         />
       )}
+      
+      {/* First-Time User Guidance Modal */}
+      <Modal
+        visible={showGuidance}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseGuidance}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.guidanceCard, isDarkMode && styles.guidanceCardDark]}>
+            <TouchableOpacity 
+              style={styles.closeModalButton}
+              onPress={handleCloseGuidance}
+            >
+              <X size={24} color={isDarkMode ? Colors.white : Colors.text} />
+            </TouchableOpacity>
+            
+            <View style={styles.guidanceIconContainer}>
+              <LinearGradient
+                colors={[Colors.primary, Colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.guidanceIcon}
+              >
+                <User size={40} color={Colors.white} strokeWidth={2.5} />
+              </LinearGradient>
+            </View>
+            
+            <Text style={[styles.guidanceTitle, isDarkMode && styles.textDark]}>
+              Welcome to AI DressUp! 👋
+            </Text>
+            
+            <Text style={[styles.guidanceText, isDarkMode && styles.guidanceTextDark]}>
+              Let's set up your profile to get personalized fashion recommendations!
+            </Text>
+            
+            <View style={styles.guidanceSteps}>
+              <View style={styles.guidanceStep}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <Text style={[styles.stepText, isDarkMode && styles.guidanceTextDark]}>
+                  Click the profile icon in the top right corner
+                </Text>
+              </View>
+              
+              <View style={styles.guidanceStep}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>2</Text>
+                </View>
+                <Text style={[styles.stepText, isDarkMode && styles.guidanceTextDark]}>
+                  Upload your profile photo by tapping the camera icon
+                </Text>
+              </View>
+              
+              <View style={styles.guidanceStep}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+                <Text style={[styles.stepText, isDarkMode && styles.guidanceTextDark]}>
+                  Fill in your details for better recommendations
+                </Text>
+              </View>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.guidanceButton}
+              onPress={handleGoToProfile}
+            >
+              <LinearGradient
+                colors={[Colors.primary, Colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.guidanceButtonGradient}
+              >
+                <Text style={styles.guidanceButtonText}>Set Up Profile</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={handleCloseGuidance}>
+              <Text style={[styles.skipText, isDarkMode && styles.guidanceTextDark]}>
+                Skip for now
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -475,5 +594,127 @@ const styles = StyleSheet.create({
   },
   infoTextDark: {
     color: Colors.textLight,
+  },
+  // Guidance Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  guidanceCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: 28,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  guidanceCardDark: {
+    backgroundColor: '#1E293B',
+  },
+  closeModalButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    zIndex: 1,
+  },
+  guidanceIconContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  guidanceIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  guidanceTitle: {
+    fontSize: 24,
+    fontWeight: FontWeights.bold,
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  guidanceText: {
+    fontSize: FontSizes.body,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  guidanceTextDark: {
+    color: Colors.textLight,
+  },
+  guidanceSteps: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  guidanceStep: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    fontSize: 14,
+    fontWeight: FontWeights.bold,
+    color: Colors.white,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: FontSizes.body,
+    color: Colors.text,
+    lineHeight: 22,
+  },
+  guidanceButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  guidanceButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guidanceButtonText: {
+    fontSize: FontSizes.body,
+    fontWeight: FontWeights.bold,
+    color: Colors.white,
+  },
+  skipText: {
+    fontSize: FontSizes.small,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: FontWeights.medium,
   },
 });
