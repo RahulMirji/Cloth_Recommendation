@@ -263,255 +263,404 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
+      animationType="fade"
+      transparent={true}
       onRequestClose={onClose}
     >
-      <View style={[
-        styles.container,
-        { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
-      ]}>
-        {/* Header */}
+      {/* Dark Overlay */}
+      <View style={styles.modalOverlay}>
+        {/* Centered Card Container */}
         <View style={[
-          styles.header,
-          { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
+          styles.modalCard,
+          { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }
         ]}>
-          <Text style={[
-            styles.headerTitle,
-            { color: themedColors.text }
-          ]}>
-            Upgrade to Pro
-          </Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            activeOpacity={0.8}
-          >
-            <X size={24} color={themedColors.text} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Price Banner */}
+          {/* Gradient Header with Close Button */}
           <LinearGradient
-            colors={['#8B5CF6', '#7C3AED']}
+            colors={['#8B5CF6', '#EC4899']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.priceBanner}
+            style={styles.gradientHeader}
           >
-            <Text style={styles.priceLabel}>Monthly Subscription</Text>
-            <Text style={styles.priceAmount}>₹29</Text>
-            <Text style={styles.priceFeatures}>100 Credits • 30 Days Access</Text>
+            <View style={styles.headerContent}>
+              <View style={styles.headerIcon}>
+                <Upload size={28} color="#FFFFFF" strokeWidth={2.5} />
+              </View>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerTitle}>Upgrade to Pro</Text>
+                <Text style={styles.headerSubtitle}>Unlock unlimited credits</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+              activeOpacity={0.8}
+            >
+              <X size={24} color="#FFFFFF" strokeWidth={2.5} />
+            </TouchableOpacity>
           </LinearGradient>
 
-          {/* QR Code Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <QrCode size={24} color="#8B5CF6" />
-              <Text style={[styles.sectionTitle, { color: themedColors.text }]}>
-                Scan QR to Pay
-              </Text>
-            </View>
-            <View style={[
-              styles.qrContainer,
-              { backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB' }
-            ]}>
-              <Image 
-                source={QR_CODE_IMAGE}
-                style={styles.qrCode}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={[styles.qrInstructions, { color: themedColors.textSecondary }]}>
-              Scan this QR code with any UPI app to pay ₹29
-            </Text>
-          </View>
-
-          {/* UTR Number Input */}
-          <View style={styles.section}>
-            <Text style={[styles.inputLabel, { color: themedColors.text }]}>
-              UTR / Transaction Reference Number *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                { 
-                  backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB',
-                  color: themedColors.text,
-                  borderColor: isDarkMode ? '#3A3A3A' : '#E5E7EB'
-                }
-              ]}
-              placeholder="Enter 12-digit UTR number"
-              placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
-              value={utrNumber}
-              onChangeText={setUtrNumber}
-              keyboardType="numeric"
-              maxLength={12}
-              editable={!isUploading}
-            />
-            <Text style={[styles.helperText, { color: themedColors.textSecondary }]}>
-              Must be exactly 12 digits
-            </Text>
-          </View>
-
-          {/* Screenshot Upload */}
-          <View style={styles.section}>
-            <Text style={[styles.inputLabel, { color: themedColors.text }]}>
-              Payment Screenshot *
-            </Text>
-            
-            {screenshot ? (
-              <View style={styles.screenshotPreview}>
-                <Image 
-                  source={{ uri: screenshot }} 
-                  style={styles.screenshotImage}
-                  resizeMode="cover"
-                />
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => setScreenshot(null)}
-                  activeOpacity={0.8}
-                >
-                  <X size={20} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.uploadArea,
-                  { 
-                    backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB',
-                    borderColor: isDarkMode ? '#3A3A3A' : '#E5E7EB'
-                  }
-                ]}
-                onPress={handlePickImage}
-                activeOpacity={0.8}
-                disabled={isUploading}
-              >
-                <View style={styles.uploadIconContainer}>
-                  <ImageIcon size={48} color="#8B5CF6" strokeWidth={1.5} />
-                </View>
-                <Text style={[styles.uploadTitle, { color: themedColors.text }]}>
-                  Upload Payment Screenshot
-                </Text>
-                <Text style={[styles.uploadSubtitle, { color: themedColors.textSecondary }]}>
-                  Tap to select from gallery
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Instructions */}
-          <View style={[
-            styles.instructionsContainer,
-            { backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6' }
-          ]}>
-            <AlertCircle size={20} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
-            <Text style={[styles.instructionsText, { color: themedColors.textSecondary }]}>
-              After payment, enter the 12-digit UTR number and upload a screenshot. 
-              Your request will be reviewed within 2 hours.
-            </Text>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButtonContainer, isUploading && styles.submitButtonDisabled]}
-            onPress={submitPayment}
-            activeOpacity={0.9}
-            disabled={isUploading}
+          {/* Scrollable Content */}
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
           >
+            {/* Premium Price Banner */}
             <LinearGradient
-              colors={isUploading ? ['#9CA3AF', '#6B7280'] : ['#8B5CF6', '#EC4899']}
+              colors={['#8B5CF6', '#EC4899', '#F59E0B']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.submitGradient}
+              style={styles.priceBanner}
             >
-              {isUploading ? (
-                <>
-                  <ActivityIndicator color="#fff" size="small" />
-                  <Text style={styles.submitButtonText}>
-                    Uploading... {uploadProgress}%
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Upload size={20} color="#fff" />
-                  <Text style={styles.submitButtonText}>Submit Payment</Text>
-                </>
-              )}
+              <View style={styles.priceMainSection}>
+                <Text style={styles.priceAmount}>₹29</Text>
+                <Text style={styles.priceFrequency}>/month</Text>
+              </View>
+              <View style={styles.featuresList}>
+                <View style={styles.featureItem}>
+                  <CheckCircle2 size={16} color="#FFFFFF" strokeWidth={2.5} />
+                  <Text style={styles.featureText}>100 Credits</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <CheckCircle2 size={16} color="#FFFFFF" strokeWidth={2.5} />
+                  <Text style={styles.featureText}>30 Days Access</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <CheckCircle2 size={16} color="#FFFFFF" strokeWidth={2.5} />
+                  <Text style={styles.featureText}>All Features Unlocked</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <CheckCircle2 size={16} color="#FFFFFF" strokeWidth={2.5} />
+                  <Text style={styles.featureText}>Priority Support</Text>
+                </View>
+              </View>
             </LinearGradient>
-          </TouchableOpacity>
-        </ScrollView>
+
+            {/* QR Code Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <QrCode size={22} color="#8B5CF6" strokeWidth={2.5} />
+                <Text style={[styles.sectionTitle, { color: themedColors.text }]}>
+                  QR Code Image
+                </Text>
+              </View>
+              
+              {/* Merchant Name */}
+              <Text style={[styles.merchantName, { color: themedColors.text }]}>
+                Rahul Mirji
+              </Text>
+              
+              {/* QR Code Container with Gradient Border */}
+              <View style={styles.qrCodeWrapper}>
+                <LinearGradient
+                  colors={['#8B5CF6', '#EC4899', '#F59E0B']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.qrGradientBorder}
+                >
+                  <View style={[
+                    styles.qrContainer,
+                    { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }
+                  ]}>
+                    <Image 
+                      source={QR_CODE_IMAGE}
+                      style={styles.qrCode}
+                      resizeMode="cover"
+                    />
+                  </View>
+                </LinearGradient>
+              </View>
+              
+              {/* UPI ID */}
+              <Text style={[styles.upiId, { color: themedColors.textSecondary }]}>
+                rahul.mirji@ptyes
+              </Text>
+              
+              <Text style={[styles.qrInstructions, { color: themedColors.textSecondary }]}>
+                Scan with any UPI app to pay
+              </Text>
+            </View>
+
+            {/* UTR Number Input */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <CheckCircle2 size={22} color="#8B5CF6" strokeWidth={2.5} />
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>
+                  UTR / Transaction Reference Number *
+                </Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.input,
+                  { 
+                    backgroundColor: isDarkMode ? '#1E1E1E' : '#F9FAFB',
+                    color: themedColors.text,
+                    borderColor: utrNumber.length > 0 ? '#8B5CF6' : (isDarkMode ? '#3A3A3A' : '#E5E7EB')
+                  }
+                ]}
+                placeholder="Enter 12-digit UTR number"
+                placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
+                value={utrNumber}
+                onChangeText={setUtrNumber}
+                keyboardType="numeric"
+                maxLength={12}
+                editable={!isUploading}
+              />
+              <Text style={[styles.helperText, { color: themedColors.textSecondary }]}>
+                Find this in your payment confirmation SMS/email
+              </Text>
+            </View>
+
+            {/* Screenshot Upload */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <ImageIcon size={22} color="#8B5CF6" strokeWidth={2.5} />
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>
+                  Payment Screenshot *
+                </Text>
+              </View>
+              
+              {screenshot ? (
+                <View style={styles.screenshotPreviewContainer}>
+                  <View style={styles.screenshotPreview}>
+                    <Image 
+                      source={{ uri: screenshot }} 
+                      style={styles.screenshotImage}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => setScreenshot(null)}
+                      activeOpacity={0.8}
+                    >
+                      <X size={20} color="#fff" strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.screenshotSuccessIndicator}>
+                    <CheckCircle2 size={18} color="#10B981" strokeWidth={2.5} />
+                    <Text style={styles.screenshotSuccessText}>Screenshot uploaded!</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.uploadAreaWrapper}>
+                  <LinearGradient
+                    colors={['#8B5CF6', '#EC4899', '#F59E0B']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.uploadGradientBorder}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.uploadArea,
+                        { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }
+                      ]}
+                      onPress={handlePickImage}
+                      activeOpacity={0.7}
+                      disabled={isUploading}
+                    >
+                      <LinearGradient
+                        colors={['rgba(139, 92, 246, 0.1)', 'rgba(236, 72, 153, 0.1)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.uploadGradientBg}
+                      >
+                        <View style={styles.uploadIconContainer}>
+                          <LinearGradient
+                            colors={['#8B5CF6', '#EC4899']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.uploadIconGradient}
+                          >
+                            <ImageIcon size={32} color="#FFFFFF" strokeWidth={2} />
+                          </LinearGradient>
+                        </View>
+                        <Text style={[styles.uploadTitle, { color: themedColors.text }]}>
+                          Tap to Upload Screenshot
+                        </Text>
+                        <Text style={[styles.uploadSubtitle, { color: themedColors.textSecondary }]}>
+                          Select payment screenshot from gallery
+                        </Text>
+                        <View style={styles.uploadHintBadge}>
+                          <Text style={styles.uploadHintText}>JPG, PNG • Max 5MB</Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </LinearGradient>
+                </View>
+              )}
+            </View>
+
+            {/* Instructions */}
+            <View style={[
+              styles.instructionsContainer,
+              { 
+                backgroundColor: isDarkMode ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.08)',
+                borderColor: isDarkMode ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'
+              }
+            ]}>
+              <AlertCircle size={22} color="#8B5CF6" strokeWidth={2.5} />
+              <Text style={[styles.instructionsText, { color: themedColors.text }]}>
+                After completing the payment, enter the 12-digit UTR number and upload a clear screenshot. 
+                Your Pro subscription will be activated within 2 hours after admin review.
+              </Text>
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={[styles.submitButtonContainer, isUploading && styles.submitButtonDisabled]}
+              onPress={submitPayment}
+              activeOpacity={0.85}
+              disabled={isUploading}
+            >
+              <LinearGradient
+                colors={isUploading ? ['#9CA3AF', '#6B7280'] : ['#10B981', '#059669', '#047857']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitGradient}
+              >
+                {isUploading ? (
+                  <>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={styles.submitButtonText}>
+                      Uploading... {uploadProgress}%
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={20} color="#fff" strokeWidth={2.5} />
+                    <Text style={styles.submitButtonText}>Submit Payment Proof</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  // Modal Overlay & Card
+  modalOverlay: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
-  header: {
+  modalCard: {
+    width: '100%',
+    maxWidth: 500,
+    height: '90%',  // Changed from maxHeight to height for proper constraint
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+    flexDirection: 'column',
+  },
+  // Gradient Header
+  gradientHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingVertical: 20,
+    paddingTop: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollView: {
     flex: 1,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 30,
   },
+  // Premium Price Banner
   priceBanner: {
-    padding: 24,
     borderRadius: 16,
-    alignItems: 'center',
+    padding: 24,
     marginBottom: 24,
-    elevation: 4,
     shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  priceLabel: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600',
-    marginBottom: 8,
+  priceMainSection: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 16,
   },
   priceAmount: {
     fontSize: 48,
-    color: '#fff',
-    fontWeight: '800',
-    marginBottom: 8,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -2,
   },
-  priceFeatures: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+  priceFrequency: {
+    fontSize: 18,
     fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginLeft: 4,
+  },
+  featuresList: {
+    gap: 10,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  featureText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   section: {
     marginBottom: 24,
@@ -519,164 +668,238 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+  },
+  // Merchant Info
+  merchantName: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  // QR Code with Gradient Border
+  qrCodeWrapper: {
+    marginBottom: 10,
+  },
+  qrGradientBorder: {
+    padding: 4,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   qrContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
+    padding: 12,
     borderRadius: 16,
     alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    justifyContent: 'center',
+    width: '100%',
+    aspectRatio: 1,
   },
   qrCode: {
-    width: 250,
-    height: 250,
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  upiId: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   qrInstructions: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 20,
+    fontStyle: 'italic',
+    fontWeight: '500',
   },
   inputLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 8,
   },
   input: {
     backgroundColor: '#fff',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    fontSize: 17,
+    fontWeight: '600',
     color: '#1F2937',
+    letterSpacing: 1,
   },
   helperText: {
     fontSize: 13,
     color: '#6B7280',
-    marginTop: 6,
+    marginTop: 8,
     marginLeft: 4,
+    fontWeight: '500',
+  },
+  // Enhanced Upload Area with Gradient Border
+  uploadAreaWrapper: {
+    borderRadius: 20,
+  },
+  uploadGradientBorder: {
+    padding: 3,
+    borderRadius: 20,
   },
   uploadArea: {
     backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#8B5CF6',
-    borderRadius: 16,
-    paddingVertical: 48,
-    paddingHorizontal: 24,
+    borderRadius: 17,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
     alignItems: 'center',
-    borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  uploadGradientBg: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
   },
   uploadIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F3E8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 16,
   },
+  uploadIconGradient: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   uploadTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   uploadSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 12,
   },
-  uploadButtons: {
-    gap: 12,
+  uploadHintBadge: {
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
   },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#8B5CF6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    borderStyle: 'dashed',
-  },
-  uploadButtonText: {
-    fontSize: 16,
+  uploadHintText: {
+    fontSize: 11,
     fontWeight: '600',
     color: '#8B5CF6',
   },
+  // Screenshot Preview
+  screenshotPreviewContainer: {
+    gap: 12,
+  },
+  screenshotSuccessIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  screenshotSuccessText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10B981',
+  },
   screenshotPreview: {
     position: 'relative',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 3,
+    borderColor: '#8B5CF6',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   screenshotImage: {
     width: '100%',
-    height: 300,
+    height: 280,
   },
   removeButton: {
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(239, 68, 68, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   instructionsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
     backgroundColor: '#FEF3C7',
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 14,
     marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
   },
   instructionsText: {
     flex: 1,
-    fontSize: 13,
-    color: '#92400E',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#1F2937',
+    lineHeight: 20,
+    fontWeight: '500',
   },
   submitButtonContainer: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#8B5CF6',
+    marginTop: 4,
+    elevation: 6,
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
   },
   submitButtonDisabled: {
     elevation: 0,
     shadowOpacity: 0,
+    opacity: 0.6,
   },
   submitGradient: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 16,
     gap: 8,
   },
   submitButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#fff',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });
