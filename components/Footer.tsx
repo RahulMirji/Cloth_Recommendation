@@ -48,7 +48,7 @@ export function Footer({
   const isDarkMode = colorScheme === 'dark' || settings.isDarkMode;
 
   const currentYear = new Date().getFullYear();
-  const appVersion = '1.0.0';
+  const appVersion = '1.1.8';
 
   const socialLinks = [
     {
@@ -184,7 +184,7 @@ export function Footer({
       {/* App Info */}
       <View style={styles.section}>
         <Text style={[styles.appName, isDarkMode && styles.appNameDark]}>
-          AI Dresser
+          Cloth Recommendation
         </Text>
         <Text style={[styles.tagline, isDarkMode && styles.taglineDark]}>
           Your AI-Powered Fashion Assistant
@@ -194,23 +194,24 @@ export function Footer({
       {/* Made with Love */}
       <View style={styles.madeWithLove}>
         <Text style={[styles.madeWithText, isDarkMode && styles.madeWithTextDark]}>
-          Made with
+          Developed by Rahul Mirji and team
         </Text>
-        <Heart 
-          size={14} 
-          color={Colors.error} 
-          fill={Colors.error}
-          style={styles.heartIcon}
-        />
-        <Text style={[styles.madeWithText, isDarkMode && styles.madeWithTextDark]}>
-          by Rahul Mirji
+      </View>
+      
+      {/* Guidance */}
+      <View style={styles.guidanceContainer}>
+        <Text style={[styles.guidanceText, isDarkMode && styles.guidanceTextDark]}>
+          Under the guidance of Dr. Tabassum Ar
+        </Text>
+        <Text style={[styles.collegeText, isDarkMode && styles.collegeTextDark]}>
+          HKBK College of Engineering
         </Text>
       </View>
 
       {/* Copyright & Version */}
       <View style={styles.copyrightContainer}>
         <Text style={[styles.copyright, isDarkMode && styles.copyrightDark]}>
-          © {currentYear} AI Dresser. All rights reserved.
+          © {currentYear} Cloth Recommendation. All rights reserved.
         </Text>
         <Text style={[styles.version, isDarkMode && styles.versionDark]}>
           Version {appVersion}
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
     gap: 6,
   },
   madeWithText: {
@@ -347,6 +348,27 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.medium,
   },
   madeWithTextDark: {
+    color: Colors.textLight,
+  },
+  guidanceContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 4,
+  },
+  guidanceText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: FontWeights.medium,
+  },
+  guidanceTextDark: {
+    color: Colors.textLight,
+  },
+  collegeText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: FontWeights.semibold,
+  },
+  collegeTextDark: {
     color: Colors.textLight,
   },
   heartIcon: {
