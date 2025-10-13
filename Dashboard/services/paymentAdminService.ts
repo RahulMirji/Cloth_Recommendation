@@ -214,7 +214,8 @@ export const getPaymentById = async (
   }
 };
 
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number | undefined): string => {
+  if (amount === undefined || amount === null) return '₹0.00';
   return `₹${amount.toFixed(2)}`;
 };
 
