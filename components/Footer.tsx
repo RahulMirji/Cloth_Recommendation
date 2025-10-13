@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   collegeText: {
     fontSize: 12,
     color: Colors.textSecondary,
-    fontWeight: FontWeights.semiBold,
+    fontWeight: FontWeights.semibold,
   },
   collegeTextDark: {
     color: Colors.textLight,
