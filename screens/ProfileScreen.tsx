@@ -876,8 +876,8 @@ const styles = StyleSheet.create({
   },
   upgradePillAvatar: {
     position: 'absolute',
-    bottom: 20,
-    right: -18,
+    bottom: 30,
+    right: -12,
     borderRadius: 14,
     overflow: 'hidden',
     shadowColor: Colors.primary,

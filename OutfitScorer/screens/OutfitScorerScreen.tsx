@@ -78,6 +78,8 @@ export default function OutfitScorerScreen() {
   const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [showPaymentScreen, setShowPaymentScreen] = useState(false);
+  const [creditPulseAnim] = useState(new Animated.Value(1));
+  const [creditGlowAnim] = useState(new Animated.Value(0));
   
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
@@ -109,6 +111,55 @@ export default function OutfitScorerScreen() {
       ])
     ).start();
   }, []);
+
+  // Credit pulse/glow animation when credit is deducted
+  const animateCreditDeduction = () => {
+    // Reset animations
+    creditPulseAnim.setValue(1);
+    creditGlowAnim.setValue(0);
+    
+    // Enhanced pulse animation (more dramatic heartbeat effect)
+    Animated.sequence([
+      // Quick expand
+      Animated.timing(creditPulseAnim, {
+        toValue: 1.4,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      // Bounce shrink
+      Animated.timing(creditPulseAnim, {
+        toValue: 0.85,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      // Second bounce expand
+      Animated.timing(creditPulseAnim, {
+        toValue: 1.25,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      // Settle back
+      Animated.timing(creditPulseAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Enhanced glow animation (more visible flash)
+    Animated.sequence([
+      Animated.timing(creditGlowAnim, {
+        toValue: 0.4,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(creditGlowAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   // Load user credits on mount and when screen is focused
   useEffect(() => {
@@ -353,6 +404,9 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
       if (session?.user?.id) {
         const creditDeducted = await deductCredit(session.user.id);
         if (creditDeducted) {
+          console.log('🎬 Triggering credit deduction animation');
+          // Trigger credit deduction animation
+          animateCreditDeduction();
           // Reload credits to update UI
           await loadUserCredits();
         }
@@ -514,12 +568,23 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
     return Colors.warning;
   };
 
+  const screenBackgroundColor = isDarkMode ? '#0F172A' : themedColors.background;
+
   return (
-    <View style={[styles.container, { backgroundColor: themedColors.background }]}>
+    <View style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
       <Stack.Screen
         options={{
           headerShown: true,
           title: 'Outfit Scorer',
+          headerStyle: {
+            backgroundColor: screenBackgroundColor,
+          },
+          headerTintColor: themedColors.text,
+          headerTitleStyle: {
+            color: themedColors.text,
+            fontWeight: '600',
+          },
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
               <X size={24} color={themedColors.text} />
@@ -528,9 +593,21 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
           headerRight: () => (
             selectedImage && userCredits && session?.user ? (
               <View style={styles.headerRightContainer}>
-                <View style={styles.headerCreditBadge}>
-                  <Sparkles size={14} color="#8B5CF6" />
-                  <Text style={styles.headerCreditText}>
+                <Animated.View 
+                  style={[
+                    styles.headerCreditBadge,
+                    isDarkMode ? {} : styles.headerCreditBadgeLight,
+                    {
+                      transform: [{ scale: creditPulseAnim }],
+                      opacity: creditGlowAnim.interpolate({
+                        inputRange: [0, 0.4],
+                        outputRange: [1, 0.5],
+                      }),
+                    }
+                  ]}
+                >
+                  <Sparkles size={14} color={isDarkMode ? "#8B5CF6" : "#7C3AED"} />
+                  <Text style={[styles.headerCreditText, !isDarkMode && styles.headerCreditTextLight]}>
                     {userCredits.credits_remaining}/{userCredits.credits_cap}
                   </Text>
                   {userCredits.credits_cap === 100 ? (
@@ -545,12 +622,19 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
                       <Text style={styles.headerUpgradeText}>Upgrade</Text>
                     </TouchableOpacity>
                   )}
-                </View>
+                </Animated.View>
               </View>
             ) : null
           ),
         }}
       />
+
+      {isDarkMode && (
+        <LinearGradient
+          colors={['#0F172A', '#0F172A']}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -839,23 +923,37 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(139, 92, 246, 0.3)',
   },
+  headerCreditBadgeLight: {
+    backgroundColor: '#E9D5FF',
+    borderColor: '#A855F7',
+    borderWidth: 2,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 5,
+  },
   headerCreditText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#8B5CF6',
   },
+  headerCreditTextLight: {
+    color: '#6B21A8',
+    fontWeight: '900',
+  },
   headerProBadge: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: '#FCD34D',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.4)',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
   },
   headerProText: {
     fontSize: 10,
-    fontWeight: '800',
-    color: '#FFD700',
+    fontWeight: '900',
+    color: '#92400E',
     letterSpacing: 0.5,
   },
   headerUpgradeButton: {
@@ -878,8 +976,9 @@ const styles = StyleSheet.create({
   emptyState: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 24,
+    paddingTop: 80,
   },
   emptyIconContainer: {
     width: 100,
@@ -935,6 +1034,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 24,
+    paddingTop: 16,
   },
   imageContainer: {
     width: '100%',
