@@ -11,7 +11,6 @@ describe('PaymentRequestCard', () => {
     user_email: 'john@example.com',
     user_phone: '1234567890',
     plan_id: 'plan-1',
-    plan_name: 'Monthly Pro',
     amount: 29,
     utr_number: 'UTR123456789',
     screenshot_url: 'https://example.com/screenshot.jpg',
@@ -48,8 +47,8 @@ describe('PaymentRequestCard', () => {
     expect(mockOnPress).toHaveBeenCalledTimes(1);
   });
 
-  it('handles null user_name gracefully', () => {
-    const paymentWithoutName = { ...mockPayment, user_name: null };
+  it('handles undefined user_name gracefully', () => {
+    const paymentWithoutName: PaymentSubmission = { ...mockPayment, user_name: undefined };
     const { getByText } = render(
       <PaymentRequestCard payment={paymentWithoutName} onPress={mockOnPress} />
     );
@@ -58,7 +57,7 @@ describe('PaymentRequestCard', () => {
   });
 
   it('handles undefined amount gracefully', () => {
-    const paymentWithoutAmount = { ...mockPayment, amount: undefined };
+    const paymentWithoutAmount: PaymentSubmission = { ...mockPayment, amount: undefined };
     const { getByText } = render(
       <PaymentRequestCard payment={paymentWithoutAmount} onPress={mockOnPress} />
     );
