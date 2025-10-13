@@ -21,8 +21,8 @@ export const PaymentRequestCard: React.FC<PaymentRequestCardProps> = ({
   payment,
   onPress,
 }) => {
-  const statusColor = STATUS_COLORS[payment.status];
-  const statusLabel = STATUS_LABELS[payment.status];
+  const statusColor = payment.status ? STATUS_COLORS[payment.status] : STATUS_COLORS.pending;
+  const statusLabel = payment.status ? STATUS_LABELS[payment.status] : STATUS_LABELS.pending;
 
   return (
     <TouchableOpacity
@@ -39,7 +39,7 @@ export const PaymentRequestCard: React.FC<PaymentRequestCardProps> = ({
         {/* Left: Screenshot Thumbnail */}
         <View style={styles.thumbnailContainer}>
           <Image
-            source={{ uri: payment.screenshot_url }}
+            source={{ uri: payment.screenshot_url || '' }}
             style={styles.thumbnail}
             resizeMode="cover"
           />
@@ -58,7 +58,7 @@ export const PaymentRequestCard: React.FC<PaymentRequestCardProps> = ({
           {/* Amount & UTR */}
           <View style={styles.detailRow}>
             <MaterialCommunityIcons name="currency-inr" size={16} color="#667eea" />
-            <Text style={styles.amount}>{formatCurrency(payment.amount)}</Text>
+            <Text style={styles.amount}>{formatCurrency(payment.amount || 0)}</Text>
             <View style={styles.dot} />
             <Text style={styles.utr} numberOfLines={1}>
               UTR: {payment.utr_number}
@@ -68,7 +68,7 @@ export const PaymentRequestCard: React.FC<PaymentRequestCardProps> = ({
           {/* Date */}
           <View style={styles.detailRow}>
             <MaterialCommunityIcons name="clock-outline" size={14} color="#9ca3af" />
-            <Text style={styles.date}>{formatDate(payment.submitted_at)}</Text>
+            <Text style={styles.date}>{formatDate(payment.submitted_at || '')}</Text>
           </View>
 
           {/* Reviewer Info (if processed) */}

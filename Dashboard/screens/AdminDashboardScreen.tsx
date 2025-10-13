@@ -997,11 +997,11 @@ export default function AdminDashboardScreen() {
                   <View
                     style={[
                       styles.paymentStatusBadge,
-                      { backgroundColor: STATUS_COLORS[selectedPayment.status] },
+                      { backgroundColor: selectedPayment.status ? STATUS_COLORS[selectedPayment.status] : STATUS_COLORS.pending },
                     ]}
                   >
                     <Text style={styles.paymentStatusText}>
-                      {STATUS_LABELS[selectedPayment.status]}
+                      {selectedPayment.status ? STATUS_LABELS[selectedPayment.status] : STATUS_LABELS.pending}
                     </Text>
                   </View>
                 </View>
@@ -1027,7 +1027,7 @@ export default function AdminDashboardScreen() {
                     <MaterialCommunityIcons name="currency-inr" size={20} color={colors.primary} />
                     <Text style={styles.paymentDetailLabel}>Amount:</Text>
                     <Text style={styles.paymentDetailValue}>
-                      {formatCurrency(selectedPayment.amount)}
+                      {formatCurrency(selectedPayment.amount || 0)}
                     </Text>
                   </View>
 
@@ -1048,7 +1048,7 @@ export default function AdminDashboardScreen() {
                   {selectedPayment.reviewed_at && (
                     <View style={styles.paymentDetailRow}>
                       <MaterialCommunityIcons
-                        name="check-circle"
+                        name="clock-check"
                         size={20}
                         color={colors.primary}
                       />
@@ -1090,7 +1090,7 @@ export default function AdminDashboardScreen() {
                     activeOpacity={0.8}
                   >
                     <Image
-                      source={{ uri: selectedPayment.screenshot_url }}
+                      source={{ uri: selectedPayment.screenshot_url || '' }}
                       style={styles.paymentScreenshot}
                       resizeMode="cover"
                     />
@@ -1160,7 +1160,7 @@ export default function AdminDashboardScreen() {
       {selectedPayment && (
         <ScreenshotPreviewModal
           visible={showScreenshot}
-          imageUrl={selectedPayment.screenshot_url}
+          imageUrl={selectedPayment.screenshot_url || ''}
           onClose={() => setShowScreenshot(false)}
         />
       )}

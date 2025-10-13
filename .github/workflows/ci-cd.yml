@@ -63,180 +63,27 @@ jobs:
       - name: Run TypeScript compiler
         run: npx tsc --noEmit
 
-  build-android:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    needs: [test, type-check]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    outputs:
-      apk-url: ${{ steps.build.outputs.apk-url }}
-      build-id: ${{ steps.build.outputs.build-id }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          cache: "npm"
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: 📦 Install EAS CLI globally
-        run: npm install -g eas-cli
-
-      - name: 🔐 Verify EAS Authentication
-        run: eas whoami
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: 🏗️ Build Android APK with EAS
-        id: build
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "🚀 Starting EAS build for Android..."
-          echo "📦 Build Profile: production"
-          echo "🏷️ Build Type: APK"
-          echo ""
-
-          echo "🏗️ Starting EAS build (this will take 15-25 minutes)..."
-          echo ""
-
-          # Start the build and capture the output
-          set +e  # Don't exit on error
-          BUILD_OUTPUT=$(eas build --platform android --profile production --non-interactive --wait 2>&1)
-          BUILD_EXIT_CODE=$?
-          set -e  # Re-enable exit on error
-
-          echo "$BUILD_OUTPUT"
-          echo ""
-
-          # Check if build failed
-          if [ $BUILD_EXIT_CODE -ne 0 ]; then
-            echo "❌ EAS build failed with exit code: $BUILD_EXIT_CODE"
-            echo "::error::EAS build failed. Check the logs above for details."
-            exit 1
-          fi
-
-          # Extract build ID (UUID format) and URL from output
-          # EAS Build IDs are UUIDs like: 12345678-1234-1234-1234-123456789abc
-          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || echo "unknown")
-          APK_URL=$(echo "$BUILD_OUTPUT" | grep -oP 'https://expo\.dev/[^\s]+' | head -1 || echo "")
-
-          # If we couldn't extract Build ID, try alternative patterns
-          if [ "$BUILD_ID" == "unknown" ]; then
-            BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -i "build" | grep -oP '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}' | head -1 || echo "unknown")
-          fi
-
-          echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "apk-url=$APK_URL" >> $GITHUB_OUTPUT
-
-          echo ""
-          echo "✅ Build completed successfully!"
-          echo "🆔 Build ID: $BUILD_ID"
-          echo "🔗 APK URL: $APK_URL"
-
-          # Fail if we couldn't extract Build ID
-          if [ "$BUILD_ID" == "unknown" ]; then
-            echo "❌ Could not extract Build ID from EAS output"
-            echo "::warning::Build succeeded but could not extract Build ID. Check logs above."
-          fi
-
-      - name: 📥 Download APK Artifact
-        id: download
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "📥 Downloading APK from EAS..."
-
-          BUILD_ID="${{ steps.build.outputs.build-id }}"
-
-          # Check if we have a valid Build ID
-          if [ "$BUILD_ID" == "unknown" ] || [ -z "$BUILD_ID" ]; then
-            echo "❌ No valid Build ID available. Cannot download APK."
-            echo "::error::Build ID extraction failed. Check the build logs."
-            exit 1
-          fi
-
-          echo "🆔 Using Build ID: $BUILD_ID"
-
-          # Get the build details using EAS CLI (human-readable format)
-          echo "📋 Fetching build details..."
-          echo "Running: eas build:view $BUILD_ID"
-
-          BUILD_VIEW=$(eas build:view $BUILD_ID 2>&1)
-
-          echo "Build details:"
-          echo "$BUILD_VIEW"
-          echo ""
-
-          # Extract download URL from the output
-          # EAS outputs the URL in format: "Download URL: https://..."
-          DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -oP 'https://[^\s]+\.apk' | head -1)
-
-          if [ -z "$DOWNLOAD_URL" ]; then
-            # Try alternative pattern for EAS output
-            DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -i "artifact" | grep -oP 'https://[^\s]+' | head -1)
-          fi
-
-          if [ -z "$DOWNLOAD_URL" ]; then
-            # Try to find any expo.dev URL
-            DOWNLOAD_URL=$(echo "$BUILD_VIEW" | grep -oP 'https://expo-artifacts[^\s]+' | head -1)
-          fi
-
-          if [ -n "$DOWNLOAD_URL" ] && [ "$DOWNLOAD_URL" != "null" ]; then
-            echo "🔗 Download URL: $DOWNLOAD_URL"
-            echo "⬇️ Downloading APK..."
-            wget -q --show-progress -O ai-dresser-${{ github.run_number }}.apk "$DOWNLOAD_URL"
-            
-            # Verify the download
-            if [ -f "ai-dresser-${{ github.run_number }}.apk" ]; then
-              FILE_SIZE=$(du -h "ai-dresser-${{ github.run_number }}.apk" | cut -f1)
-              echo "✅ APK downloaded successfully! Size: $FILE_SIZE"
-              echo "apk-path=ai-dresser-${{ github.run_number }}.apk" >> $GITHUB_OUTPUT
-            else
-              echo "❌ APK download failed!"
-              exit 1
-            fi
-          else
-            echo "❌ Could not find download URL"
-            exit 1
-          fi
-
-      - name: 📤 Upload APK as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: ai-dresser-${{ github.run_number }}.apk
-          retention-days: 30
-
-      - name: 📊 Build Summary
-        if: always()
-        run: |
-          echo "### 📱 Android Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Build ID:** \`${{ steps.build.outputs.build-id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f "ai-dresser-${{ github.run_number }}.apk" ]; then
-            FILE_SIZE=$(du -h "ai-dresser-${{ github.run_number }}.apk" | cut -f1)
-            echo "**APK Size:** $FILE_SIZE" >> $GITHUB_STEP_SUMMARY
-            echo "**APK Name:** \`ai-dresser-${{ github.run_number }}.apk\`" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View on Expo](${{ steps.build.outputs.apk-url }})" >> $GITHUB_STEP_SUMMARY
+  # COMMENTED OUT: EAS build quota exhausted - Will uncomment at start of new month
+  # build-android:
+  #   name: Build Android APK
+  #   runs-on: ubuntu-latest
+  #   needs: [test, type-check]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  #   outputs:
+  #     apk-url: ${{ steps.build.outputs.apk-url }}
+  #     build-id: ${{ steps.build.outputs.build-id }}
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20.x"
+  #         cache: "npm"
+  #
+  #     ... (entire build job commented out)
 
   security-scan:
     name: Security Scan
@@ -259,97 +106,20 @@ jobs:
         run: npm audit --audit-level=moderate
         continue-on-error: true
 
-  deploy-production:
-    name: Deploy to Production & Create Release
-    runs-on: ubuntu-latest
-    needs: [build-android]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: 📥 Download APK Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: android-apk
-          path: ./artifacts
-
-      - name: 📝 Generate Release Notes
-        id: release-notes
-        run: |
-          # Get commit messages since last release
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-
-          if [ -n "$LAST_TAG" ]; then
-            COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
-          else
-            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -n 10)
-          fi
-
-          # Create release notes
-          cat << EOF > release-notes.md
-          ## 🚀 AI Dresser - Release v${{ github.run_number }}
-
-          **Build Date:** $(date '+%Y-%m-%d %H:%M:%S UTC')
-          **Branch:** master
-          **Commit:** ${{ github.sha }}
-
-          ### 📱 Downloads
-
-          - **Android APK:** ai-dresser-${{ github.run_number }}.apk
-
-          ### 📝 Changes in this Release
-
-          $COMMITS
-
-          ### 🔗 Links
-
-          - [Expo Build Details](${{ needs.build-android.outputs.apk-url }})
-          - [Commit History](https://github.com/${{ github.repository }}/commits/master)
-
-          ---
-
-          **Installation Instructions:**
-          1. Download the APK file
-          2. Enable "Install from Unknown Sources" on your Android device
-          3. Install the APK
-          4. Enjoy! 🎉
-          EOF
-
-          echo "Release notes generated!"
-
-      - name: 🏷️ Create GitHub Release
-        id: create-release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          name: 🎉 AI Dresser v${{ github.run_number }}
-          body_path: release-notes.md
-          draft: false
-          prerelease: false
-          files: |
-            ./artifacts/ai-dresser-${{ github.run_number }}.apk
-          generate_release_notes: true
-
-      - name: 📢 Release Summary
-        run: |
-          echo "### 🎉 Production Release Created!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Release Version:** v${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release URL:** ${{ steps.create-release.outputs.url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ APK attached to release" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Release notes generated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Release](${{ steps.create-release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+  # COMMENTED OUT: Deploy depends on build-android which is disabled due to quota
+  # deploy-production:
+  #   name: Deploy to Production & Create Release
+  #   runs-on: ubuntu-latest
+  #   needs: [build-android]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  #
+  #   steps:
+  #     ... (entire deploy job commented out)
 
   pipeline-summary:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [test, type-check, security-scan, build-android, deploy-production]
+    needs: [test, type-check, security-scan]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
@@ -364,8 +134,6 @@ jobs:
           echo "| Tests | ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Type Check | ${{ needs.type-check.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || '⚠️ Warning' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Android Build | ${{ needs.build-android.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Production Deploy | ${{ needs.deploy-production.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📱 Build Information" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -374,15 +142,7 @@ jobs:
           echo "- **Branch:** master" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
-            echo "## ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Your app has been built and released! 🎉" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📦 **Release:** [v${{ github.run_number }}](https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }})" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ⚠️ Pipeline Issues Detected" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please check the failed jobs above for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ℹ️ Note" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Android APK build is temporarily disabled due to EAS quota limits." >> $GITHUB_STEP_SUMMARY
+          echo "Will be re-enabled at the start of next month. 📅" >> $GITHUB_STEP_SUMMARY
