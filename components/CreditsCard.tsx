@@ -102,13 +102,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   gradient: {
-    padding: 16,
+    padding: 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   titleSection: {
     flexDirection: 'row',
@@ -116,9 +116,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   creditsLabel: {
     fontSize: FontSizes.small,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 11,
     color: '#fff',
-    marginTop: 8,
+    marginTop: 6,
     fontWeight: FontWeights.semibold,
   },
 });

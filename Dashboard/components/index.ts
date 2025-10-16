@@ -9,3 +9,4 @@ export { UserListItem } from './UserListItem';
 export { DeleteUserModal } from './DeleteUserModal';
 export { UserDetailsModal } from './UserDetailsModal';
 export { LogoutConfirmModal } from './LogoutConfirmModal';
+export { AdminAccessButton } from './AdminAccessButton';

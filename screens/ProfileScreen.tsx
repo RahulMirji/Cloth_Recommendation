@@ -45,6 +45,7 @@ import { useAlert } from '@/contexts/AlertContext';
 import { CreditsCard } from '@/components/CreditsCard';
 import { getUserCredits, UserCredits } from '@/OutfitScorer/services/creditService';
 import { PaymentUploadScreen } from '@/OutfitScorer/components/PaymentUploadScreen';
+import { AdminAccessButton } from '@/Dashboard/components/AdminAccessButton';
 
 export function ProfileScreen() {
   const { userProfile, settings, updateUserProfile, logout, session } = useApp();
@@ -501,141 +502,138 @@ export function ProfileScreen() {
             </View>
           </View>
 
-          {/* Compact Profile Info Grid */}
-          <View style={styles.section}>
-            {/* Row 1: Name & Email */}
-            <View style={styles.infoRow}>
-              <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
-                <View style={styles.infoCardHeader}>
-                  <View style={[styles.infoIconContainer, isDarkMode && styles.inputIconContainerDark]}>
-                    <User size={16} color={Colors.primary} />
-                  </View>
-                  <Text style={[styles.infoLabel, isDarkMode && styles.textDark]}>NAME</Text>
-                </View>
-                {isEditing ? (
-                  <TextInput
-                    style={[styles.infoInput, isDarkMode && styles.inputDark]}
-                    value={editedProfile.name}
-                    onChangeText={(text) => setEditedProfile({ ...editedProfile, name: text })}
-                    placeholder="Your name"
-                    placeholderTextColor={Colors.textLight}
-                  />
-                ) : (
-                  <Text style={[styles.infoValue, isDarkMode && styles.textDark]} numberOfLines={1}>
-                    {userProfile.name || 'Not provided'}
-                  </Text>
-                )}
-              </View>
-
-              <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
-                <View style={styles.infoCardHeader}>
-                  <View style={[styles.infoIconContainer, isDarkMode && styles.inputIconContainerDark]}>
-                    <Mail size={16} color={Colors.primary} />
-                  </View>
-                  <Text style={[styles.infoLabel, isDarkMode && styles.textDark]}>EMAIL</Text>
-                </View>
-                <Text style={[styles.infoValue, isDarkMode && styles.textDark]} numberOfLines={1}>
-                  {userProfile.email || 'Not provided'}
+          {/* Clean Profile Info List - Instagram Style */}
+          <View style={styles.profileInfoSection}>
+            {/* Name Field */}
+            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
+              <View style={styles.infoFieldHeader}>
+                <User size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
+                  NAME
                 </Text>
               </View>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
+                  value={editedProfile.name}
+                  onChangeText={(text) => setEditedProfile({ ...editedProfile, name: text })}
+                  placeholder="Your name"
+                  placeholderTextColor={Colors.textLight}
+                />
+              ) : (
+                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
+                  {userProfile.name || 'Not provided'}
+                </Text>
+              )}
             </View>
 
-            {/* Row 2: Phone & Age */}
-            <View style={styles.infoRow}>
-              <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
-                <View style={styles.infoCardHeader}>
-                  <View style={[styles.infoIconContainer, isDarkMode && styles.inputIconContainerDark]}>
-                    <Phone size={16} color={Colors.primary} />
-                  </View>
-                  <Text style={[styles.infoLabel, isDarkMode && styles.textDark]}>PHONE</Text>
-                </View>
-                {isEditing ? (
-                  <TextInput
-                    style={[styles.infoInput, isDarkMode && styles.inputDark]}
-                    value={editedProfile.phone}
-                    onChangeText={(text) => setEditedProfile({ ...editedProfile, phone: text })}
-                    placeholder="Phone number"
-                    placeholderTextColor={Colors.textLight}
-                    keyboardType="phone-pad"
-                  />
-                ) : (
-                  <Text style={[styles.infoValue, isDarkMode && styles.textDark]} numberOfLines={1}>
-                    {userProfile.phone || 'Not provided'}
-                  </Text>
-                )}
+            {/* Email Field */}
+            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
+              <View style={styles.infoFieldHeader}>
+                <Mail size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
+                  EMAIL
+                </Text>
               </View>
-
-              <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
-                <View style={styles.infoCardHeader}>
-                  <View style={[styles.infoIconContainer, isDarkMode && styles.inputIconContainerDark]}>
-                    <Calendar size={16} color={Colors.primary} />
-                  </View>
-                  <Text style={[styles.infoLabel, isDarkMode && styles.textDark]}>AGE</Text>
-                </View>
-                {isEditing ? (
-                  <TextInput
-                    style={[styles.infoInput, isDarkMode && styles.inputDark]}
-                    value={editedProfile.age}
-                    onChangeText={(text) => setEditedProfile({ ...editedProfile, age: text })}
-                    placeholder="Your age"
-                    placeholderTextColor={Colors.textLight}
-                    keyboardType="number-pad"
-                  />
-                ) : (
-                  <Text style={[styles.infoValue, isDarkMode && styles.textDark]} numberOfLines={1}>
-                    {userProfile.age || 'Not provided'}
-                  </Text>
-                )}
-              </View>
+              <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
+                {userProfile.email || 'Not provided'}
+              </Text>
             </View>
 
-            {/* Row 3: Gender & About Me */}
-            <View style={styles.infoRow}>
-              <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
-                <View style={styles.infoCardHeader}>
-                  <View style={[styles.infoIconContainer, isDarkMode && styles.inputIconContainerDark]}>
-                    <Users size={16} color={Colors.primary} />
-                  </View>
-                  <Text style={[styles.infoLabel, isDarkMode && styles.textDark]}>GENDER</Text>
-                </View>
-                {isEditing ? (
-                  <TextInput
-                    style={[styles.infoInput, isDarkMode && styles.inputDark]}
-                    value={editedProfile.gender}
-                    onChangeText={(text) => setEditedProfile({ ...editedProfile, gender: text as '' | 'male' | 'female' | 'other' })}
-                    placeholder="Your gender"
-                    placeholderTextColor={Colors.textLight}
-                  />
-                ) : (
-                  <Text style={[styles.infoValue, isDarkMode && styles.textDark]} numberOfLines={1}>
-                    {userProfile.gender || 'Not provided'}
-                  </Text>
-                )}
+            {/* Phone Field */}
+            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
+              <View style={styles.infoFieldHeader}>
+                <Phone size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
+                  PHONE
+                </Text>
               </View>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
+                  value={editedProfile.phone}
+                  onChangeText={(text) => setEditedProfile({ ...editedProfile, phone: text })}
+                  placeholder="Phone number"
+                  placeholderTextColor={Colors.textLight}
+                  keyboardType="phone-pad"
+                />
+              ) : (
+                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
+                  {userProfile.phone || 'Not provided'}
+                </Text>
+              )}
+            </View>
 
-              <View style={[styles.infoCard, isDarkMode && styles.infoCardDark]}>
-                <View style={styles.infoCardHeader}>
-                  <View style={[styles.infoIconContainer, isDarkMode && styles.inputIconContainerDark]}>
-                    <Edit3 size={16} color={Colors.primary} />
-                  </View>
-                  <Text style={[styles.infoLabel, isDarkMode && styles.textDark]}>ABOUT ME</Text>
-                </View>
-                {isEditing ? (
-                  <TextInput
-                    style={[styles.infoInput, isDarkMode && styles.inputDark]}
-                    value={editedProfile.bio}
-                    onChangeText={(text) => setEditedProfile({ ...editedProfile, bio: text })}
-                    placeholder="Tell us about yourself"
-                    placeholderTextColor={Colors.textLight}
-                    multiline
-                    numberOfLines={2}
-                  />
-                ) : (
-                  <Text style={[styles.infoValue, isDarkMode && styles.textDark]} numberOfLines={2}>
-                    {userProfile.bio || 'Not provided'}
-                  </Text>
-                )}
+            {/* Age Field */}
+            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
+              <View style={styles.infoFieldHeader}>
+                <Calendar size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
+                  AGE
+                </Text>
               </View>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
+                  value={editedProfile.age}
+                  onChangeText={(text) => setEditedProfile({ ...editedProfile, age: text })}
+                  placeholder="Your age"
+                  placeholderTextColor={Colors.textLight}
+                  keyboardType="number-pad"
+                />
+              ) : (
+                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
+                  {userProfile.age || 'Not provided'}
+                </Text>
+              )}
+            </View>
+
+            {/* Gender Field */}
+            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
+              <View style={styles.infoFieldHeader}>
+                <Users size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
+                  GENDER
+                </Text>
+              </View>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
+                  value={editedProfile.gender}
+                  onChangeText={(text) => setEditedProfile({ ...editedProfile, gender: text as '' | 'male' | 'female' | 'other' })}
+                  placeholder="Your gender"
+                  placeholderTextColor={Colors.textLight}
+                />
+              ) : (
+                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
+                  {userProfile.gender || 'Not provided'}
+                </Text>
+              )}
+            </View>
+
+            {/* About Me Field */}
+            <View style={[styles.infoField, styles.lastInfoField, isDarkMode && styles.infoFieldDark]}>
+              <View style={styles.infoFieldHeader}>
+                <Edit3 size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
+                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
+                  ABOUT ME
+                </Text>
+              </View>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.cleanInput, styles.cleanInputMultiline, isDarkMode && styles.cleanInputDark]}
+                  value={editedProfile.bio}
+                  onChangeText={(text) => setEditedProfile({ ...editedProfile, bio: text })}
+                  placeholder="Tell us about yourself"
+                  placeholderTextColor={Colors.textLight}
+                  multiline
+                  numberOfLines={3}
+                />
+              ) : (
+                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
+                  {userProfile.bio || 'Not provided'}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -649,7 +647,7 @@ export function ProfileScreen() {
               {/* Outfit Scorer Credits */}
               {outfitScorerCredits && (
                 <CreditsCard
-                  icon={<Sparkles size={18} color="#fff" strokeWidth={2.5} />}
+                  icon={<Sparkles size={16} color="#fff" strokeWidth={2.5} />}
                   title="Outfit Scorer"
                   credits={outfitScorerCredits.credits_remaining}
                   maxCredits={outfitScorerCredits.credits_cap}
@@ -661,7 +659,7 @@ export function ProfileScreen() {
               {/* AI Stylist Credits */}
               {aiStylistCredits && (
                 <CreditsCard
-                  icon={<Camera size={18} color="#fff" strokeWidth={2.5} />}
+                  icon={<Camera size={16} color="#fff" strokeWidth={2.5} />}
                   title="AI Stylist"
                   credits={aiStylistCredits.credits_remaining}
                   maxCredits={aiStylistCredits.credits_cap}
@@ -673,7 +671,7 @@ export function ProfileScreen() {
               {/* Image Generator Credits */}
               {imageGenCredits && (
                 <CreditsCard
-                  icon={<Wand2 size={18} color="#fff" strokeWidth={2.5} />}
+                  icon={<Wand2 size={16} color="#fff" strokeWidth={2.5} />}
                   title="Image Generator"
                   credits={imageGenCredits.credits_remaining}
                   maxCredits={imageGenCredits.credits_cap}
@@ -681,6 +679,16 @@ export function ProfileScreen() {
                   onUpgradePress={handleUpgrade}
                 />
               )}
+            </View>
+          )}
+
+          {/* Admin Access Button - Only visible to admin users */}
+          {!isEditing && (
+            <View style={styles.adminButtonContainer}>
+              <AdminAccessButton 
+                userEmail={userProfile.email} 
+                isDarkMode={isDarkMode}
+              />
             </View>
           )}
 
@@ -876,8 +884,8 @@ const styles = StyleSheet.create({
   },
   upgradePillAvatar: {
     position: 'absolute',
-    bottom: 30,
-    right: -12,
+    bottom: -5,
+    right: -10,
     borderRadius: 14,
     overflow: 'hidden',
     shadowColor: Colors.primary,
@@ -1093,12 +1101,16 @@ const styles = StyleSheet.create({
   },
   creditsSection: {
     marginTop: 20,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: FontSizes.heading,
     fontWeight: FontWeights.bold,
     color: Colors.text,
     marginBottom: 16,
+  },
+  adminButtonContainer: {
+    paddingHorizontal: 20,
   },
   proPillGradient: {
     flexDirection: 'row',
@@ -1127,6 +1139,69 @@ const styles = StyleSheet.create({
     color: Colors.white,
     letterSpacing: 0.5,
   },
+  // Clean Profile Info Section - Instagram Style
+  profileInfoSection: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  infoField: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.02)',
+  },
+  infoFieldDark: {
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+  },
+  lastInfoField: {
+    marginBottom: 0,
+  },
+  infoFieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  infoFieldLabel: {
+    fontSize: 12,
+    fontWeight: FontWeights.bold,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  infoFieldLabelDark: {
+    color: Colors.textLight,
+  },
+  infoFieldValue: {
+    fontSize: 16,
+    fontWeight: FontWeights.medium,
+    color: Colors.text,
+    lineHeight: 24,
+  },
+  infoFieldValueDark: {
+    color: Colors.white,
+  },
+  cleanInput: {
+    fontSize: 16,
+    fontWeight: FontWeights.medium,
+    color: Colors.text,
+    padding: 0,
+    paddingTop: 4,
+    paddingBottom: 4,
+    lineHeight: 24,
+  },
+  cleanInputDark: {
+    color: Colors.white,
+  },
+  cleanInputMultiline: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  // Legacy styles (can be removed if not used elsewhere)
   infoRow: {
     flexDirection: 'row',
     gap: 12,

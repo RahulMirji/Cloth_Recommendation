@@ -1,14 +1,12 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Home, Settings, User, Clock, Shirt } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
-import { TouchableOpacity, Image, View, StyleSheet, Text, useColorScheme, Vibration } from 'react-native';
-import { BlurView } from 'expo-blur';
+import React from 'react';
+import { TouchableOpacity, Image, View, StyleSheet, Text, useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { useNavigationTheme } from '@/constants/ThemeConfig';
-import { ADMIN_CONFIG } from '@/Dashboard/constants/config';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -18,50 +16,6 @@ export default function TabLayout() {
   
   // Pass isDarkMode explicitly to ensure proper theme switching
   const navigationTheme = useNavigationTheme(isDarkMode);
-
-  // Long press state for admin access
-  const [isLongPressing, setIsLongPressing] = useState(false);
-  const longPressTimerRef = useRef<any>(null);
-  const pressStartTimeRef = useRef<number>(0);
-
-  /**
-   * Handle long press start on Settings tab
-   */
-  const handlePressIn = () => {
-    pressStartTimeRef.current = Date.now();
-    setIsLongPressing(true);
-    
-    // Start timer for long press
-    longPressTimerRef.current = setTimeout(() => {
-      // Vibrate to indicate successful long press
-      Vibration.vibrate(100);
-      
-      // Navigate to admin login
-      router.push('/(admin)/admin-login' as any);
-      
-      setIsLongPressing(false);
-    }, ADMIN_CONFIG.LONG_PRESS_DURATION_MS);
-  };
-
-  /**
-   * Handle long press end/cancel
-   */
-  const handlePressOut = () => {
-    const pressDuration = Date.now() - pressStartTimeRef.current;
-    
-    // Clear timer
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    
-    setIsLongPressing(false);
-    
-    // If it was a short press, navigate normally to settings
-    if (pressDuration < ADMIN_CONFIG.LONG_PRESS_DURATION_MS) {
-      // Let the tab handle normal navigation
-    }
-  };
 
   const ProfileButton = () => (
     <TouchableOpacity
@@ -155,14 +109,6 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
-          tabBarButton: (props: any) => (
-            <TouchableOpacity
-              {...props}
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
-              activeOpacity={isLongPressing ? 0.6 : 0.2}
-            />
-          ),
         }}
       />
     </Tabs>
