@@ -15,7 +15,7 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+    "setupFiles": ["<rootDir>/jest.setup.js"],
     "coverageDirectory": "coverage",
     "collectCoverageFrom": [
       "Razorpay/**/*.js",

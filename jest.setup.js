@@ -62,6 +62,17 @@ jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
 }));
 
+// Mock react-native-razorpay with proper event emitter
+jest.mock('react-native-razorpay', () => {
+  const { EventEmitter } = require('events');
+  return {
+    __esModule: true,
+    default: {
+      open: jest.fn(() => Promise.resolve({ razorpay_payment_id: 'test_payment_id' })),
+    },
+  };
+});
+
 // Mock lucide-react-native
 jest.mock('lucide-react-native', () => ({
   Home: 'Home',

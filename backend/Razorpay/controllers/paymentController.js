@@ -26,16 +26,33 @@ const { createClient } = require('@supabase/supabase-js');
 let supabase = null;
 const getSupabase = () => {
   if (!supabase) {
-    // Use service role key to bypass RLS for backend operations
-    const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY).trim();
-    const supabaseUrl = process.env.SUPABASE_URL.trim();
+    // In test environment, use test values if not already set
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
+      process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://test-project.supabase.co';
+      process.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'test_anon_key_12345';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'test_service_role_key_12345';
+    }
     
-    console.log('� Initializing Supabase with URL:', supabaseUrl);
-    console.log('🔑 Key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon');
-    console.log('🔑 Key length:', serviceRoleKey.length);
+    // Use service role key to bypass RLS for backend operations
+    const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '').trim();
+    const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
+    
+    // Validate required environment variables
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY must be defined');
+    }
+    
+    if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {
+      console.log('🔗 Initializing Supabase with URL:', supabaseUrl);
+      console.log('🔑 Key type:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon');
+      console.log('🔑 Key length:', serviceRoleKey.length);
+    }
     
     supabase = createClient(supabaseUrl, serviceRoleKey);
-    console.log('💾 Supabase client initialized');
+    
+    if (process.env.NODE_ENV !== 'test' && process.env.JEST_WORKER_ID === undefined) {
+      console.log('💾 Supabase client initialized');
+    }
   }
   return supabase;
 };

@@ -97,20 +97,13 @@ export const verifyRazorpayPayment = async (
       paymentId: request.razorpay_payment_id,
     });
 
-    // Add timeout to fetch request (30 seconds)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-
     const response = await fetch(`${API_URL}/api/razorpay/verify-payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     const data = await response.json();
 
@@ -122,16 +115,6 @@ export const verifyRazorpayPayment = async (
     return data;
   } catch (error: any) {
     console.error('❌ Error verifying payment:', error);
-    
-    // Handle timeout error
-    if (error.name === 'AbortError') {
-      return {
-        success: false,
-        message: 'Payment verification timed out. Your payment may still be processing. Please check your credits or contact support.',
-        error: 'Request timeout',
-      };
-    }
-    
     return {
       success: false,
       message: error.message || 'Payment verification failed',
