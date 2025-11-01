@@ -27,13 +27,17 @@ import {
   CheckCircle2, 
   AlertCircle,
   X,
-  ImageIcon
+  ImageIcon,
+  Zap,
+  Clock
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
 import { useAlert } from '@/contexts/AlertContext';
 import getThemedColors from '@/constants/themedColors';
+import { RazorpayPayment } from '@/components/RazorpayPayment';
+import { type CreditPlan } from '@/utils/razorpayService';
 
 interface PaymentUploadScreenProps {
   visible: boolean;
@@ -60,6 +64,7 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showManualPayment, setShowManualPayment] = useState(false);
 
   const handlePickImage = async () => {
     try {
@@ -226,9 +231,18 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
       });
 
       if (error) {
-        // Handle duplicate request error
+        // Handle duplicate request error with friendly message
         if (error.message.includes('DUPLICATE_REQUEST')) {
-          throw new Error('You already have a pending payment request. Please wait for admin review.');
+          showAlert(
+            'info',
+            '⏳ Payment Already Submitted',
+            'You have a pending payment request. Our team will review it within 2 hours. Please check back soon!'
+          );
+          // Close modal after showing alert
+          setTimeout(() => {
+            onClose();
+          }, 3000);
+          return; // Exit without throwing error
         }
         throw new Error(`Submission failed: ${error.message}`);
       }
@@ -253,7 +267,16 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
 
     } catch (error: any) {
       console.error('Error submitting payment:', error);
-      showAlert('error', 'Submission Failed', error.message || 'Failed to submit payment. Please try again.');
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || 'Failed to submit payment. Please try again.';
+      const errorTitle = errorMessage.includes('network') || errorMessage.includes('Network')
+        ? '🌐 Network Error'
+        : errorMessage.includes('invalid') || errorMessage.includes('Invalid')
+        ? '❌ Invalid Information'
+        : '⚠️ Submission Failed';
+      
+      showAlert('error', errorTitle, errorMessage);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -336,6 +359,166 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
                 </View>
               </View>
             </LinearGradient>
+
+            {/* Choose Payment Method Section */}
+            {!showManualPayment ? (
+              <>
+                {/* Payment Method Selection Header */}
+                <View style={styles.paymentMethodHeader}>
+                  <Text style={[styles.paymentMethodTitle, { color: themedColors.text }]}>
+                    Choose Payment Method
+                  </Text>
+                  <Text style={[styles.paymentMethodSubtitle, { color: themedColors.textSecondary }]}>
+                    Select your preferred payment option
+                  </Text>
+                </View>
+
+                {/* Razorpay Payment Button */}
+                <RazorpayPayment
+                  credits={100 as CreditPlan}
+                  userId={session?.user?.id || ''}
+                  userEmail={session?.user?.email}
+                  userName={session?.user?.user_metadata?.name}
+                  userPhone={session?.user?.user_metadata?.phone}
+                  onSuccess={(data) => {
+                    // Only alert shown for payment - single source of truth
+                    showAlert('success', '🎉 Payment Successful!', `${data.credits} credits have been added to your account instantly!`);
+                    setTimeout(() => {
+                      onClose();
+                    }, 2000);
+                  }}
+                  onFailure={(error) => {
+                    console.error('Razorpay payment failed:', error);
+                    // Handle user cancellation gracefully
+                    if (error.code === 2) {
+                      showAlert('info', 'Payment Cancelled', 'You cancelled the payment. No charges were made.');
+                    } else {
+                      showAlert('error', 'Payment Failed', error.message || 'Unable to process payment. Please try again.');
+                    }
+                  }}
+                >
+                  {({ isProcessing, initiatePayment }) => (
+                    <TouchableOpacity
+                      style={styles.razorpayButtonContainer}
+                      onPress={initiatePayment}
+                      disabled={isProcessing}
+                      activeOpacity={0.85}
+                    >
+                      <LinearGradient
+                        colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.razorpayGradient}
+                      >
+                        <View style={styles.paymentButtonContent}>
+                          <View style={styles.paymentButtonLeft}>
+                            <View style={styles.paymentIconContainer}>
+                              <Zap size={24} color="#FFFFFF" strokeWidth={2.5} fill="#FFFFFF" />
+                            </View>
+                            <View style={styles.paymentButtonTextContainer}>
+                              <Text style={styles.paymentButtonTitle}>
+                                {isProcessing ? 'Processing Payment...' : 'Pay with Razorpay'}
+                              </Text>
+                              <Text style={styles.paymentButtonSubtitle}>
+                                Instant activation • UPI, Cards, Wallets
+                              </Text>
+                            </View>
+                          </View>
+                          {isProcessing ? (
+                            <ActivityIndicator color="#FFFFFF" size="small" />
+                          ) : (
+                            <View style={styles.instantBadge}>
+                              <Text style={styles.instantBadgeText}>INSTANT</Text>
+                            </View>
+                          )}
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+                </RazorpayPayment>
+
+                {/* Divider */}
+                <View style={styles.paymentDivider}>
+                  <View style={[styles.paymentDividerLine, { backgroundColor: isDarkMode ? '#3A3A3A' : '#E5E7EB' }]} />
+                  <Text style={[styles.paymentDividerText, { color: themedColors.textSecondary }]}>OR</Text>
+                  <View style={[styles.paymentDividerLine, { backgroundColor: isDarkMode ? '#3A3A3A' : '#E5E7EB' }]} />
+                </View>
+
+                {/* Manual Payment Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.manualPaymentButtonContainer,
+                    { borderColor: isDarkMode ? '#3A3A3A' : '#E5E7EB' }
+                  ]}
+                  onPress={() => setShowManualPayment(true)}
+                  activeOpacity={0.85}
+                >
+                  <View style={[
+                    styles.manualPaymentButton,
+                    { backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB' }
+                  ]}>
+                    <View style={styles.paymentButtonContent}>
+                      <View style={styles.paymentButtonLeft}>
+                        <View style={[
+                          styles.paymentIconContainer,
+                          { backgroundColor: isDarkMode ? '#3A3A3A' : '#E5E7EB' }
+                        ]}>
+                          <QrCode size={24} color="#6B7280" strokeWidth={2.5} />
+                        </View>
+                        <View style={styles.paymentButtonTextContainer}>
+                          <Text style={[styles.manualPaymentButtonTitle, { color: themedColors.text }]}>
+                            Pay via UPI (Manual)
+                          </Text>
+                          <Text style={[styles.manualPaymentButtonSubtitle, { color: themedColors.textSecondary }]}>
+                            2 hours review • Upload screenshot
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={[
+                        styles.reviewBadge,
+                        { backgroundColor: isDarkMode ? '#3A3A3A' : '#E5E7EB' }
+                      ]}>
+                        <Clock size={14} color="#6B7280" strokeWidth={2.5} />
+                        <Text style={styles.reviewBadgeText}>2 HRS</Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Payment Method Info */}
+                <View style={[
+                  styles.paymentInfoContainer,
+                  { 
+                    backgroundColor: isDarkMode ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.08)',
+                    borderColor: isDarkMode ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'
+                  }
+                ]}>
+                  <AlertCircle size={20} color="#8B5CF6" strokeWidth={2.5} />
+                  <Text style={[styles.paymentInfoText, { color: themedColors.text }]}>
+                    <Text style={{ fontWeight: '800' }}>Razorpay</Text> provides instant activation, while 
+                    <Text style={{ fontWeight: '800' }}> Manual Payment</Text> requires admin verification within 2 hours.
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                {/* Back Button */}
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => {
+                    setShowManualPayment(false);
+                    setUtrNumber('');
+                    setScreenshot(null);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.backButtonContent}>
+                    <X size={20} color="#8B5CF6" strokeWidth={2.5} />
+                    <Text style={[styles.backButtonText, { color: themedColors.text }]}>
+                      Back to Payment Methods
+                    </Text>
+                  </View>
+                </TouchableOpacity>
 
             {/* QR Code Section */}
             <View style={styles.section}>
@@ -506,34 +689,36 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
               </Text>
             </View>
 
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={[styles.submitButtonContainer, isUploading && styles.submitButtonDisabled]}
-              onPress={submitPayment}
-              activeOpacity={0.85}
-              disabled={isUploading}
-            >
-              <LinearGradient
-                colors={isUploading ? ['#9CA3AF', '#6B7280'] : ['#10B981', '#059669', '#047857']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.submitGradient}
-              >
-                {isUploading ? (
-                  <>
-                    <ActivityIndicator color="#fff" size="small" />
-                    <Text style={styles.submitButtonText}>
-                      Uploading... {uploadProgress}%
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Upload size={20} color="#fff" strokeWidth={2.5} />
-                    <Text style={styles.submitButtonText}>Submit Payment Proof</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                {/* Submit Button */}
+                <TouchableOpacity
+                  style={[styles.submitButtonContainer, isUploading && styles.submitButtonDisabled]}
+                  onPress={submitPayment}
+                  activeOpacity={0.85}
+                  disabled={isUploading}
+                >
+                  <LinearGradient
+                    colors={isUploading ? ['#9CA3AF', '#6B7280'] : ['#10B981', '#059669', '#047857']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.submitGradient}
+                  >
+                    {isUploading ? (
+                      <>
+                        <ActivityIndicator color="#fff" size="small" />
+                        <Text style={styles.submitButtonText}>
+                          Uploading... {uploadProgress}%
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={20} color="#fff" strokeWidth={2.5} />
+                        <Text style={styles.submitButtonText}>Submit Payment Proof</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -901,5 +1086,171 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.3,
+  },
+  // Payment Method Selection
+  paymentMethodHeader: {
+    marginBottom: 20,
+    gap: 6,
+  },
+  paymentMethodTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  paymentMethodSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Razorpay Button
+  razorpayButtonContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    marginBottom: 20,
+  },
+  razorpayGradient: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  paymentButtonContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 18,
+    minHeight: 88,
+  },
+  paymentButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  paymentIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paymentButtonTextContainer: {
+    flex: 1,
+    gap: 4,
+  },
+  paymentButtonTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  paymentButtonSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  instantBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  instantBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
+  },
+  // Payment Divider
+  paymentDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  paymentDividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  paymentDividerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  // Manual Payment Button
+  manualPaymentButtonContainer: {
+    borderRadius: 16,
+    borderWidth: 2,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  manualPaymentButton: {
+    borderRadius: 14,
+  },
+  manualPaymentButtonTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  manualPaymentButtonSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reviewBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  reviewBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#6B7280',
+    letterSpacing: 0.8,
+  },
+  // Payment Info Container
+  paymentInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  paymentInfoText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
+  },
+  // Back Button
+  backButton: {
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  backButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+    borderRadius: 12,
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });
