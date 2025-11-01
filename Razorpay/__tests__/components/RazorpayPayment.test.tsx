@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react-native';
+import { Text, TouchableOpacity } from 'react-native';
 import { RazorpayPayment } from '@/components/RazorpayPayment';
 import * as razorpayService from '@/utils/razorpayService';
 
@@ -60,9 +61,9 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment, isProcessing }) => (
-            <button onClick={initiatePayment}>
-              {isProcessing ? 'Processing...' : 'Pay Now'}
-            </button>
+            <TouchableOpacity onPress={initiatePayment}>
+              <Text>{isProcessing ? 'Processing...' : 'Pay Now'}</Text>
+            </TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -88,7 +89,9 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment, isProcessing }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}>
+              <Text>Pay Now</Text>
+            </TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -140,7 +143,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -179,7 +182,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -215,7 +218,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -251,7 +254,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -287,9 +290,9 @@ describe('RazorpayPayment', () => {
           {({ initiatePayment, isProcessing }) => {
             processingState = isProcessing;
             return (
-              <button onClick={() => initiatePayment()}>
-                {isProcessing ? 'Processing...' : 'Pay Now'}
-              </button>
+              <TouchableOpacity onPress={() => initiatePayment()}>
+                <Text>{isProcessing ? 'Processing...' : 'Pay Now'}</Text>
+              </TouchableOpacity>
             );
           }}
         </RazorpayPayment>
@@ -308,9 +311,9 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment, isProcessing }) => (
-            <button onClick={() => initiatePayment()} disabled={isProcessing}>
-              Pay Now
-            </button>
+            <TouchableOpacity onPress={() => initiatePayment()} disabled={isProcessing}>
+              <Text>Pay Now</Text>
+            </TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -329,7 +332,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -349,7 +352,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
@@ -386,7 +389,7 @@ describe('RazorpayPayment', () => {
           onFailure={mockOnFailure}
         >
           {({ initiatePayment }) => (
-            <button onClick={() => initiatePayment()}>Pay Now</button>
+            <TouchableOpacity onPress={() => initiatePayment()}><Text>Pay Now</Text></TouchableOpacity>
           )}
         </RazorpayPayment>
       );
