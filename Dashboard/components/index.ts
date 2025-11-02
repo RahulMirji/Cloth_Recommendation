@@ -10,3 +10,4 @@ export { DeleteUserModal } from './DeleteUserModal';
 export { UserDetailsModal } from './UserDetailsModal';
 export { LogoutConfirmModal } from './LogoutConfirmModal';
 export { AdminAccessButton } from './AdminAccessButton';
+export { ModelManagementCard } from './ModelManagementCard';

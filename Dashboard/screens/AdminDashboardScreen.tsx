@@ -27,6 +27,7 @@ import { useAdminAuthContext } from '../contexts/AdminAuthContext';
 import { useUserManagement, useAdminStats } from '../hooks';
 import { StatsCard, UserListItem, DeleteUserModal, UserDetailsModal, LogoutConfirmModal } from '../components';
 import { PaymentStatsCard } from '../components/PaymentStatsCard';
+import { ModelManagementCard } from '../components/ModelManagementCard';
 import type { DashboardUser } from '../types';
 import { PaymentSubmission, PaymentStats, STATUS_COLORS, STATUS_LABELS } from '../types/payment.types';
 import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, deletePayment, formatCurrency, formatDate } from '../services/paymentAdminService';
@@ -185,7 +186,7 @@ export default function AdminDashboardScreen() {
   // Get themed colors based on user's app theme
   const colors = getThemedAdminColors(isDarkMode);
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'payments'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'payments' | 'model'>('stats');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -432,6 +433,22 @@ export default function AdminDashboardScreen() {
     router.replace('/(tabs)' as any);
   }, [logout, router]);
 
+  const renderModel = () => {
+    return (
+      <View style={styles.statsContainer}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: isDarkMode ? colors.textDark : colors.text },
+          ]}
+        >
+          AI Model Management
+        </Text>
+        <ModelManagementCard />
+      </View>
+    );
+  };
+
   const renderStats = () => {
     if (statsLoading || !stats) {
       return (
@@ -585,6 +602,19 @@ export default function AdminDashboardScreen() {
             </View>
           </View>
         )}
+
+        {/* User Management Section */}
+        <View style={{ marginTop: 32 }}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: isDarkMode ? colors.textDark : colors.text },
+            ]}
+          >
+            User Management
+          </Text>
+          {renderUsers()}
+        </View>
       </View>
     );
   };
@@ -896,30 +926,6 @@ export default function AdminDashboardScreen() {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'users' && styles.tabActive,
-            activeTab === 'users' && { borderBottomColor: colors.primary },
-          ]}
-          onPress={() => setActiveTab('users')}
-        >
-          <Ionicons
-            name="people"
-            size={20}
-            color={activeTab === 'users' ? colors.primary : isDarkMode ? colors.textSecondaryDark : colors.textSecondary}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'users' && { color: colors.primary },
-              activeTab !== 'users' && { color: isDarkMode ? colors.textSecondaryDark : colors.textSecondary },
-            ]}
-          >
-            Users
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.tab,
             activeTab === 'payments' && styles.tabActive,
             activeTab === 'payments' && { borderBottomColor: colors.primary },
           ]}
@@ -940,6 +946,30 @@ export default function AdminDashboardScreen() {
             Payments
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'model' && styles.tabActive,
+            activeTab === 'model' && { borderBottomColor: colors.primary },
+          ]}
+          onPress={() => setActiveTab('model')}
+        >
+          <Ionicons
+            name="sparkles"
+            size={20}
+            color={activeTab === 'model' ? colors.primary : isDarkMode ? colors.textSecondaryDark : colors.textSecondary}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'model' && { color: colors.primary },
+              activeTab !== 'model' && { color: isDarkMode ? colors.textSecondaryDark : colors.textSecondary },
+            ]}
+          >
+            AI Model
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -951,8 +981,8 @@ export default function AdminDashboardScreen() {
         }
       >
         {activeTab === 'stats' && renderStats()}
-        {activeTab === 'users' && renderUsers()}
         {activeTab === 'payments' && renderPayments()}
+        {activeTab === 'model' && renderModel()}
         
         {/* Footer with adjusted margins */}
         <View style={styles.footerWrapper}>
