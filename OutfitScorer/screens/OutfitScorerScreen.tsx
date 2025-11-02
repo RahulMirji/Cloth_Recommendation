@@ -27,10 +27,10 @@ import { useAlert } from '@/contexts/AlertContext';
 import { convertImageToBase64 } from '@/OutfitScorer/utils/pollinationsAI';
 import { generateTextWithImageModel } from '@/OutfitScorer/utils/multiModelAI';
 import { AIModel, getDefaultModel } from '@/OutfitScorer/utils/aiModels';
+import { getGlobalModel } from '@/OutfitScorer/utils/globalModelManager';
 import { saveChatHistory, getChatHistoryById } from '@/OutfitScorer/utils/chatHistory';
 import { OutfitScoreConversationData, ProductRecommendationData } from '@/OutfitScorer/types/chatHistory.types';
 import { ProductRecommendationsSection } from '@/OutfitScorer/components/ProductRecommendations';
-import { ModelSelector } from '@/OutfitScorer/components/ModelSelector';
 import {
   generateProductRecommendations,
   extractMissingItems,
@@ -72,7 +72,6 @@ export default function OutfitScorerScreen() {
   const [recommendations, setRecommendations] = useState<Map<string, ProductRecommendation[]>>(new Map());
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState<boolean>(false);
   const [glowAnim] = useState(new Animated.Value(0));
-  const [selectedModel, setSelectedModel] = useState<AIModel>(getDefaultModel());
   
   // Credit system state
   const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
@@ -323,6 +322,10 @@ export default function OutfitScorerScreen() {
     setResult(null);
 
     try {
+      // Load globally selected model (admin-controlled)
+      const globalModel = await getGlobalModel();
+      console.log(`🤖 Using model: ${globalModel.name}`);
+      
       const base64Image = await convertImageToBase64(selectedImage);
       
       // Shortened prompt to fit OpenAI Vision 7000 char limit
@@ -362,7 +365,7 @@ RULES:
 
 If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`;
 
-      const response = await generateTextWithImageModel(selectedModel, base64Image, prompt);
+      const response = await generateTextWithImageModel(globalModel, base64Image, prompt);
 
       console.log('📝 Raw response from AI:', response.substring(0, 200) + '...');
 
@@ -533,28 +536,31 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
       console.error('Error analyzing outfit:', error);
       setIsAnalyzing(false);
       
+      // Get model name for error messages
+      const globalModel = await getGlobalModel();
+      
       // Handle different types of errors with user-friendly messages
       let errorMessage = 'Unknown error';
       
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('taking too long')) {
-          errorMessage = `Analysis timeout with ${selectedModel.name}\n\n` +
+          errorMessage = `Analysis timeout with ${globalModel.name}\n\n` +
                        'The AI service is taking too long. This might be due to:\n\n' +
                        '• Large image size - try taking a new photo\n' +
                        '• Slow internet connection\n' +
                        '• Server is busy\n\n' +
-                       '💡 Try selecting a different AI model above or try again later!';
+                       '💡 Contact admin if issue persists!';
         } else if (error.message.includes('network') || error.message.includes('connection')) {
           errorMessage = 'Network connection issue\n\nPlease check your internet and try again.';
         } else if (error.message.includes('Invalid response format')) {
-          errorMessage = `${selectedModel.name} returned an unexpected format\n\n` +
-                       '💡 Try selecting a different AI model from the dropdown above!';
+          errorMessage = `${globalModel.name} returned an unexpected format\n\n` +
+                       '💡 Contact admin to switch models!';
         } else if (error.message.includes('API error') || error.message.includes('failed')) {
-          errorMessage = `${selectedModel.name} is currently unavailable\n\n` +
-                       '💡 Please select a different AI model from the dropdown above and try again!';
+          errorMessage = `${globalModel.name} is currently unavailable\n\n` +
+                       '💡 Contact admin to switch to backup model!';
         } else {
-          errorMessage = `Error with ${selectedModel.name}\n\n${error.message}\n\n` +
-                       '💡 Try selecting a different AI model from the dropdown above!';
+          errorMessage = `Error with ${globalModel.name}\n\n${error.message}\n\n` +
+                       '💡 Contact admin if issue persists!';
         }
       }
       
@@ -708,12 +714,7 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
 
             {!result && !isAnalyzing && (
               <>
-                {/* AI Model Selector */}
-                <ModelSelector
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                />
-
+                {/* Context Input */}
                 <View style={styles.contextContainer}>
                   <Text style={[styles.contextLabel, { color: themedColors.text }]}>
                     Where are you going?
