@@ -19,21 +19,7 @@ export interface AIModel {
 }
 
 export const AI_MODELS: AIModel[] = [
-  // DEFAULT: Custom (Original Pollinations AI - uses Gemini by default)
-  {
-    id: 'custom',
-    name: 'Custom',
-    provider: 'pollinations',
-    description: 'Default Pollinations AI model. Automatically selects the best available model.',
-    quality: 5,
-    speed: 'fast',
-    modelName: 'gemini',
-    endpoint: 'https://text.pollinations.ai/openai',
-    isRecommended: true,
-    tier: 1,
-  },
-  
-  // AVAILABLE MODELS
+  // DEFAULT: Gemini 1.5 Flash (Pollinations AI)
   {
     id: 'gemini-flash',
     name: 'Gemini 1.5 Flash',
@@ -43,28 +29,20 @@ export const AI_MODELS: AIModel[] = [
     speed: 'fast',
     modelName: 'gemini',
     endpoint: 'https://text.pollinations.ai/openai',
+    isRecommended: true,
     tier: 1,
   },
+  
+  // CUSTOM FINE-TUNED MODEL (Add your AWS endpoint here after training)
   {
-    id: 'mistral-vision',
-    name: 'Mistral Vision',
-    provider: 'pollinations',
-    description: 'Open-source vision model. Reliable backup option.',
-    quality: 4,
-    speed: 'fast',
-    modelName: 'mistral',
-    endpoint: 'https://text.pollinations.ai/openai',
-    tier: 1,
-  },
-  {
-    id: 'openai-vision',
-    name: 'OpenAI Vision',
-    provider: 'pollinations',
-    description: 'OpenAI\'s vision model via Pollinations. Consistent results.',
+    id: 'finetuned-llava',
+    name: 'Fine-tuned LLaVA (Custom)',
+    provider: 'pollinations', // Will be changed to 'custom' after deployment
+    description: 'Custom LLaVA model fine-tuned on Indian fashion dataset. Optimized for accurate outfit analysis.',
     quality: 5,
     speed: 'fast',
-    modelName: 'openai',
-    endpoint: 'https://text.pollinations.ai/openai',
+    modelName: 'gemini', // Temporary fallback to Gemini until your model is ready
+    endpoint: 'https://text.pollinations.ai/openai', // REPLACE WITH: https://your-api.amazonaws.com/analyze
     tier: 1,
   },
 ];
