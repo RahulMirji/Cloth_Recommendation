@@ -135,6 +135,176 @@ jest.mock('./components/Footer', () => ({
 // Silence the warning: Animated: `useNativeDriver` is not supported
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => {}, { virtual: true });
 
+// Comprehensive Animated API mock for TouchableOpacity and other animated components
+// Mock Animated.Value class
+class MockAnimatedValue {
+  constructor(value) {
+    this._value = value;
+    this._listeners = [];
+  }
+  
+  setValue(value) {
+    this._value = value;
+    this._listeners.forEach(listener => listener({ value }));
+  }
+  
+  interpolate(config) {
+    return new MockAnimatedValue(this._value);
+  }
+  
+  addListener(callback) {
+    this._listeners.push(callback);
+    return this._listeners.length - 1;
+  }
+  
+  removeListener(id) {
+    this._listeners.splice(id, 1);
+  }
+  
+  removeAllListeners() {
+    this._listeners = [];
+  }
+  
+  stopAnimation(callback) {
+    if (callback) callback(this._value);
+  }
+  
+  resetAnimation(callback) {
+    if (callback) callback(this._value);
+  }
+  
+  extractOffset() {}
+  
+  flattenOffset() {}
+  
+  setOffset(offset) {
+    this._offset = offset;
+  }
+}
+
+// Mock Animated.ValueXY class
+class MockAnimatedValueXY {
+  constructor(value) {
+    this.x = new MockAnimatedValue(value?.x || 0);
+    this.y = new MockAnimatedValue(value?.y || 0);
+  }
+  
+  setValue(value) {
+    this.x.setValue(value.x);
+    this.y.setValue(value.y);
+  }
+  
+  setOffset(offset) {
+    this.x.setOffset(offset.x);
+    this.y.setOffset(offset.y);
+  }
+  
+  flattenOffset() {
+    this.x.flattenOffset();
+    this.y.flattenOffset();
+  }
+  
+  extractOffset() {
+    this.x.extractOffset();
+    this.y.extractOffset();
+  }
+  
+  stopAnimation(callback) {
+    this.x.stopAnimation();
+    this.y.stopAnimation();
+    if (callback) callback({ x: this.x._value, y: this.y._value });
+  }
+  
+  resetAnimation(callback) {
+    this.x.resetAnimation();
+    this.y.resetAnimation();
+    if (callback) callback({ x: this.x._value, y: this.y._value });
+  }
+  
+  addListener(callback) {
+    return this.x.addListener(callback);
+  }
+  
+  removeListener(id) {
+    this.x.removeListener(id);
+    this.y.removeListener(id);
+  }
+  
+  removeAllListeners() {
+    this.x.removeAllListeners();
+    this.y.removeAllListeners();
+  }
+  
+  getLayout() {
+    return {
+      left: this.x,
+      top: this.y,
+    };
+  }
+  
+  getTranslateTransform() {
+    return [
+      { translateX: this.x },
+      { translateY: this.y },
+    ];
+  }
+}
+
+// Mock animation creator that returns a controllable animation
+const createMockAnimation = (value, config) => ({
+  start: (callback) => {
+    if (callback) {
+      callback({ finished: true });
+    }
+  },
+  stop: jest.fn(),
+  reset: jest.fn(),
+});
+
+// Patch the Animated module directly
+const RN = require('react-native');
+RN.Animated.Value = MockAnimatedValue;
+RN.Animated.ValueXY = MockAnimatedValueXY;
+RN.Animated.timing = jest.fn((value, config) => createMockAnimation(value, config));
+RN.Animated.spring = jest.fn((value, config) => createMockAnimation(value, config));
+RN.Animated.decay = jest.fn((value, config) => createMockAnimation(value, config));
+RN.Animated.loop = jest.fn((animation) => ({
+  start: (callback) => {
+    if (callback) callback({ finished: true });
+  },
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+RN.Animated.parallel = jest.fn((animations, config) => ({
+  start: (callback) => {
+    if (callback) callback({ finished: true });
+  },
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+RN.Animated.sequence = jest.fn((animations) => ({
+  start: (callback) => {
+    if (callback) callback({ finished: true });
+  },
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+RN.Animated.stagger = jest.fn((delay, animations) => ({
+  start: (callback) => {
+    if (callback) callback({ finished: true });
+  },
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+RN.Animated.delay = jest.fn((time) => ({
+  start: (callback) => {
+    if (callback) callback({ finished: true });
+  },
+  stop: jest.fn(),
+  reset: jest.fn(),
+}));
+RN.Animated.event = jest.fn((argMapping, config) => jest.fn());
+
 // Mock global fetch
 global.fetch = jest.fn();
 
