@@ -52,7 +52,7 @@ const calculateMedian = (sortedNumbers: number[]): number | null => {
 /**
  * Calculate age statistics
  */
-const calculateAgeStatistics = (users: DashboardUser[]): AgeStatistics => {
+export const calculateAgeStatistics = (users: DashboardUser[]): AgeStatistics => {
   const usersWithAge = users.filter(u => u.age !== null && u.age !== undefined);
   const ages = usersWithAge.map(u => u.age!).sort((a, b) => a - b);
   
@@ -84,7 +84,7 @@ const calculateAgeStatistics = (users: DashboardUser[]): AgeStatistics => {
 /**
  * Calculate age distribution
  */
-const calculateAgeDistribution = (users: DashboardUser[]): AgeGroup[] => {
+export const calculateAgeDistribution = (users: DashboardUser[]): AgeGroup[] => {
   const distribution: { [key: string]: DashboardUser[] } = {};
   
   // Initialize all age groups
@@ -122,7 +122,7 @@ const calculateAgeDistribution = (users: DashboardUser[]): AgeGroup[] => {
 /**
  * Generate insights from demographics data
  */
-const generateInsights = (
+export const generateInsights = (
   users: DashboardUser[],
   ageDistribution: AgeGroup[],
   ageStatistics: AgeStatistics

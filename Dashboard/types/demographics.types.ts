@@ -8,6 +8,9 @@ import { DashboardUser } from './index';
 
 export type Gender = 'male' | 'female';
 
+// Alias for testing purposes
+export type DemographicUser = DashboardUser;
+
 export interface AgeGroup {
   label: string;
   min: number | null;
