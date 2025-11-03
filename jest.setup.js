@@ -135,6 +135,166 @@ jest.mock('./components/Footer', () => ({
 // Silence the warning: Animated: `useNativeDriver` is not supported
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => {}, { virtual: true });
 
+// Mock Animated API completely
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  
+  // Create a mock animated value
+  class MockAnimatedValue {
+    constructor(value) {
+      this._value = value;
+    }
+    
+    setValue(value) {
+      this._value = value;
+    }
+    
+    setOffset(offset) {
+      this._offset = offset;
+    }
+    
+    flattenOffset() {}
+    
+    extractOffset() {}
+    
+    addListener() {
+      return 'mock-listener-id';
+    }
+    
+    removeListener() {}
+    
+    removeAllListeners() {}
+    
+    stopAnimation() {}
+    
+    resetAnimation() {}
+    
+    interpolate() {
+      return this;
+    }
+  }
+  
+  RN.Animated.timing = (value, config) => ({
+    start: (callback) => {
+      if (value && value.setValue) {
+        value.setValue(config.toValue);
+      }
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.spring = (value, config) => ({
+    start: (callback) => {
+      if (value && value.setValue) {
+        value.setValue(config.toValue);
+      }
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.decay = (value, config) => ({
+    start: (callback) => {
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.loop = (animation) => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.parallel = (animations) => ({
+    start: (callback) => {
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.sequence = (animations) => ({
+    start: (callback) => {
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.stagger = (time, animations) => ({
+    start: (callback) => {
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.delay = (time) => ({
+    start: (callback) => {
+      if (callback) {
+        callback({ finished: true });
+      }
+    },
+    stop: jest.fn(),
+    reset: jest.fn(),
+  });
+  
+  RN.Animated.Value = MockAnimatedValue;
+  RN.Animated.ValueXY = class MockAnimatedValueXY {
+    constructor(value) {
+      this.x = new MockAnimatedValue(value?.x || 0);
+      this.y = new MockAnimatedValue(value?.y || 0);
+    }
+    setValue(value) {
+      this.x.setValue(value.x);
+      this.y.setValue(value.y);
+    }
+    setOffset(offset) {
+      this.x.setOffset(offset.x);
+      this.y.setOffset(offset.y);
+    }
+    flattenOffset() {
+      this.x.flattenOffset();
+      this.y.flattenOffset();
+    }
+    extractOffset() {
+      this.x.extractOffset();
+      this.y.extractOffset();
+    }
+    stopAnimation() {}
+    resetAnimation() {}
+    addListener() {
+      return 'mock-listener-id';
+    }
+    removeListener() {}
+    getLayout() {
+      return {
+        left: this.x,
+        top: this.y,
+      };
+    }
+  };
+  
+  return RN;
+});
+
 // Mock global fetch
 global.fetch = jest.fn();
 
