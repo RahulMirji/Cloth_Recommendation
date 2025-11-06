@@ -45,16 +45,32 @@ The Virtual Try-On feature allows users to upload their photo and a clothing/out
 
 ## File Structure
 ```
-services/
-  └── piApiService.ts          # PI API integration service
+VirtualTryOn/
+├── index.ts                          # Main module exports
+├── README.md                         # This file
+│
+├── screens/
+│   ├── VirtualTryOnScreen.tsx       # Main upload screen
+│   └── VirtualTryOnResultScreen.tsx # Result display screen
+│
+├── services/
+│   └── piApiService.ts              # PI API integration service
+│
+├── types/
+│   └── index.ts                     # TypeScript interfaces & types
+│
+├── constants/
+│   └── index.ts                     # API configuration & constants
+│
+└── utils/
+    └── index.ts                     # Helper functions (future use)
+```
 
-screens/
-  ├── VirtualTryOnScreen.tsx   # Main upload screen
-  └── VirtualTryOnResultScreen.tsx  # Result display screen
-
+## Integration Points
+```
 app/
-  ├── virtual-try-on.tsx       # Route for upload screen
-  └── virtual-try-on-result.tsx # Route for result screen
+├── virtual-try-on.tsx               # Route for upload screen
+└── virtual-try-on-result.tsx        # Route for result screen
 ```
 
 ## Dependencies Added
