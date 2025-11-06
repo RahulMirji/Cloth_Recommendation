@@ -1,3 +1,3 @@
-import VirtualTryOnResultScreen from '../screens/VirtualTryOnResultScreen';
+import { VirtualTryOnResultScreen } from '../VirtualTryOn';
 
 export default VirtualTryOnResultScreen;

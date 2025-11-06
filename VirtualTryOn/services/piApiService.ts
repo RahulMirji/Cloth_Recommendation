@@ -1,41 +1,24 @@
+/**
+ * PI API Service
+ * 
+ * Service for interacting with PI API for virtual try-on image generation
+ */
+
 import axios from 'axios';
-
-const PI_API_KEY = '0216505f2a6a8d23e3be11b9648b5d52abcc76da2ce9467b3bb6910f833291e9';
-const API_ENDPOINT = 'https://api.piapi.ai/api/v1/task';
-
-interface GenerateTryOnResponse {
-  success: boolean;
-  data?: any;
-  imageUrl?: string | null;
-  error?: string;
-}
-
-interface TaskResponse {
-  code: number;
-  data: {
-    task_id: string;
-    status: 'pending' | 'processing' | 'completed' | 'failed';
-    output?: {
-      image_urls?: string[];
-    };
-    error?: {
-      message?: string;
-    };
-  };
-  message: string;
-}
+import { GenerateTryOnResponse, TaskResponse } from '../types';
+import { PI_API_CONFIG, VIRTUAL_TRY_ON_PROMPT } from '../constants';
 
 /**
  * Poll task status until completion
  */
-const pollTaskStatus = async (taskId: string, maxAttempts = 60): Promise<string> => {
+const pollTaskStatus = async (taskId: string, maxAttempts = PI_API_CONFIG.MAX_POLL_ATTEMPTS): Promise<string> => {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const response = await axios.get<TaskResponse>(
-        `${API_ENDPOINT}/${taskId}`,
+        `${PI_API_CONFIG.ENDPOINT}/${taskId}`,
         {
           headers: {
-            'X-API-Key': PI_API_KEY,
+            'X-API-Key': PI_API_CONFIG.API_KEY,
           },
         }
       );
@@ -51,14 +34,14 @@ const pollTaskStatus = async (taskId: string, maxAttempts = 60): Promise<string>
       }
 
       if (status === 'failed') {
-        const errorMsg = error?.message || error?.raw_message || response.data.data.detail || 'Task failed';
+        const errorMsg = error?.message || (error as any)?.raw_message || (response.data.data as any).detail || 'Task failed';
         console.error('❌ Task failed with error:', errorMsg);
         console.error('Full error object:', JSON.stringify(error, null, 2));
         throw new Error(errorMsg);
       }
 
-      // Wait 2 seconds before next poll
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, PI_API_CONFIG.POLL_INTERVAL));
     } catch (error: any) {
       if (error.message === 'Task failed') {
         throw error;
@@ -81,31 +64,24 @@ export const generateTryOnImage = async (
   try {
     console.log('🚀 Creating virtual try-on task...');
     
-    // Step 1: Create task
+    // Step 1: Create task with IDM-VTON format
     const createResponse = await axios.post<TaskResponse>(
-      API_ENDPOINT,
+      PI_API_CONFIG.ENDPOINT,
       {
-        model: 'gemini',
-        task_type: 'gemini-2.5-flash-image',
+        model: PI_API_CONFIG.MODEL,
+        task_type: PI_API_CONFIG.TASK_TYPE,
         input: {
-          prompt: `Create a photorealistic image showing the person from the first image wearing the exact clothing from the second image. Preserve the person's facial features, skin tone, hair, and body proportions. Apply the outfit naturally with proper fit, realistic fabric texture, appropriate shadows and highlights. Maintain the original background and lighting conditions. Ensure the clothing fits the person's body shape realistically.`,
-          image_urls: [userImageUrl, outfitImageUrl],
-          num_images: 1,
-          output_format: 'png',
-        },
-        config: {
-          webhook_config: {
-            endpoint: '',
-            secret: '',
-          },
+          human_image: userImageUrl,
+          cloth_image: outfitImageUrl,
+          category: 'upper_body', // Options: upper_body, lower_body, dresses
         },
       },
       {
         headers: {
-          'X-API-Key': PI_API_KEY,
+          'X-API-Key': PI_API_CONFIG.API_KEY,
           'Content-Type': 'application/json',
         },
-        timeout: 30000, // 30 second timeout for task creation
+        timeout: PI_API_CONFIG.TIMEOUT,
       }
     );
 
