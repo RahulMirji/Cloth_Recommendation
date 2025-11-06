@@ -14,7 +14,7 @@
 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Sparkles, Shirt, User, Wand2, X } from 'lucide-react-native';
+import { Camera, Sparkles, Shirt, User, Wand2, X, Scan } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -330,6 +330,35 @@ export function HomeScreen() {
               </Text>
               <Text style={styles.cardDescription}>
                 Create any image you can imagine with AI-powered generation
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Virtual Try-On Card - Fourth (New) */}
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => router.push('/virtual-try-on')}
+          >
+            <LinearGradient
+              colors={['#8B5CF6', '#EC4899']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardGradient}
+            >
+              {/* New Tag */}
+              <View style={styles.betaTag}>
+                <Text style={styles.betaText}>NEW</Text>
+              </View>
+              
+              <View style={styles.cardIcon}>
+                <Scan size={32} color={Colors.white} strokeWidth={2.5} />
+              </View>
+              <Text style={styles.cardTitle}>
+                Virtual Try-On
+              </Text>
+              <Text style={styles.cardDescription}>
+                See how outfits look on you with AI-powered virtual try-on
               </Text>
             </LinearGradient>
           </TouchableOpacity>
