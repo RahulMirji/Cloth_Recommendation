@@ -112,6 +112,20 @@ function RootLayoutNav() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name="virtual-try-on"
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="virtual-try-on-result"
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
       
       {/* Admin Routes */}
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
