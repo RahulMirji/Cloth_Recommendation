@@ -10,7 +10,6 @@ import {
   StyleSheet,
   useColorScheme,
   Dimensions,
-  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { generateTryOnImage } from '../services/piApiService';
@@ -18,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { useImageUpload } from '@/OutfitScorer/hooks/useImageUpload';
 import { useApp } from '@/contexts/AppContext';
 import { useAlert } from '@/contexts/AlertContext';
-import { Camera, Upload, Sparkles, User, Shirt, X, ChevronLeft } from 'lucide-react-native';
+import { Camera, Upload, Sparkles, User, Shirt, X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -145,15 +144,6 @@ export default function VirtualTryOnScreen() {
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      {/* Back Button */}
-      <TouchableOpacity 
-        style={[styles.backButton, isDarkMode && styles.backButtonDark]}
-        onPress={() => router.back()}
-        activeOpacity={0.7}
-      >
-        <ChevronLeft size={28} color={isDarkMode ? Colors.white : Colors.text} strokeWidth={2.5} />
-      </TouchableOpacity>
-
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -330,26 +320,6 @@ const styles = StyleSheet.create({
   },
   containerDark: {
     backgroundColor: '#0F172A',
-  },
-  backButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  backButtonDark: {
-    backgroundColor: '#1E293B',
   },
   scrollView: {
     flex: 1,
