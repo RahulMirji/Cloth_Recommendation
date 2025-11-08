@@ -64,16 +64,23 @@ export const generateTryOnImage = async (
   try {
     console.log('🚀 Creating virtual try-on task...');
     
-    // Step 1: Create task with IDM-VTON format
+    // Step 1: Create task
     const createResponse = await axios.post<TaskResponse>(
       PI_API_CONFIG.ENDPOINT,
       {
         model: PI_API_CONFIG.MODEL,
         task_type: PI_API_CONFIG.TASK_TYPE,
         input: {
-          human_image: userImageUrl,
-          cloth_image: outfitImageUrl,
-          category: 'upper_body', // Options: upper_body, lower_body, dresses
+          prompt: VIRTUAL_TRY_ON_PROMPT,
+          image_urls: [userImageUrl, outfitImageUrl],
+          num_images: 1,
+          output_format: 'png',
+        },
+        config: {
+          webhook_config: {
+            endpoint: '',
+            secret: '',
+          },
         },
       },
       {
