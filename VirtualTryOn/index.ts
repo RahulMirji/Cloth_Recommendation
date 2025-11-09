@@ -1,19 +1,19 @@
 /**
  * Virtual Try-On Module
  * 
- * A modular feature for AI-powered virtual try-on using PI API.
- * Allows users to upload their photo and try on different outfits.
+ * Main entry point for Virtual Try-On feature
+ * Using PI API for virtual try-on image generation
  */
 
-// Screen exports
+// Screens
 export { default as VirtualTryOnScreen } from './screens/VirtualTryOnScreen';
 export { default as VirtualTryOnResultScreen } from './screens/VirtualTryOnResultScreen';
 
-// Service exports
+// Services
 export * from './services/piApiService';
 
-// Type exports
+// Types
 export * from './types';
 
-// Constant exports
+// Constants
 export * from './constants';
