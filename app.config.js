@@ -1,4 +1,4 @@
-{
+export default {
   "expo": {
     "name": "AI Cloth Recommendation",
     "slug": "ai-cloth-recommendation-app",
@@ -80,7 +80,8 @@
       },
       "eas": {
         "projectId": "3087b3fe-4b5a-4714-836c-8765d40344d0"
-      }
+      },
+      "geminiApiKey": process.env.EXPO_PUBLIC_GEMINI_API_KEY
     },
     "owner": "rahulmirji07"
   }

@@ -3,10 +3,16 @@
  * 
  * Supports multiple free, open-source AI vision models.
  * Users can select their preferred model from the UI.
+ * 
+ * Providers:
+ * - 'pollinations': Free proxy API (OpenAI-compatible format)
+ * - 'gemini': Official Google Gemini API (Google format)
+ * - 'huggingface': Hugging Face Inference API
  */
 
 import { Platform } from 'react-native';
 import { AIModel } from './aiModels';
+import { callGeminiAPI } from './geminiAPI';
 
 export interface TextGenerationMessage {
   role: 'user' | 'assistant';
@@ -30,10 +36,21 @@ export async function generateTextWithModel(
     // Disable streaming on mobile as ReadableStream is not supported in React Native
     const shouldStream = Platform.OS === 'web' && (options.stream ?? false);
 
-    console.log(`🤖 Using model: ${model.name} (${model.modelName})`);
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🟢 POLLINATIONS API CALL STARTING');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log(`🤖 Model: ${model.name} (${model.modelName})`);
+    console.log('🌐 Endpoint:', model.endpoint);
+    console.log('📤 Provider: Pollinations Proxy');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('');
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    
+    const startTime = Date.now();
 
     const requestBody = {
       model: model.modelName,
@@ -41,6 +58,8 @@ export async function generateTextWithModel(
       stream: shouldStream,
     };
 
+    console.log('⏳ Sending request to Pollinations API...');
+    
     const response = await fetch(model.endpoint, {
       method: 'POST',
       headers: {
@@ -50,6 +69,9 @@ export async function generateTextWithModel(
       body: JSON.stringify(requestBody),
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
+
+    const fetchTime = Date.now() - startTime;
+    console.log(`⚡ Response received in ${fetchTime}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -97,7 +119,16 @@ export async function generateTextWithModel(
         throw new Error('Empty response from AI model');
       }
 
-      console.log('✅ Response received, length:', content.length);
+      console.log('');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('✅ POLLINATIONS API SUCCESS');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📊 Response length:', content.length, 'characters');
+      console.log('⏱️  Total time:', Date.now() - startTime, 'ms');
+      console.log('🎯 Source: Pollinations Proxy → Gemini');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('');
+      
       return content;
     }
   } catch (error) {
@@ -114,6 +145,35 @@ export async function generateTextWithImageModel(
   imageBase64: string,
   prompt: string
 ): Promise<string> {
+  console.log('');
+  console.log('╔═══════════════════════════════════════════════════════╗');
+  console.log('║                                                       ║');
+  console.log('║           🚀 AI MODEL REQUEST ROUTING                ║');
+  console.log('║                                                       ║');
+  console.log('╚═══════════════════════════════════════════════════════╝');
+  console.log('');
+  console.log('📋 Model Info:');
+  console.log('   Name:', model.name);
+  console.log('   ID:', model.id);
+  console.log('   Provider:', model.provider);
+  console.log('   Model Name:', model.modelName);
+  console.log('');
+  
+  // Route to official Gemini API if provider is 'gemini'
+  if (model.provider === 'gemini') {
+    console.log('🔀 ROUTING DECISION: Official Gemini API');
+    console.log('   ✅ Provider is "gemini" - using Google\'s official API');
+    console.log('   🌐 Direct connection to Google servers');
+    console.log('');
+    return callGeminiAPI(model.modelName, prompt, imageBase64);
+  }
+
+  // Otherwise use existing Pollinations/OpenAI-compatible flow
+  console.log('🔀 ROUTING DECISION: Pollinations Proxy API');
+  console.log('   ✅ Provider is "pollinations" - using free proxy');
+  console.log('   🌐 Connection via Pollinations proxy');
+  console.log('');
+  
   const imageUrl = imageBase64.startsWith('data:')
     ? imageBase64
     : `data:image/jpeg;base64,${imageBase64}`;

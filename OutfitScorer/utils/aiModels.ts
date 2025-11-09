@@ -8,7 +8,7 @@
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'pollinations' | 'huggingface';
+  provider: 'pollinations' | 'huggingface' | 'gemini'; // Added 'gemini' for official Google API
   description: string;
   quality: 1 | 2 | 3 | 4 | 5; // 5 stars rating
   speed: 'slow' | 'medium' | 'fast' | 'very-fast';
@@ -19,12 +19,12 @@ export interface AIModel {
 }
 
 export const AI_MODELS: AIModel[] = [
-  // DEFAULT: Gemini 1.5 Flash (Pollinations AI)
+  // DEFAULT: Gemini 1.5 Flash (Pollinations AI - FREE, no API key needed)
   {
     id: 'gemini-flash',
     name: 'Gemini 1.5 Flash',
     provider: 'pollinations',
-    description: 'Google\'s latest vision model. Excellent for fashion analysis with fast responses.',
+    description: 'Google\'s vision model via Pollinations proxy. FREE with no API key required.',
     quality: 5,
     speed: 'fast',
     modelName: 'gemini',
@@ -33,7 +33,21 @@ export const AI_MODELS: AIModel[] = [
     tier: 1,
   },
   
-  // CUSTOM FINE-TUNED MODEL (Add your AWS endpoint here after training)
+  // NEW: Official Gemini Flash Lite (Direct from Google)
+  {
+    id: 'gemini-2-flash',
+    name: 'Gemini Flash Lite (Official)',
+    provider: 'gemini',
+    description: 'Google\'s latest Gemini Flash Lite via official API. Faster and more accurate. Requires API key.',
+    quality: 5,
+    speed: 'very-fast',
+    modelName: 'gemini-flash-lite-latest',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent',
+    isRecommended: false,
+    tier: 1,
+  },
+  
+  // CUSTOM FINE-TUNED MODEL (placeholder for future deployment)
   {
     id: 'finetuned-llava',
     name: 'Fine-tuned LLaVA (Custom)',
