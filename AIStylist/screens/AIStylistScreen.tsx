@@ -18,6 +18,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 import { generateTextWithImage, convertImageToBase64 } from '@/AIStylist/utils/pollinationsAI';
+import { generateTextWithImageModel } from '@/OutfitScorer/utils/multiModelAI';
+import { AIStylistAIModel } from '@/AIStylist/utils/aiModels';
+import { getGlobalAIStylistModel } from '@/AIStylist/utils/globalModelManager';
 import { SpeechToTextService, generateSpeakBackAudio, convertAudioToText, speakTextLocal, stopAllTTS } from '@/AIStylist/utils/audioUtils';
 import { ChatMessage, ChatSession, generateSessionId, createChatMessage } from '@/AIStylist/utils/chatUtils';
 import { supabase } from '@/lib/supabase';
@@ -49,6 +52,7 @@ export default function AIStylistScreen() {
   const [streamingHandler] = useState(() => new StreamingResponseHandler());
   const [vadEnabled, setVadEnabled] = useState<boolean>(false);
   const [isHandsFreeMode, setIsHandsFreeMode] = useState<boolean>(false);
+  const [currentAIModel, setCurrentAIModel] = useState<AIStylistAIModel | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const currentSessionRef = useRef<ChatSession | null>(null);
@@ -62,6 +66,21 @@ export default function AIStylistScreen() {
   // auto-listen OFF so the assistant won't start speaking or listening again
   // automatically.
   const AUTO_LISTEN_AFTER_AUDIO = false;
+
+  // Load AI model on mount
+  useEffect(() => {
+    loadAIModel();
+  }, []);
+
+  const loadAIModel = async () => {
+    try {
+      const model = await getGlobalAIStylistModel();
+      setCurrentAIModel(model);
+      console.log('🤖 AIStylist loaded model:', model.name);
+    } catch (error) {
+      console.error('❌ Failed to load AIStylist model:', error);
+    }
+  };
 
   useEffect(() => {
     // Initialize storage service for enhanced vision
@@ -462,6 +481,18 @@ export default function AIStylistScreen() {
       console.log('🎵 Platform:', Platform.OS);
       console.log('🎵 Conversation active:', isConversationActive);
 
+      // Clean up any existing recording first (important!)
+      if (recording) {
+        console.log('🎵 ⚠️ Found existing recording, cleaning up...');
+        try {
+          await recording.stopAndUnloadAsync();
+        } catch (cleanupError) {
+          console.log('🎵 Cleanup error (ignoring):', cleanupError);
+        }
+        setRecording(null);
+        setIsRecording(false);
+      }
+
       if (!isConversationActive) {
         console.log('🎵 Starting new conversation first...');
         await startNewConversation();
@@ -505,11 +536,14 @@ export default function AIStylistScreen() {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : 'No stack trace'
       });
+      
+      // Clean up on error
       setIsRecording(false);
+      setRecording(null);
       setMessages(prev => prev.slice(0, -1));
       showCustomAlert('error', 'Recording Error', 'Failed to start voice recording. Please try again.');
     }
-  }, [isConversationActive, startNewConversation]);
+  }, [isConversationActive, startNewConversation, recording]);
 
   const stopHoldToSpeak = useCallback(async () => {
     try {
@@ -787,7 +821,22 @@ Provide helpful, friendly, and specific fashion advice based on:
 
 Keep responses conversational and natural, as if you're talking to them in person. Be encouraging and constructive.`;
 
-        response = await generateTextWithImage(imageReference, systemPrompt);
+        // Use global AI model with fallback to legacy Pollinations
+        if (currentAIModel) {
+          console.log(`🤖 Using ${currentAIModel.name} for vision analysis`);
+          
+          if (currentAIModel.provider === 'gemini') {
+            // Use Gemini Official API via multiModelAI
+            response = await generateTextWithImageModel(currentAIModel, imageReference, systemPrompt);
+          } else {
+            // Use Pollinations (existing logic)
+            response = await generateTextWithImage(imageReference, systemPrompt);
+          }
+        } else {
+          // Fallback to Pollinations if model not loaded yet
+          console.log('⚠️ AI model not loaded, using fallback Pollinations');
+          response = await generateTextWithImage(imageReference, systemPrompt);
+        }
       } else {
         // This should rarely happen now
         console.log('⚠️ No vision mode available - this shouldn\'t happen');
