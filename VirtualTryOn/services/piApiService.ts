@@ -2,7 +2,8 @@
  * PI API Service
  * 
  * Service for interacting with PI API for virtual try-on image generation
- * Last updated: 2025-11-08 17:12:00
+ * Using Gemini 2.5 Flash Image via PI API
+ * Last updated: 2025-11-09
  */
 
 import axios from 'axios';
@@ -11,9 +12,9 @@ import { PI_API_CONFIG, VIRTUAL_TRY_ON_PROMPT } from '../constants';
 
 /**
  * Poll task status until completion
- * Polls every 3 seconds for up to 15 attempts (45 seconds total)
+ * Polls every 3 seconds for up to 20 attempts (60 seconds total)
  */
-const pollTaskStatus = async (taskId: string, maxAttempts = 15): Promise<string> => {
+const pollTaskStatus = async (taskId: string, maxAttempts = 20): Promise<string> => {
   const pollInterval = 3000; // 3 seconds between polls
   
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -31,7 +32,7 @@ const pollTaskStatus = async (taskId: string, maxAttempts = 15): Promise<string>
 
       console.log(`📊 Task status (attempt ${attempt + 1}/${maxAttempts}):`, status);
       
-      // Only log full response on first and last attempts to reduce noise
+      // Only log full response on first and last attempts or when status changes
       if (attempt === 0 || attempt === maxAttempts - 1 || status !== 'pending') {
         console.log('📋 Full response:', JSON.stringify(response.data, null, 2));
       }
@@ -66,34 +67,34 @@ const pollTaskStatus = async (taskId: string, maxAttempts = 15): Promise<string>
     }
   }
 
-  throw new Error('Task timeout - generation took too long (exceeded 45 seconds)');
+  throw new Error('Task timeout - generation took too long (exceeded 60 seconds)');
 };
 
 /**
  * Generate virtual try-on image using PI API
+ * Uses Gemini 2.5 Flash Image model via PI API wrapper
  */
 export const generateTryOnImage = async (
   userImageUrl: string,
   outfitImageUrl: string
 ): Promise<GenerateTryOnResponse> => {
   try {
-    console.log('🚀 Creating virtual try-on task...');
+    console.log('🚀 Creating virtual try-on task with PI API...');
     console.log('👤 User image:', userImageUrl);
     console.log('👕 Outfit image:', outfitImageUrl);
+    console.log('🔑 API Key:', PI_API_CONFIG.API_KEY ? 'Set ✅' : 'Missing ❌');
     
-    // Step 1: Create task with correct format for gemini virtual try-on
-    // Note: When using image_urls (i2i mode), aspect_ratio should NOT be specified
-    // The API will use the input image's aspect ratio automatically
+    // Step 1: Create task with correct format matching the example
     const createResponse = await axios.post<TaskResponse>(
       PI_API_CONFIG.ENDPOINT,
       {
-        model: PI_API_CONFIG.MODEL,
-        task_type: PI_API_CONFIG.TASK_TYPE,
+        model: 'gemini',
+        task_type: 'gemini-2.5-flash-image',
         input: {
           prompt: VIRTUAL_TRY_ON_PROMPT,
           image_urls: [userImageUrl, outfitImageUrl],
           output_format: 'png',
-          // aspect_ratio is omitted for i2i mode - uses input image aspect ratio
+          aspect_ratio: '1:1',
         },
       },
       {
@@ -105,6 +106,8 @@ export const generateTryOnImage = async (
       }
     );
 
+    console.log('📥 Create response:', JSON.stringify(createResponse.data, null, 2));
+
     if (createResponse.data.code !== 200) {
       throw new Error(createResponse.data.message || 'Failed to create task');
     }
@@ -113,7 +116,7 @@ export const generateTryOnImage = async (
     console.log('✅ Task created:', taskId);
 
     // Step 2: Poll for completion
-    console.log('⏳ Waiting for task to complete...');
+    console.log('⏳ Waiting for task to complete (can take up to 60 seconds)...');
     const imageUrl = await pollTaskStatus(taskId);
 
     return {
@@ -123,6 +126,7 @@ export const generateTryOnImage = async (
     };
   } catch (error: any) {
     console.error('❌ PI API Error:', error);
+    console.error('❌ Error response:', error.response?.data);
     return {
       success: false,
       error: error.response?.data?.message || error.message || 'Failed to generate image',

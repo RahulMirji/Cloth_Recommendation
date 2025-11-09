@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { generateTryOnImage } from '../services/piApiService';
+import { generateTryOnImage } from '../services/piApiService'; // Using PI API
 import { useRouter } from 'expo-router';
 import { useImageUpload } from '@/OutfitScorer/hooks/useImageUpload';
 import { useApp } from '@/contexts/AppContext';
@@ -116,12 +116,12 @@ export default function VirtualTryOnScreen() {
       }
 
       // Call API with uploaded image URLs
-      console.log('🎨 Calling PI API...');
+      console.log('🎨 Calling Fal.ai API (100% FREE - No card needed!)...');
       console.log('User image URL:', userImageUpload.url);
       console.log('Outfit image URL:', outfitImageUpload.url);
       
       const result = await generateTryOnImage(userImageUpload.url!, outfitImageUpload.url!);
-      console.log('🎨 PI API result:', result);
+      console.log('🎨 Fal.ai result:', result);
 
       if (result.success && result.imageUrl) {
         console.log('✅ Generation successful! Image URL:', result.imageUrl);
@@ -292,7 +292,7 @@ export default function VirtualTryOnScreen() {
               <View style={styles.progressFill} />
             </View>
             <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>
-              ✨ AI is working its magic... This may take 15-30 seconds
+              ✨ AI is working its magic... This may take 20-40 seconds (FREE credits!)
             </Text>
           </View>
         )}
@@ -305,6 +305,7 @@ export default function VirtualTryOnScreen() {
               <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• Use a clear, well-lit photo of yourself</Text>
               <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• Choose an outfit with good visibility</Text>
               <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• Front-facing photos work best</Text>
+              <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• 🎓 FREE $5 credits via Replicate!</Text>
             </View>
           </View>
         )}

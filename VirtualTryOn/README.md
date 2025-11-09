@@ -1,7 +1,14 @@
 # Virtual Try-On Feature
 
 ## Overview
-The Virtual Try-On feature allows users to upload their photo and a clothing/outfit image, then generates a realistic image showing the user wearing that outfit using pi.ai's Nano Banana (Gemini 2.5 Flash Image) API.
+The Virtual Try-On feature allows users to upload their photo and a clothing/outfit image, then generates a realistic image showing the user wearing that outfit using **Hugging Face's IDM-VTON model** (FREE tier with rate limits - perfect for student projects).
+
+## ✅ **NEW: Now Using FREE Hugging Face API!**
+- **Previous**: PI API ($0.03 per image) ❌
+- **Current**: Hugging Face Inference API (FREE with rate limits) ✅
+- **Model**: `yisol/IDM-VTON` - State-of-the-art virtual try-on
+- **Cost**: $0.00 for ~1000 requests/month (free tier)
+- **Perfect for**: Final year projects, demos, student usage
 
 ## Implementation Status
 ✅ Branch created: `virtual-try-on`
@@ -80,10 +87,20 @@ app/
 - `react-native-share`: Latest - Share functionality
 
 ## API Configuration
-- **Endpoint**: https://api.piapi.ai/api/v1/task
-- **Model**: Gemini 2.5 Flash Image (Nano Banana)
-- **API Key**: Configured in `services/piApiService.ts`
-- **Pricing**: $0.03 per image
+- **Service**: Hugging Face Inference API (FREE tier)
+- **Endpoint**: https://api-inference.huggingface.co/models/yisol/IDM-VTON
+- **Model**: IDM-VTON (Improving Diffusion Models for Virtual Try-on)
+- **API Key**: Get from https://huggingface.co/settings/tokens
+- **Pricing**: FREE tier - ~1000 requests/month
+- **PRO tier**: $9/month - 30,000 requests/month (if needed)
+
+### Getting Your Free API Key:
+1. Sign up at https://huggingface.co/join
+2. Go to https://huggingface.co/settings/tokens
+3. Click "New token"
+4. Select "Read" access (free)
+5. Copy token (starts with `hf_...`)
+6. Paste in `VirtualTryOn/constants/index.ts` → `HF_API_CONFIG.API_KEY`
 
 ## Usage Flow
 
