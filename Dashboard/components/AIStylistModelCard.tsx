@@ -8,18 +8,16 @@ import {
   useColorScheme,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Sparkles, Check } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AIModel, AI_MODELS } from '@/OutfitScorer/utils/aiModels';
+import { MessageSquare, Check } from 'lucide-react-native';
+import { AIStylistAIModel, AISTYLIST_AI_MODELS } from '@/AIStylist/utils/aiModels';
+import { getGlobalAIStylistModel, setGlobalAIStylistModel } from '@/AIStylist/utils/globalModelManager';
 
-const STORAGE_KEY = '@admin_selected_model';
-
-interface ModelManagementCardProps {
-  onModelChange?: (model: AIModel) => void;
+interface AIStylistModelCardProps {
+  onModelChange?: (model: AIStylistAIModel) => void;
 }
 
-export function ModelManagementCard({ onModelChange }: ModelManagementCardProps) {
-  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
+export function AIStylistModelCard({ onModelChange }: AIStylistModelCardProps) {
+  const [selectedModel, setSelectedModel] = useState<AIStylistAIModel>(AISTYLIST_AI_MODELS[0]);
   const [isLoading, setIsLoading] = useState(true);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -31,39 +29,32 @@ export function ModelManagementCard({ onModelChange }: ModelManagementCardProps)
 
   const loadSavedModel = async () => {
     try {
-      const saved = await AsyncStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const modelId = JSON.parse(saved);
-        const model = AI_MODELS.find(m => m.id === modelId);
-        if (model) {
-          setSelectedModel(model);
-          onModelChange?.(model);
-        }
-      }
+      const model = await getGlobalAIStylistModel();
+      setSelectedModel(model);
+      onModelChange?.(model);
     } catch (error) {
-      console.error('Error loading saved model:', error);
+      console.error('Error loading AIStylist model:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSelectModel = async (model: AIModel) => {
+  const handleSelectModel = async (model: AIStylistAIModel) => {
     try {
       setSelectedModel(model);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(model.id));
+      await setGlobalAIStylistModel(model.id);
       onModelChange?.(model);
       
-      // Show success feedback
-      console.log(`✅ Switched to: ${model.name}`);
+      console.log(`✅ AIStylist switched to: ${model.name}`);
     } catch (error) {
-      console.error('Error saving model:', error);
+      console.error('Error saving AIStylist model:', error);
     }
   };
 
   if (isLoading) {
     return (
       <View style={[styles.container, isDarkMode && styles.containerDark]}>
-        <ActivityIndicator size="small" color="#8B5CF6" />
+        <ActivityIndicator size="small" color="#10B981" />
       </View>
     );
   }
@@ -74,24 +65,24 @@ export function ModelManagementCard({ onModelChange }: ModelManagementCardProps)
       <TouchableOpacity activeOpacity={1}>
         <LinearGradient
           colors={isDarkMode ? 
-            ['rgba(139, 92, 246, 0.15)', 'rgba(109, 40, 217, 0.05)'] : 
-            ['rgba(139, 92, 246, 0.08)', 'rgba(236, 72, 153, 0.03)']}
+            ['rgba(16, 185, 129, 0.15)', 'rgba(5, 150, 105, 0.05)'] : 
+            ['rgba(16, 185, 129, 0.08)', 'rgba(5, 150, 105, 0.03)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.activeCard}
         >
           <View style={styles.activeCardHeader}>
-            <Sparkles size={18} color="#8B5CF6" strokeWidth={2.5} />
+            <MessageSquare size={18} color="#10B981" strokeWidth={2.5} />
             <Text style={[styles.activeLabel, isDarkMode && styles.textLight]}>ACTIVE</Text>
           </View>
           <Text style={[styles.activeName, isDarkMode && styles.textWhite]}>
             {selectedModel.name}
           </Text>
           <View style={styles.activeBadges}>
-            <View style={[styles.badge, styles.badgePurple]}>
+            <View style={[styles.badge, styles.badgeGreen]}>
               <Text style={styles.badgeText}>Quality {selectedModel.quality}/5</Text>
             </View>
-            <View style={[styles.badge, styles.badgeGreen]}>
+            <View style={[styles.badge, styles.badgeBlue]}>
               <Text style={styles.badgeText}>{selectedModel.speed}</Text>
             </View>
           </View>
@@ -100,7 +91,7 @@ export function ModelManagementCard({ onModelChange }: ModelManagementCardProps)
 
       {/* Model Options */}
       <View style={styles.optionsContainer}>
-        {AI_MODELS.map((model) => {
+        {AISTYLIST_AI_MODELS.map((model) => {
           const isActive = selectedModel.id === model.id;
           
           return (
@@ -142,7 +133,7 @@ export function ModelManagementCard({ onModelChange }: ModelManagementCardProps)
               </View>
               {isActive && (
                 <View style={styles.checkCircle}>
-                  <Check size={14} color="#8B5CF6" strokeWidth={3} />
+                  <Check size={14} color="#10B981" strokeWidth={3} />
                 </View>
               )}
             </TouchableOpacity>
@@ -160,7 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#8B5CF6',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -177,7 +168,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: 'rgba(16, 185, 129, 0.2)',
   },
   activeCardHeader: {
     flexDirection: 'row',
@@ -188,7 +179,7 @@ const styles = StyleSheet.create({
   activeLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#8B5CF6',
+    color: '#10B981',
     letterSpacing: 1.5,
   },
   activeName: {
@@ -207,11 +198,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
   },
-  badgePurple: {
-    backgroundColor: 'rgba(139, 92, 246, 0.12)',
-  },
   badgeGreen: {
     backgroundColor: 'rgba(16, 185, 129, 0.12)',
+  },
+  badgeBlue: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
   },
   badgeText: {
     fontSize: 11,
@@ -239,13 +230,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#374151',
   },
   optionActive: {
-    borderColor: '#8B5CF6',
+    borderColor: '#10B981',
   },
   optionActiveLight: {
-    backgroundColor: 'rgba(139, 92, 246, 0.04)',
+    backgroundColor: 'rgba(16, 185, 129, 0.04)',
   },
   optionActiveDark: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
   },
   optionContent: {
     flex: 1,
@@ -262,7 +253,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   optionNameActive: {
-    color: '#8B5CF6',
+    color: '#10B981',
   },
   recommendedTag: {
     width: 20,
@@ -290,7 +281,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(139, 92, 246, 0.12)',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
