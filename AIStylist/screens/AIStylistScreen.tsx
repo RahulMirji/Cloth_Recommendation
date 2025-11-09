@@ -585,86 +585,89 @@ export default function AIStylistScreen() {
         // Update message to show processing
         setMessages(prev => [
           ...prev.slice(0, -1),
-          createChatMessage('user', 'Processing voice...')
+          createChatMessage('user', '🎤 Converting speech to text...')
         ]);
-        console.log('🎵 Updated UI to show "Processing voice..."');
+        console.log('🎵 Updated UI to show "Converting speech to text..."');
 
-        // Convert audio to text
+        // Convert audio to text using Groq Whisper STT
         try {
-          console.log('🎵 === STARTING PARALLEL PROCESSING ===');
+          console.log('🎵 === STEP 1: STARTING SPEECH-TO-TEXT ===');
           console.log('🎵 Audio URI for conversion:', uri);
+          console.log('🎵 Using Groq Whisper API (whisper-large-v3-turbo)');
 
-          // 🚀 PARALLEL PROCESSING: Start both STT and image capture at the same time
-          const [voiceText, imageResult] = await Promise.all([
-            // Process 1: Convert audio to text
-            (async () => {
-              console.log('⚡ STT: Starting audio-to-text conversion...');
-              const text = await convertAudioToText(uri);
-              console.log('⚡ STT: Complete! Text:', text.substring(0, 100));
-              return text;
-            })(),
-            
-            // Process 2: Capture/upload image (parallel!)
-            (async () => {
-              console.log('⚡ IMAGE: Starting capture...');
-              try {
-                if (useEnhancedVision) {
-                  const imageUrl = await uploadImageAndGetURL();
-                  console.log('⚡ IMAGE: Upload complete!');
-                  return { type: 'enhanced', url: imageUrl };
-                } else {
-                  const imgBase64 = await captureCurrentImage();
-                  console.log('⚡ IMAGE: Base64 capture complete!');
-                  return { type: 'basic', url: imgBase64 ? `data:image/jpeg;base64,${imgBase64}` : null };
-                }
-              } catch (err) {
-                console.warn('⚡ IMAGE: Capture failed:', err);
-                return { type: 'none', url: null };
-              }
-            })()
-          ]);
+          // 🎤 STEP 1: Convert speech to text using Groq Whisper
+          const voiceText = await convertAudioToText(uri);
+          console.log('✅ STT Complete! Transcribed text:', voiceText);
+          console.log('🎵 Text length:', voiceText.length, 'characters');
 
-          console.log('🎵 === PARALLEL PROCESSING COMPLETE ===');
-          console.log('🎵 Converted text:', voiceText);
-          console.log('🎵 Text length:', voiceText.length);
-          console.log('🎵 Image result:', imageResult.type);
-
-          // Update message with transcribed text
+          // Update message with transcribed text immediately
           const userTextMessage = createChatMessage('user', voiceText);
           setMessages(prev => [...prev.slice(0, -1), userTextMessage]);
-          console.log('🎵 Updated UI with transcribed text');
+          console.log('✅ Updated UI with transcribed text:', voiceText.substring(0, 50) + '...');
 
-          // Store both text and image in session
+          // Add user message to session
           if (currentSessionRef.current) {
             currentSessionRef.current.messages.push(userTextMessage);
-            if (imageResult.url) {
-              currentSessionRef.current.imageBase64 = imageResult.url;
-              console.log('🎵 Stored image in session');
-            }
-            console.log('🎵 Added message to session');
+            console.log('✅ Added user message to session');
           }
 
-          console.log('🎵 === STARTING AI RESPONSE GENERATION ===');
-          console.log('🎵 Voice text for AI:', voiceText);
+          // 📸 STEP 2: Capture image from camera
+          console.log('🎵 === STEP 2: CAPTURING IMAGE ===');
+          try {
+            if (useEnhancedVision) {
+              console.log('📸 Using Enhanced Vision mode - uploading to Supabase...');
+              const imageUrl = await uploadImageAndGetURL();
+              if (imageUrl && currentSessionRef.current) {
+                currentSessionRef.current.imageBase64 = imageUrl;
+                console.log('✅ Image uploaded to Supabase:', imageUrl.substring(0, 50) + '...');
+              }
+            } else {
+              console.log('📸 Using Basic Vision mode - capturing base64...');
+              const imgBase64 = await captureCurrentImage();
+              if (imgBase64 && currentSessionRef.current) {
+                currentSessionRef.current.imageBase64 = `data:image/jpeg;base64,${imgBase64}`;
+                console.log('✅ Image captured (base64), length:', imgBase64.length);
+              }
+            }
+          } catch (imageError) {
+            console.warn('⚠️ Image capture failed (continuing anyway):', imageError);
+            // Continue even if image capture fails - we still have the text
+          }
+
+          // 🤖 STEP 3: Send text + image to Gemini and get AI response
+          console.log('🎵 === STEP 3: SENDING TO GEMINI AI ===');
+          console.log('🤖 User input:', voiceText);
+          console.log('🤖 Has image:', !!currentSessionRef.current?.imageBase64);
+          console.log('🤖 Calling getAIResponseWithImageAndVoice...');
+          
           await getAIResponseWithImageAndVoice(voiceText);
-          console.log('🎵 AI response generation initiated');
+          
+          console.log('✅ AI response generation complete!');
 
         } catch (transcriptionError) {
-          console.error('🎵 ❌ Voice transcription failed:', transcriptionError);
-          console.error('🎵 Transcription error details:', {
+          console.error('❌ STT FAILED:', transcriptionError);
+          console.error('❌ Error details:', {
             message: transcriptionError instanceof Error ? transcriptionError.message : String(transcriptionError),
-            stack: transcriptionError instanceof Error ? transcriptionError.stack : 'No stack trace'
+            stack: transcriptionError instanceof Error ? transcriptionError.stack : 'No stack trace',
+            name: transcriptionError instanceof Error ? transcriptionError.name : 'Unknown'
           });
 
+          // Show user-friendly error
           setMessages(prev => [
             ...prev.slice(0, -1),
-            createChatMessage('user', 'Voice input (transcription failed)')
+            createChatMessage('user', '❌ Could not understand speech')
           ]);
-          showCustomAlert('error', 'Transcription Error', 'Could not convert voice to text. Please try again.');
+          
+          showCustomAlert(
+            'error', 
+            'Speech Recognition Failed', 
+            'Could not convert your voice to text. Please try again and speak clearly.',
+            [{ text: 'OK' }]
+          );
         }
       } else {
-        console.error('🎵 ❌ No recording URI obtained');
-        showCustomAlert('error', 'Recording Error', 'No audio was recorded. Please try again.');
+        console.error('❌ No recording URI obtained');
+        showCustomAlert('error', 'Recording Error', 'No audio was recorded. Please try speaking longer and try again.');
       }
 
       console.log('🎵 Cleaning up recording...');
