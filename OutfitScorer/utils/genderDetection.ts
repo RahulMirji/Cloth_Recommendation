@@ -243,16 +243,20 @@ export function detectGenderFromAnalysis(
     'womens',
   ];
 
-  // Check explicit mentions
+  // Check explicit mentions (using word boundaries to avoid false positives)
   explicitMaleKeywords.forEach((keyword) => {
-    if (allText.includes(keyword)) {
+    // Use word boundary regex to match whole words only
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(allText)) {
       maleScore += 20;
       indicators.push(`Explicit mention: "${keyword}"`);
     }
   });
 
   explicitFemaleKeywords.forEach((keyword) => {
-    if (allText.includes(keyword)) {
+    // Use word boundary regex to match whole words only
+    const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (regex.test(allText)) {
       femaleScore += 20;
       indicators.push(`Explicit mention: "${keyword}"`);
     }
@@ -282,7 +286,12 @@ export function detectGenderFromAnalysis(
   ];
 
   maleClothingIndicators.forEach((indicator) => {
-    if (allText.includes(indicator.keyword)) {
+    // Use regex for multi-word phrases, simple includes for compound words
+    const hasMatch = indicator.keyword.includes(' ')
+      ? allText.includes(indicator.keyword) // Multi-word: "bow tie", "suit jacket"
+      : new RegExp(`\\b${indicator.keyword}\\b`, 'i').test(allText); // Single word with boundaries
+    
+    if (hasMatch) {
       maleScore += indicator.score;
       indicators.push(`Male clothing: ${indicator.name}`);
     }
@@ -316,7 +325,12 @@ export function detectGenderFromAnalysis(
   ];
 
   femaleClothingIndicators.forEach((indicator) => {
-    if (allText.includes(indicator.keyword)) {
+    // Use regex for multi-word phrases, simple includes for compound words
+    const hasMatch = indicator.keyword.includes(' ')
+      ? allText.includes(indicator.keyword) // Multi-word: "salwar kameez", "maang tikka"
+      : new RegExp(`\\b${indicator.keyword}\\b`, 'i').test(allText); // Single word with boundaries
+    
+    if (hasMatch) {
       femaleScore += indicator.score;
       indicators.push(`Female clothing: ${indicator.name}`);
     }
@@ -378,13 +392,25 @@ export function detectGenderFromAnalysis(
     confidence = Math.min(femaleScore / (totalScore || 1), 1);
   }
 
-  console.log('🔍 Gender Detection:', {
-    gender,
-    confidence: `${(confidence * 100).toFixed(1)}%`,
-    maleScore,
-    femaleScore,
-    indicators: indicators.slice(0, 5), // Top 5 indicators
+  console.log('');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('� GENDER DETECTION ANALYSIS');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📊 Scores:');
+  console.log('   Male Score:', maleScore);
+  console.log('   Female Score:', femaleScore);
+  console.log('   Total Score:', totalScore);
+  console.log('');
+  console.log('🎯 Result:');
+  console.log('   Gender:', gender.toUpperCase());
+  console.log('   Confidence:', `${(confidence * 100).toFixed(1)}%`);
+  console.log('');
+  console.log('🔍 Top Indicators:');
+  indicators.slice(0, 5).forEach((indicator, index) => {
+    console.log(`   ${index + 1}. ${indicator}`);
   });
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('');
 
   return {
     gender,
