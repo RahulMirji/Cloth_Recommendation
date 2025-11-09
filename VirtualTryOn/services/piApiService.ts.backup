@@ -2,7 +2,6 @@
  * PI API Service
  * 
  * Service for interacting with PI API for virtual try-on image generation
- * Last updated: 2025-11-08 17:12:00
  */
 
 import axios from 'axios';
@@ -11,11 +10,8 @@ import { PI_API_CONFIG, VIRTUAL_TRY_ON_PROMPT } from '../constants';
 
 /**
  * Poll task status until completion
- * Polls every 3 seconds for up to 15 attempts (45 seconds total)
  */
-const pollTaskStatus = async (taskId: string, maxAttempts = 15): Promise<string> => {
-  const pollInterval = 3000; // 3 seconds between polls
-  
+const pollTaskStatus = async (taskId: string, maxAttempts = PI_API_CONFIG.MAX_POLL_ATTEMPTS): Promise<string> => {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const response = await axios.get<TaskResponse>(
@@ -30,15 +26,10 @@ const pollTaskStatus = async (taskId: string, maxAttempts = 15): Promise<string>
       const { status, output, error } = response.data.data;
 
       console.log(`📊 Task status (attempt ${attempt + 1}/${maxAttempts}):`, status);
-      
-      // Only log full response on first and last attempts to reduce noise
-      if (attempt === 0 || attempt === maxAttempts - 1 || status !== 'pending') {
-        console.log('📋 Full response:', JSON.stringify(response.data, null, 2));
-      }
+      console.log('📋 Full response:', JSON.stringify(response.data, null, 2));
 
       if (status === 'completed' && output?.image_urls?.[0]) {
         console.log('✅ Task completed successfully!');
-        console.log('🖼️ Image URL:', output.image_urls[0]);
         return output.image_urls[0];
       }
 
@@ -49,24 +40,18 @@ const pollTaskStatus = async (taskId: string, maxAttempts = 15): Promise<string>
         throw new Error(errorMsg);
       }
 
-      // Wait before next poll (don't wait after last attempt)
-      if (attempt < maxAttempts - 1) {
-        console.log(`⏳ Waiting ${pollInterval / 1000} seconds before next poll...`);
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-      }
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, PI_API_CONFIG.POLL_INTERVAL));
     } catch (error: any) {
-      if (error.message && (error.message.includes('Task failed') || error.message.includes('failed with error'))) {
+      if (error.message === 'Task failed') {
         throw error;
       }
-      console.error('⚠️ Error polling task:', error.message);
+      console.error('Error polling task:', error.message);
       // Continue polling on network errors
-      if (attempt < maxAttempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-      }
     }
   }
 
-  throw new Error('Task timeout - generation took too long (exceeded 45 seconds)');
+  throw new Error('Task timeout - generation took too long');
 };
 
 /**
@@ -78,12 +63,8 @@ export const generateTryOnImage = async (
 ): Promise<GenerateTryOnResponse> => {
   try {
     console.log('🚀 Creating virtual try-on task...');
-    console.log('👤 User image:', userImageUrl);
-    console.log('👕 Outfit image:', outfitImageUrl);
     
-    // Step 1: Create task with correct format for gemini virtual try-on
-    // Note: When using image_urls (i2i mode), aspect_ratio should NOT be specified
-    // The API will use the input image's aspect ratio automatically
+    // Step 1: Create task
     const createResponse = await axios.post<TaskResponse>(
       PI_API_CONFIG.ENDPOINT,
       {
@@ -92,8 +73,14 @@ export const generateTryOnImage = async (
         input: {
           prompt: VIRTUAL_TRY_ON_PROMPT,
           image_urls: [userImageUrl, outfitImageUrl],
+          num_images: 1,
           output_format: 'png',
-          // aspect_ratio is omitted for i2i mode - uses input image aspect ratio
+        },
+        config: {
+          webhook_config: {
+            endpoint: '',
+            secret: '',
+          },
         },
       },
       {
