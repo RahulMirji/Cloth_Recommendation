@@ -44,6 +44,7 @@ export default {
     },
     "plugins": [
       "./plugins/withAndroidXResolution",
+      "./plugins/withRazorpay",
       [
         "expo-router",
         {

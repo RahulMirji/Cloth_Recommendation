@@ -33,8 +33,9 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="myapp"/>
+        <data android:scheme="aidryer"/>
       </intent-filter>
     </activity>
+    <activity android:name="com.razorpay.CheckoutActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize" android:exported="true" android:theme="@style/CheckoutTheme"/>
   </application>
 </manifest>
