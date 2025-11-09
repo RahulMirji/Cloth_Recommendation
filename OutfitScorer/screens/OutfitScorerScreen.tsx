@@ -57,6 +57,7 @@ interface ScoringResult {
   strengths: string[];
   improvements: string[];
   missingItems?: string[]; // New field for missing items
+  gender?: 'male' | 'female' | 'unisex'; // Vision model gender detection
 }
 
 
@@ -324,7 +325,18 @@ export default function OutfitScorerScreen() {
     try {
       // Load globally selected model (admin-controlled)
       const globalModel = await getGlobalModel();
-      console.log(`🤖 Using model: ${globalModel.name}`);
+      console.log('');
+      console.log('╔═══════════════════════════════════════════════════════╗');
+      console.log('║         📱 OUTFIT SCORER - ANALYSIS STARTING         ║');
+      console.log('╚═══════════════════════════════════════════════════════╝');
+      console.log('');
+      console.log('🎯 Selected Model:', globalModel.name);
+      console.log('🔧 Model ID:', globalModel.id);
+      console.log('🏭 Provider:', globalModel.provider);
+      console.log('🤖 Model Name:', globalModel.modelName);
+      console.log('⭐ Quality:', '⭐'.repeat(globalModel.quality));
+      console.log('⚡ Speed:', globalModel.speed);
+      console.log('');
       
       const base64Image = await convertImageToBase64(selectedImage);
       
@@ -337,6 +349,7 @@ ANALYZE:
 2. STYLE: Fabric, pattern, cut, details (tucked/untucked, rolled sleeves)
 3. MISSING: List ALL missing pieces/accessories for context
 4. COLORS: Harmony, contrast, season, skin tone match
+5. GENDER: Visual analysis of the person in the image
 
 Return ONLY JSON (ALWAYS return JSON even if context mismatch):
 {
@@ -345,18 +358,22 @@ Return ONLY JSON (ALWAYS return JSON even if context mismatch):
   "feedback": "<3-4 sentences: impression, strengths, issues, potential>",
   "strengths": ["<specific detail>", "<another>", "<third>"],
   "improvements": ["<specific item needed e.g. Add tie>", "<another>", "<third>", "<fourth>"],
-  "missingItems": ["<tie/blazer/shoes/watch/belt/necklace/earrings/bag/scarf>", "<another>"]
+  "missingItems": ["<tie/blazer/shoes/watch/belt/necklace/earrings/bag/scarf>", "<another>"],
+  "gender": "<male/female/unisex>"
 }
 
 SCORING (avg 0-100):
 • Colors 25% • Fit 25% • Complete 20% • Style 15% • Fabric 10% • Accessories 5%
 
 RULES:
-• Identify GENDER from clothes/jewelry
+• Identify GENDER from VISUAL ANALYSIS of the person (male/female/unisex)
+  - male: if person appears to be male
+  - female: if person appears to be female
+  - unisex: if ambiguous, unclear, or no person visible
 • Honest about missing - if invisible, state missing
 • Professional = formal required
 • List missing in BOTH missingItems AND improvements
-• GENDER-APPROPRIATE:
+• GENDER-APPROPRIATE recommendations based on detected gender:
   MEN: tie/blazer/shoes/belt/watch/cufflinks
   WOMEN: necklace/earrings/heels/bag/bracelet
   UNISEX: watch/sunglasses/bag/jacket
@@ -367,7 +384,13 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
 
       const response = await generateTextWithImageModel(globalModel, base64Image, prompt);
 
-      console.log('📝 Raw response from AI:', response.substring(0, 200) + '...');
+      console.log('');
+      console.log('╔═══════════════════════════════════════════════════════╗');
+      console.log('║           � RESPONSE RECEIVED FROM AI              ║');
+      console.log('╚═══════════════════════════════════════════════════════╝');
+      console.log('�📝 Response preview:', response.substring(0, 200) + '...');
+      console.log('📊 Total response length:', response.length, 'characters');
+      console.log('');
 
       let jsonMatch = response.match(/\{[\s\S]*\}/);
       
@@ -422,12 +445,13 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
       if (parsedResult.improvements && parsedResult.improvements.length > 0) {
         setIsLoadingRecommendations(true);
         try {
-          // Extract missing items with gender awareness
+          // Extract missing items with gender awareness from vision model
           const analysisText = `${parsedResult.feedback || ''} ${parsedResult.improvements.join(' ')}`;
           const missingItems = extractMissingItems(
             parsedResult.improvements,
             context,
-            analysisText
+            analysisText,
+            parsedResult.gender  // Pass vision-detected gender
           );
           
           if (missingItems.length > 0) {
@@ -436,7 +460,8 @@ If context mismatch, low score + explain in feedback. ALWAYS return valid JSON.`
               missingItems,
               context,
               analysisText,
-              parsedResult.improvements
+              parsedResult.improvements,
+              parsedResult.gender  // Pass vision-detected gender
             );
             setRecommendations(generatedRecommendations);
           }

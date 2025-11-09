@@ -28,6 +28,8 @@ import { useUserManagement, useAdminStats } from '../hooks';
 import { StatsCard, UserListItem, DeleteUserModal, UserDetailsModal, LogoutConfirmModal, DemographicsModal } from '../components';
 import { PaymentStatsCard } from '../components/PaymentStatsCard';
 import { ModelManagementCard } from '../components/ModelManagementCard';
+import { AIStylistModelCard } from '../components/AIStylistModelCard';
+import { ImageGenModelCard } from '../components/ImageGenModelCard';
 import type { DashboardUser } from '../types';
 import { PaymentSubmission, PaymentStats, STATUS_COLORS, STATUS_LABELS } from '../types/payment.types';
 import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, deletePayment, formatCurrency, formatDate } from '../services/paymentAdminService';
@@ -471,18 +473,62 @@ export default function AdminDashboardScreen() {
     setDemographicsData(null);
   }, []);
 
-  const renderModel = () => {
+  const renderModelManagement = () => {
     return (
       <View style={styles.statsContainer}>
         <Text
           style={[
             styles.sectionTitle,
-            { color: isDarkMode ? colors.textDark : colors.text },
+            { 
+              color: isDarkMode ? colors.textDark : colors.text,
+              marginBottom: 16,
+            },
           ]}
         >
           AI Model Management
         </Text>
+
+        {/* Outfit Scorer Models */}
+        <Text
+          style={[
+            styles.subsectionTitle,
+            { 
+              color: isDarkMode ? colors.textDark : colors.text,
+              fontSize: 22,
+            },
+          ]}
+        >
+          Outfit Scorer
+        </Text>
         <ModelManagementCard />
+
+        {/* AI Stylist Models */}
+        <Text
+          style={[
+            styles.subsectionTitle,
+            { 
+              color: isDarkMode ? colors.textDark : colors.text,
+              fontSize: 22,
+            },
+          ]}
+        >
+          AI Stylist
+        </Text>
+        <AIStylistModelCard />
+
+        {/* Image Generator */}
+        <Text
+          style={[
+            styles.subsectionTitle,
+            { 
+              color: isDarkMode ? colors.textDark : colors.text,
+              fontSize: 22,
+            },
+          ]}
+        >
+          Image Generator
+        </Text>
+        <ImageGenModelCard />
       </View>
     );
   };
@@ -1123,7 +1169,7 @@ export default function AdminDashboardScreen() {
       >
         {activeTab === 'stats' && renderStats()}
         {activeTab === 'payments' && renderPayments()}
-        {activeTab === 'model' && renderModel()}
+        {activeTab === 'model' && renderModelManagement()}
         
         {/* Footer with adjusted margins */}
         <View style={styles.footerWrapper}>
@@ -1563,6 +1609,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginTop: 24,
+    marginBottom: 12,
   },
   sectionTitleSpaced: {
     marginTop: 24,
