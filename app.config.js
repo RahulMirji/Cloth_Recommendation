@@ -1,4 +1,19 @@
-export default {
+// Load environment variables from .env file
+require('dotenv').config();
+
+// Debug: Log environment variables at build time
+console.log('\n🔧 APP.CONFIG.JS - Environment Variables:');
+console.log('EXPO_PUBLIC_GEMINI_API_KEY:', process.env.EXPO_PUBLIC_GEMINI_API_KEY ? 'LOADED ✅' : 'MISSING ❌ (using fallback)');
+console.log('EXPO_PUBLIC_WISPHERE_API_KEY:', process.env.EXPO_PUBLIC_WISPHERE_API_KEY ? 'LOADED ✅' : 'MISSING ❌ (using fallback)');
+if (process.env.EXPO_PUBLIC_WISPHERE_API_KEY) {
+  console.log('WISPHERE_API_KEY Preview:', process.env.EXPO_PUBLIC_WISPHERE_API_KEY.substring(0, 10) + '...');
+}
+if (process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
+  console.log('GEMINI_API_KEY Preview:', process.env.EXPO_PUBLIC_GEMINI_API_KEY.substring(0, 10) + '...');
+}
+console.log('');
+
+module.exports = {
   "expo": {
     "name": "AI Cloth Recommendation",
     "slug": "ai-cloth-recommendation-app",
@@ -74,15 +89,18 @@ export default {
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
+  "extra": {
       "router": {
         "origin": "https://rork.com/"
       },
       "eas": {
         "projectId": "3087b3fe-4b5a-4714-836c-8765d40344d0"
       },
-      "geminiApiKey": process.env.EXPO_PUBLIC_GEMINI_API_KEY
+      // IMPORTANT: API keys must come from environment only (no hardcoded fallbacks)
+      // Ensure .env is configured locally. These values are exposed at runtime via Constants.expoConfig.extra
+      "geminiApiKey": process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+      "groqApiKey": process.env.EXPO_PUBLIC_WISPHERE_API_KEY
     },
     "owner": "rahulmirji07"
   }
-}
+};
