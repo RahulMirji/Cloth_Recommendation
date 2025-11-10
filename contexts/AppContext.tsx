@@ -59,30 +59,40 @@ export const [AppProvider, useApp] = createContextHook(() => {
       
       // Check for existing session with timeout (Supabase might be unreachable)
       try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        // Add timeout to prevent hanging on network issues
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth timeout')), 10000)
+        );
+        
+        const { data: { session: currentSession }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
         
         if (error) {
-          console.warn('⚠️ Auth unavailable, continuing in offline mode');
-          setSession(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
+          console.warn('⚠️ Auth error:', error.message);
+          throw error;
         }
         
         setSession(currentSession);
         setIsAuthenticated(!!currentSession);
         
-        console.log('🔐 AppContext - Auth state:', { 
+        console.log('✅ AppContext - Auth loaded:', { 
           hasSession: !!currentSession, 
-          isAuthenticated: !!currentSession 
+          userId: currentSession?.user?.id?.substring(0, 8) + '...'
         });
 
         if (currentSession?.user) {
           await loadUserProfileFromSupabase(currentSession.user.id);
         }
-      } catch (authError) {
+      } catch (authError: any) {
         // Supabase connection failed - continue without auth
-        console.warn('⚠️ Supabase unavailable (offline mode)');
+        console.error('❌ Supabase connection failed:', authError?.message || 'Network error');
+        console.log('ℹ️ Please check:');
+        console.log('  1. Internet connection');
+        console.log('  2. Supabase URL is correct');
+        console.log('  3. Supabase project is active');
         setSession(null);
         setIsAuthenticated(false);
         setIsLoading(false);

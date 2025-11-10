@@ -106,7 +106,7 @@ export class GeminiLiveSession {
     }
 
     this.config = {
-      model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+      model: 'models/gemini-2.0-flash-exp', // Correct format with models/ prefix
       responseModalities: ['AUDIO'],
       automaticVAD: true,
     };
@@ -171,6 +171,23 @@ export class GeminiLiveSession {
           console.log('═══════════════════════════════════════════════════════');
           console.log('Code:', event.code);
           console.log('Reason:', event.reason || 'No reason provided');
+          
+          // Provide helpful error messages
+          if (event.code === 1008) {
+            if (event.reason.includes('quota')) {
+              console.log('');
+              console.log('💡 QUOTA EXCEEDED');
+              console.log('The Gemini API free tier has limits. Solutions:');
+              console.log('   1. Wait for quota reset (usually 24 hours)');
+              console.log('   2. Upgrade to paid tier at: https://ai.google.dev/pricing');
+              console.log('   3. Try a different model (models/gemini-1.5-flash)');
+            } else if (event.reason.includes('not found')) {
+              console.log('');
+              console.log('💡 MODEL NOT FOUND');
+              console.log('The model may not be available for Live API.');
+              console.log('Try: models/gemini-2.0-flash-exp (requires quota)');
+            }
+          }
           console.log('');
 
           this.sessionActive = false;
@@ -241,14 +258,10 @@ export class GeminiLiveSession {
       setupMessage.setup.generationConfig.realtimeInputConfig = this.config.realtimeInputConfig;
     }
 
-    // Add transcription config
-    if (this.config.inputAudioTranscription) {
-      setupMessage.setup.generationConfig.inputAudioTranscription = {};
-    }
-
-    if (this.config.outputAudioTranscription) {
-      setupMessage.setup.generationConfig.outputAudioTranscription = {};
-    }
+    // Note: Transcription is built-in for Gemini Live API
+    // The inputAudioTranscription and outputAudioTranscription fields
+    // are not valid configuration options - transcripts are automatically
+    // provided in serverContent events when available
 
     // Add thinking config
     if (this.config.thinkingConfig) {

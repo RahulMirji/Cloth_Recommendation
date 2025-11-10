@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Gemini Live API</title>
+</head>
+<body>
+    <h1>Gemini Live API WebSocket Test</h1>
+    <div id="status">Disconnected</div>
+    <button onclick="testConnection()">Test Connection</button>
+    <div id="log" style="margin-top: 20px; font-family: monospace;"></div>
+
+    <script>
+        const API_KEY = prompt("Enter your Gemini API key:");
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += message + '<br>';
+            console.log(message);
+        }
+
+        function testConnection() {
+            const models = [
+                'gemini-2.0-flash-exp',
+                'gemini-2.5-flash',
+                'models/gemini-2.0-flash-exp',
+                'models/gemini-2.5-flash',
+            ];
+
+            models.forEach(model => {
+                setTimeout(() => testModel(model), 500);
+            });
+        }
+
+        function testModel(modelName) {
+            log(`\n=== Testing model: ${modelName} ===`);
+            
+            const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
+            
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log(`✅ WebSocket opened for ${modelName}`);
+                
+                const setupMessage = {
+                    setup: {
+                        model: modelName,
+                        generationConfig: {
+                            responseModalities: ['AUDIO'],
+                        },
+                    },
+                };
+                
+                log(`📤 Sending setup message...`);
+                ws.send(JSON.stringify(setupMessage));
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                log(`📨 Received: ${JSON.stringify(message)}`);
+                
+                if (message.setupComplete) {
+                    log(`✅ SUCCESS: ${modelName} is valid!`);
+                }
+                
+                ws.close();
+            };
+            
+            ws.onerror = (error) => {
+                log(`❌ WebSocket error for ${modelName}: ${error}`);
+            };
+            
+            ws.onclose = (event) => {
+                if (event.code !== 1000) {
+                    log(`❌ FAILED: ${modelName} - Code: ${event.code}, Reason: ${event.reason}`);
+                }
+            };
+        }
+    </script>
+</body>
+</html>
