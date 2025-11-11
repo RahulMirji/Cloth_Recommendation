@@ -150,7 +150,12 @@ export const PaymentUploadScreen: React.FC<PaymentUploadScreenProps> = ({
       } as any);
 
       // Step 4: Upload using fetch API (same as OutfitScorer)
-      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      
+      if (!supabaseUrl) {
+        throw new Error('EXPO_PUBLIC_SUPABASE_URL is not configured in environment variables');
+      }
+      
       const uploadUrl = `${supabaseUrl}/storage/v1/object/user-images/${filePath}`;
       
       const { data: { session: currentSession } } = await supabase.auth.getSession();

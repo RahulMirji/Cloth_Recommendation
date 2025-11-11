@@ -31,9 +31,13 @@ import Colors from '@/constants/colors';
 import { FontSizes, FontWeights } from '@/constants/fonts';
 import { showCustomAlert } from '@/utils/customAlert';
 
-// Supabase configuration
-const SUPABASE_URL = 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtaGl3aWVvb3Fmd2tyZGN2cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1Nzg3MTksImV4cCI6MjA3NTE1NDcxOX0.R-jk3IOAGVtRXvM2nLpB3gfMXcsrPO6WDLxY5TId6UA';
+// Supabase configuration from environment
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+}
 
 export function SignUpScreen() {
   const [name, setName] = useState('');

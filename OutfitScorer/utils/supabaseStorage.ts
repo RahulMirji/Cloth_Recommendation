@@ -151,7 +151,12 @@ export async function uploadImageToStorage(
     } as any);
 
     // Step 5: Upload to Supabase Storage using FormData (React Native compatible)
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    
+    if (!supabaseUrl) {
+      throw new Error('EXPO_PUBLIC_SUPABASE_URL is not configured in environment variables');
+    }
+    
     const uploadUrl = `${supabaseUrl}/storage/v1/object/${STORAGE_BUCKET}/${storagePath}`;
     
     const { data: { session } } = await supabase.auth.getSession();

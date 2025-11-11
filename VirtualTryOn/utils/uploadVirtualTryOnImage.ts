@@ -49,8 +49,13 @@ export async function uploadVirtualTryOnImage(
 
     console.log('📦 Preparing upload...');
 
-    // Upload using fetch API (same approach as PaymentUploadScreen)
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
+    // Get Supabase URL from environment
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    
+    if (!supabaseUrl) {
+      throw new Error('EXPO_PUBLIC_SUPABASE_URL is not configured in environment variables');
+    }
+    
     const uploadUrl = `${supabaseUrl}/storage/v1/object/user-images/${filePath}`;
     
     const { data: { session: currentSession } } = await supabase.auth.getSession();
