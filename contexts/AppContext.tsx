@@ -56,37 +56,18 @@ export const [AppProvider, useApp] = createContextHook(() => {
   const initializeAuth = async () => {
     try {
       console.log('🔐 AppContext - Checking auth session...');
+      // Check for existing session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setIsAuthenticated(!!currentSession);
       
-      // Check for existing session with timeout (Supabase might be unreachable)
-      try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.warn('⚠️ Auth unavailable, continuing in offline mode');
-          setSession(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-        
-        setSession(currentSession);
-        setIsAuthenticated(!!currentSession);
-        
-        console.log('🔐 AppContext - Auth state:', { 
-          hasSession: !!currentSession, 
-          isAuthenticated: !!currentSession 
-        });
+      console.log('🔐 AppContext - Auth state:', { 
+        hasSession: !!currentSession, 
+        isAuthenticated: !!currentSession 
+      });
 
-        if (currentSession?.user) {
-          await loadUserProfileFromSupabase(currentSession.user.id);
-        }
-      } catch (authError) {
-        // Supabase connection failed - continue without auth
-        console.warn('⚠️ Supabase unavailable (offline mode)');
-        setSession(null);
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
+      if (currentSession?.user) {
+        await loadUserProfileFromSupabase(currentSession.user.id);
       }
 
       // Listen for auth state changes
