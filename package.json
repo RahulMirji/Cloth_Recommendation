@@ -15,6 +15,8 @@
     "test:outfitscorer": "jest OutfitScorer",
     "test:aistylist": "jest AIStylist",
     "test:imagegen": "jest ImageGen",
+    "env:backup": "./scripts/protect-env.sh backup",
+    "env:restore": "./scripts/protect-env.sh restore",
     "postinstall": "npx jetifier"
   },
   "dependencies": {
