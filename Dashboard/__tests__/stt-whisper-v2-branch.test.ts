@@ -1,16 +1,66 @@
 /**
- * Test Suite for stt-whisper-v2 Branch
+ * Test Suite for stt-whisper-v2 Branch - Admin Dashboard
  * 
  * This test suite validates that the stt-whisper-v2 branch is clean
  * and ready to merge into master without any breaking changes.
  * 
  * The branch was created for Gemini Live API integration but has been
- * reverted to match master exactly.
+ * reverted to match master exactly. Only Dashboard-related changes
+ * should be present (if any).
  */
 
-describe('stt-whisper-v2 Branch Validation', () => {
-  describe('Branch Integrity', () => {
-    it('should be identical to master after revert', () => {
+describe('stt-whisper-v2 Branch - Admin Dashboard Validation', () => {
+  describe('Admin Dashboard Integrity', () => {
+    it('should maintain all admin dashboard functionality', () => {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Verify critical Dashboard files exist
+      const dashboardFiles = [
+        'Dashboard/screens/AdminDashboardScreen.tsx',
+        'Dashboard/contexts/AdminAuthContext.tsx',
+        'Dashboard/services/adminService.ts',
+      ];
+
+      dashboardFiles.forEach(file => {
+        const filePath = path.resolve(__dirname, '../../', file);
+        expect(fs.existsSync(filePath)).toBe(true);
+      });
+    });
+
+    it('should not have broken admin authentication', () => {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const authContextPath = path.resolve(__dirname, '../contexts/AdminAuthContext.tsx');
+      expect(fs.existsSync(authContextPath)).toBe(true);
+      
+      const content = fs.readFileSync(authContextPath, 'utf8');
+      // Verify key authentication functions exist
+      expect(content).toContain('verifyAdminCredentials');
+      expect(content).toContain('logout');
+    });
+
+    it('should maintain admin dashboard components', () => {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const componentFiles = [
+        'Dashboard/components/UserListItem.tsx',
+        'Dashboard/components/PaymentRequestCard.tsx',
+        'Dashboard/components/StatsCard.tsx',
+        'Dashboard/components/ModelManagementCard.tsx',
+      ];
+
+      componentFiles.forEach(file => {
+        const filePath = path.resolve(__dirname, '../../', file);
+        expect(fs.existsSync(filePath)).toBe(true);
+      });
+    });
+  });
+
+  describe('Branch Integrity - Gemini Live API Cleanup', () => {
+    it('should have removed all Gemini Live API files', () => {
       // This test validates that the branch has been properly cleaned
       // All Gemini Live API code has been removed
       const removedFiles = [
