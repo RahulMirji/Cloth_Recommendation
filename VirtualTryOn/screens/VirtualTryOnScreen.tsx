@@ -12,7 +12,8 @@ import {
   Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { generateTryOnImage } from '../services/piApiService'; // Using PI API
+import { generateTryOnImage } from '../services/geminiApiService'; // Using Gemini API
+import { preprocessForVirtualTryOn } from '../utils/imagePreprocessor';
 import { useRouter } from 'expo-router';
 import { useImageUpload } from '@/OutfitScorer/hooks/useImageUpload';
 import { useApp } from '@/contexts/AppContext';
@@ -98,30 +99,19 @@ export default function VirtualTryOnScreen() {
       console.log('📸 User photo URI:', userPhotoUri);
       console.log('👔 Outfit photo URI:', outfitPhotoUri);
 
-      // Upload images to Supabase Storage
-      console.log('⬆️ Uploading user image...');
-      const userImageUpload = await uploadOutfitImage(userPhotoUri, 'OUTFITS');
-      console.log('✅ User image upload result:', userImageUpload);
+      // STEP 1: Preprocess both images (optional - Gemini can handle various sizes)
+      console.log('🔄 Preprocessing images...');
+      const processedUserUri = await preprocessForVirtualTryOn(userPhotoUri);
+      const processedOutfitUri = await preprocessForVirtualTryOn(outfitPhotoUri);
+      console.log('✅ Images preprocessed');
 
-      console.log('⬆️ Uploading outfit image...');
-      const outfitImageUpload = await uploadOutfitImage(outfitPhotoUri, 'OUTFITS');
-      console.log('✅ Outfit image upload result:', outfitImageUpload);
-
-      if (!userImageUpload.success || !outfitImageUpload.success) {
-        const errorMsg = `User upload: ${userImageUpload.error || 'OK'}, Outfit upload: ${outfitImageUpload.error || 'OK'}`;
-        console.error('❌ Upload failed:', errorMsg);
-        showAlert('error', 'Upload Failed', errorMsg);
-        setLoading(false);
-        return;
-      }
-
-      // Call API with uploaded image URLs
-      console.log('🎨 Calling Fal.ai API (100% FREE - No card needed!)...');
-      console.log('User image URL:', userImageUpload.url);
-      console.log('Outfit image URL:', outfitImageUpload.url);
+      // STEP 2: Call Gemini API directly with local image URIs
+      console.log('🎨 Calling Gemini API...');
+      console.log('User image URI:', processedUserUri);
+      console.log('Outfit image URI:', processedOutfitUri);
       
-      const result = await generateTryOnImage(userImageUpload.url!, outfitImageUpload.url!);
-      console.log('🎨 Fal.ai result:', result);
+      const result = await generateTryOnImage(processedUserUri, processedOutfitUri);
+      console.log('🎨 Gemini API result:', result);
 
       if (result.success && result.imageUrl) {
         console.log('✅ Generation successful! Image URL:', result.imageUrl);
@@ -292,7 +282,7 @@ export default function VirtualTryOnScreen() {
               <View style={styles.progressFill} />
             </View>
             <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>
-              ✨ AI is working its magic... This may take 20-40 seconds (FREE credits!)
+              ✨ Gemini AI is working its magic... This may take 30-60 seconds
             </Text>
           </View>
         )}
@@ -305,7 +295,7 @@ export default function VirtualTryOnScreen() {
               <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• Use a clear, well-lit photo of yourself</Text>
               <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• Choose an outfit with good visibility</Text>
               <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• Front-facing photos work best</Text>
-              <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• 🎓 FREE $5 credits via Replicate!</Text>
+              <Text style={[styles.infoItem, isDarkMode && styles.infoItemDark]}>• ✨ Powered by Google Gemini AI</Text>
             </View>
           </View>
         )}

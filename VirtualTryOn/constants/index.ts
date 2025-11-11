@@ -4,12 +4,11 @@
  * Configuration constants for the Virtual Try-On feature
  */
 
-// PI API Configuration
-export const PI_API_CONFIG = {
-  ENDPOINT: 'https://api.piapi.ai/api/v1/task',
-  API_KEY: process.env.EXPO_PUBLIC_PI_API_KEY || '',
-  TIMEOUT: 30000, // 30 seconds timeout for initial request
+// Gemini API Configuration
+export const GEMINI_API_CONFIG = {
+  ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent',
+  API_KEY: 'AIzaSyCKoT-NcXhlNskt86_8YV4s_Vf1sJV-Mxs',
+  TIMEOUT: 60000, // 60 seconds timeout
 } as const;
 
-export const VIRTUAL_TRY_ON_PROMPT = `Create a photorealistic image showing the person from the first image wearing the exact clothing from the second image. Preserve the person's facial features, skin tone, hair, and body proportions. Apply the outfit naturally with proper fit, realistic fabric texture, appropriate shadows and highlights. Maintain the original background and lighting conditions. Ensure the clothing fits the person's body shape realistically.`;
-
+export const VIRTUAL_TRY_ON_PROMPT = `Virtually try this outfit from the second image on the person in the first image.`;
