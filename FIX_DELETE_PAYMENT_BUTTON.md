@@ -15,7 +15,7 @@ You need to apply the migration to your Supabase database. Here's how:
 
 1. **Open Supabase Dashboard**
    - Go to: https://supabase.com/dashboard
-   - Select your project: `wmhiwieooqfwkrdcvqvb` (Cloth Recommendation)
+   - Select your project: `wmhiwieooqfwkrdcvqvb` (Style GPT)
 
 2. **Open SQL Editor**
    - In the left sidebar, click on **SQL Editor**

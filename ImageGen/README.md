@@ -294,7 +294,7 @@ The Image Generator module is integrated via:
 
 ## 📄 License
 
-Part of the AI Cloth Recommendation App.
+Part of the Style GPT App.
 
 ## 👥 Contributing
 

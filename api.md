@@ -1,4 +1,4 @@
-# 🌐 API Documentation - AI Cloth Recommendation
+# 🌐 API Documentation - Style GPT
 
 **Last Updated**: November 5, 2025  
 **Base URL (Backend)**: `http://localhost:3000` (Dev) | `https://your-domain.com` (Prod)  
@@ -70,7 +70,7 @@ Production: https://your-backend-url.com
 ```json
 {
   "success": true,
-  "message": "Cloth Recommendation Backend - Payment Server",
+  "message": "Style GPT Backend - Payment Server",
   "status": "running",
   "timestamp": "2025-11-05T10:30:00Z",
   "environment": "development",

@@ -115,7 +115,7 @@ export const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         currency: currency,
         key: RAZORPAY_KEY_ID,
         amount: amount * 100, // Amount in paise
-        name: 'Cloth Recommendation',
+        name: 'Style GPT',
         order_id: orderId,
         prefill: {
           email: userEmail || '',

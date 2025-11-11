@@ -61,7 +61,7 @@ export default function TabLayout() {
         
         {/* Plain Text without gradient background */}
         <Text style={[styles.logoText, { color: isDarkMode ? Colors.white : Colors.text }]}>
-          AI DressUp
+          Style GPT
         </Text>
       </View>
     );

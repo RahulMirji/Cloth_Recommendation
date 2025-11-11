@@ -1,13 +1,13 @@
 # 📋 Project Documentation Plan
 
 ## Overview
-This document outlines the comprehensive documentation strategy for the **AI Cloth Recommendation** project. The project will be documented across four main markdown files, each focusing on a specific layer of the application architecture.
+This document outlines the comprehensive documentation strategy for the **Style GPT** project. The project will be documented across four main markdown files, each focusing on a specific layer of the application architecture.
 
 ---
 
 ## 🎯 Project Summary
 
-**Project Name**: AI Cloth Recommendation  
+**Project Name**: Style GPT  
 **Type**: Cross-platform Mobile Application (iOS, Android, Web)  
 **Framework**: React Native + Expo Router  
 **Backend**: Express.js + Supabase  
@@ -580,5 +580,5 @@ This document outlines the comprehensive documentation strategy for the **AI Clo
 
 **Prepared by**: AI Documentation Assistant  
 **Date**: November 5, 2025  
-**Project**: AI Cloth Recommendation  
+**Project**: Style GPT  
 **Repository**: Cloth_Recommendation (dev-test branch)

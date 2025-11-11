@@ -27,7 +27,7 @@ export const Strings = {
       done: 'Done',
     },
     // User Info Form
-    title: 'Welcome to AI Cloth Recommendation',
+    title: 'Welcome to Style GPT',
     subtitle: 'Your personal AI fashion assistant is ready to help you look your best!',
     formTitle: "Let's get to know you",
     namePlaceholder: 'Your Name',
@@ -44,7 +44,7 @@ export const Strings = {
 
   // Home Screen
   home: {
-    title: 'AI Cloth Recommendation',
+    title: 'Style GPT',
     greeting: (name: string) => `Hey ${name} 👋`,
     subtitle: 'Ready to get some style tips?',
     aiStylist: {
