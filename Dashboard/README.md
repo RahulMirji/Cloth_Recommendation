@@ -1,6 +1,6 @@
 # Admin Dashboard
 
-A secure, hidden admin dashboard for monitoring user signups and managing users in the AI DressUp app.
+A secure, hidden admin dashboard for monitoring user signups and managing users in the Style GPT app.
 
 ## 🔐 Access
 
@@ -310,7 +310,7 @@ console.log("Debug:", data);
 
 ## 📄 License
 
-This dashboard is part of the AI DressUp app and follows the same license.
+This dashboard is part of the Style GPT app and follows the same license.
 
 ## 👨‍💻 Maintenance
 

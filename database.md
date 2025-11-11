@@ -1,4 +1,4 @@
-# 🗄️ Database Documentation - AI Cloth Recommendation
+# 🗄️ Database Documentation - Style GPT
 
 **Last Updated**: November 5, 2025  
 **Platform**: Supabase (PostgreSQL 13.0.5)  

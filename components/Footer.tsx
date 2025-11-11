@@ -184,7 +184,7 @@ export function Footer({
       {/* App Info */}
       <View style={styles.section}>
         <Text style={[styles.appName, isDarkMode && styles.appNameDark]}>
-          Cloth Recommendation
+          Style GPT
         </Text>
         <Text style={[styles.tagline, isDarkMode && styles.taglineDark]}>
           Your AI-Powered Fashion Assistant
@@ -211,7 +211,7 @@ export function Footer({
       {/* Copyright & Version */}
       <View style={styles.copyrightContainer}>
         <Text style={[styles.copyright, isDarkMode && styles.copyrightDark]}>
-          © {currentYear} Cloth Recommendation. All rights reserved.
+          © {currentYear} Style GPT. All rights reserved.
         </Text>
         <Text style={[styles.version, isDarkMode && styles.versionDark]}>
           Version {appVersion}

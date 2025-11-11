@@ -1,14 +1,14 @@
 # Admin Access Security Implementation
 
 **Date:** October 14, 2025  
-**Project:** AI DressUp - Engineering Final Year Project  
+**Project:** Style GPT - Engineering Final Year Project  
 **Branch:** dashboard-v3
 
 ---
 
 ## 🎯 Overview
 
-Successfully implemented a **production-ready, secure admin access system** for the AI DressUp application. The admin dashboard is now accessible only to the designated admin user (`devprahulmirji@gmail.com`) through a secure, database-backed verification system.
+Successfully implemented a **production-ready, secure admin access system** for the Style GPT application. The admin dashboard is now accessible only to the designated admin user (`devprahulmirji@gmail.com`) through a secure, database-backed verification system.
 
 ---
 

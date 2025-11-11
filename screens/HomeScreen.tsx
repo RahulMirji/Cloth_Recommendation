@@ -149,7 +149,7 @@ export function HomeScreen() {
             </View>
             
             <Text style={[styles.guidanceTitle, isDarkMode && styles.textDark]}>
-              Welcome to AI DressUp! 👋
+              Welcome to Style GPT! 👋
             </Text>
             
             <Text style={[styles.guidanceText, isDarkMode && styles.guidanceTextDark]}>
@@ -216,21 +216,16 @@ export function HomeScreen() {
         {/* Custom Scrollable Header */}
         <View style={[styles.customHeader, isDarkMode && styles.customHeaderDark]}>
           <View style={styles.logoContainer}>
-            {/* Clothing Icon with Gradient Background and Glow */}
-            <View style={styles.logoIconContainer}>
-              <LinearGradient
-                colors={[Colors.gradient.start, Colors.gradient.end]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoIconGradient}
-              >
-                <Shirt size={22} color={Colors.white} strokeWidth={2.5} />
-              </LinearGradient>
-            </View>
+            {/* Logo Image */}
+            <Image 
+              source={require('@/assets/images/logo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             
             {/* Plain Text without gradient background */}
             <Text style={[styles.logoText, { color: isDarkMode ? Colors.white : Colors.text }]}>
-              AI DressUp
+              Style GPT
             </Text>
           </View>
           
@@ -437,6 +432,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
+    marginRight: 12,
+    borderRadius: 8,
   },
   logoIconContainer: {
     marginRight: 12,
