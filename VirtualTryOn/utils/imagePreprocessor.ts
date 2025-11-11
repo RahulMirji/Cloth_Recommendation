@@ -120,6 +120,7 @@ export const cropToSquare = async (
 /**
  * Preprocess image for virtual try-on
  * Main function to use before uploading to Supabase
+ * Forces 1024x1024 square format for consistent aspect ratio
  */
 export const preprocessForVirtualTryOn = async (
   imageUri: string
@@ -128,13 +129,13 @@ export const preprocessForVirtualTryOn = async (
   console.log('📥 Input image URI:', imageUri);
   
   const processedUri = await cropToSquare(imageUri, {
-    targetSize: 1024,  // Optimal size for AI processing
-    quality: 0.8,      // Good balance between quality and file size
-    format: SaveFormat.JPEG, // Smaller file size than PNG
+    targetSize: 1024,  // MUST be 1024x1024 for PI API
+    quality: 0.9,      // Higher quality for better results
+    format: SaveFormat.PNG, // PNG for better quality (PI API prefers PNG)
   });
 
   console.log('📤 Output image URI:', processedUri);
-  console.log('✅ Preprocessing complete!');
+  console.log('✅ Preprocessing complete - Image is now 1024x1024!');
   
   return processedUri;
 };
