@@ -2,7 +2,7 @@ import { Audio } from 'expo-av';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { router, Stack, useNavigation } from 'expo-router';
 import * as Speech from 'expo-speech';
-import { Mic, MicOff, X, RotateCw, Volume2, Square, Power, Eye, EyeOff, Zap } from 'lucide-react-native';
+import { Mic, MicOff, X, RotateCw, Volume2, Square, Power, Eye, EyeOff } from 'lucide-react-native';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
@@ -30,7 +30,6 @@ import { StreamingResponseHandler } from '@/AIStylist/utils/streamingResponseHan
 import { contextManager } from '@/AIStylist/utils/contextManager';
 import { vadDetector } from '@/AIStylist/utils/voiceActivityDetection';
 import { showCustomAlert } from '@/utils/customAlert';
-import { useGeminiLiveSession } from '@/AIStylist/hooks/useGeminiLiveSession';
 
 export default function AIStylistScreen() {
   const [facing, setFacing] = useState<CameraType>('front');
@@ -54,24 +53,9 @@ export default function AIStylistScreen() {
   const [vadEnabled, setVadEnabled] = useState<boolean>(false);
   const [isHandsFreeMode, setIsHandsFreeMode] = useState<boolean>(false);
   const [currentAIModel, setCurrentAIModel] = useState<AIStylistAIModel | null>(null);
-  const [useLiveMode, setUseLiveMode] = useState<boolean>(false); // New: Gemini Live mode toggle
   const cameraRef = useRef<CameraView>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const currentSessionRef = useRef<ChatSession | null>(null);
-
-  // Gemini Live Session Hook (only active when useLiveMode is true)
-  const geminiLive = useGeminiLiveSession({
-    voiceName: 'Kore',
-    enableTranscription: true,
-    onConnectionChange: (connected) => {
-      console.log('🎙️ Gemini Live connection:', connected ? 'Connected' : 'Disconnected');
-      setIsConversationActive(connected);
-    },
-    onError: (error) => {
-      console.error('❌ Gemini Live error:', error.message);
-      showCustomAlert('error', 'Connection Error', error.message, [{ text: 'OK' }]);
-    },
-  });
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current; // For AI speaking glow effect
@@ -1074,69 +1058,10 @@ Keep responses conversational and natural, as if you're talking to them in perso
     return unsubscribe;
   }, [navigation, stopAllAudio]);
 
-  /**
-   * Handle Gemini Live Mode Button Press
-   * Starts/stops the Gemini Live voice conversation
-   */
-  const handleLiveModePress = useCallback(async () => {
-    try {
-      if (geminiLive.isConnected) {
-        // Stop Live session
-        console.log('🛑 Stopping Gemini Live session...');
-        await geminiLive.stopSession();
-        setIsConversationActive(false);
-        stopGlowAnimation();
-      } else {
-        // Start Live session
-        console.log('🎙️ Starting Gemini Live session...');
-        
-        // Capture image first for visual context
-        if (cameraRef.current) {
-          const photo = await cameraRef.current.takePictureAsync({
-            quality: 0.7,
-            base64: true,
-          });
-          
-          if (photo?.uri) {
-            setCapturedImage(photo.uri);
-            
-            // Start the session first
-            await geminiLive.startSession();
-            
-            // Then send the image for context
-            await geminiLive.sendImage(photo.uri);
-            
-            console.log('✅ Gemini Live session started with visual context');
-            setIsConversationActive(true);
-            startGlowAnimation(); // Visual indication that AI can respond
-          }
-        } else {
-          // Start without image
-          await geminiLive.startSession();
-          setIsConversationActive(true);
-          startGlowAnimation();
-        }
-      }
-    } catch (error) {
-      console.error('❌ Gemini Live error:', error);
-      showCustomAlert(
-        'error',
-        'Connection Failed',
-        'Failed to start Gemini Live session. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
-  }, [geminiLive]);
-
   const quitConversation = useCallback(async () => {
     try {
       // CRITICAL: Stop audio FIRST before anything else
       await stopAllAudio();
-      
-      // Stop Gemini Live session if active
-      if (useLiveMode && geminiLive.isConnected) {
-        await geminiLive.stopSession();
-      }
       
       // Stop VAD if in hands-free mode
       if (isHandsFreeMode) {
@@ -1152,7 +1077,6 @@ Keep responses conversational and natural, as if you're talking to them in perso
       setIsConversationActive(false);
       setIsListening(false);
       stopPulse();
-      stopGlowAnimation();
       
       // 🧠 Clear context manager
       contextManager.clearContext();
@@ -1168,7 +1092,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
       // Still navigate back even if there's an error
       router.back();
     }
-  }, [speechService, stopAllAudio, isHandsFreeMode, useLiveMode, geminiLive]);
+  }, [speechService, stopAllAudio, isHandsFreeMode]);
 
   if (!permission) {
     return (
@@ -1232,23 +1156,6 @@ Keep responses conversational and natural, as if you're talking to them in perso
                 )}
                 <Text style={styles.visionToggleText}>
                   {useEnhancedVision ? 'Enhanced Vision' : 'Basic Vision'}
-                </Text>
-              </TouchableOpacity>
-              
-              {/* Gemini Live Mode Toggle */}
-              <TouchableOpacity
-                style={[styles.liveModeToggle, useLiveMode && styles.liveModeToggleActive]}
-                onPress={() => {
-                  setUseLiveMode(!useLiveMode);
-                  if (useLiveMode && geminiLive.isConnected) {
-                    geminiLive.stopSession();
-                  }
-                }}
-                disabled={isConversationActive}
-              >
-                <Zap size={16} color={useLiveMode ? Colors.success : Colors.white} />
-                <Text style={[styles.liveModeToggleText, useLiveMode && styles.liveModeToggleTextActive]}>
-                  {useLiveMode ? '⚡ Live Mode' : 'Live Mode'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1411,91 +1318,44 @@ Keep responses conversational and natural, as if you're talking to them in perso
                     <TouchableOpacity
                       style={[
                         styles.micButton,
-                        (isListening || geminiLive.isListening) && styles.micButtonActive,
+                        isListening && styles.micButtonActive,
                         isRecording && styles.micButtonActive,
                         !isConversationActive && styles.micButtonInactive,
-                        ((microphoneDisabled || isPlayingAudio || geminiLive.isSpeaking) && isConversationActive) && styles.micButtonDisabled,
+                        (microphoneDisabled || isPlayingAudio) && isConversationActive && styles.micButtonDisabled,
                       ]}
-                      onPress={useLiveMode ? handleLiveModePress : handleVoicePress}
-                      onPressIn={useLiveMode ? undefined : startHoldToSpeak}
-                      onPressOut={useLiveMode ? undefined : stopHoldToSpeak}
-                      disabled={microphoneDisabled || isPlayingAudio || (useLiveMode && geminiLive.isSpeaking)}
+                      onPress={handleVoicePress}
+                      onPressIn={startHoldToSpeak}
+                      onPressOut={stopHoldToSpeak}
+                      disabled={microphoneDisabled || isPlayingAudio}
                       activeOpacity={0.8}
                     >
-                      {useLiveMode ? (
-                        // Live Mode: Show connection status
-                        geminiLive.isConnected ? (
-                          geminiLive.isListening ? (
-                            <Mic size={32} color={Colors.success} />
-                          ) : geminiLive.isSpeaking ? (
-                            <Volume2 size={32} color={Colors.success} />
-                          ) : (
-                            <Mic size={32} color={Colors.white} />
-                          )
-                        ) : (
-                          <Zap size={32} color={Colors.white} />
-                        )
+                      {isListening || isRecording ? (
+                        <MicOff size={32} color={Colors.white} />
+                      ) : isConversationActive ? (
+                        <Mic size={32} color={Colors.white} />
                       ) : (
-                        // Regular Mode: Original behavior
-                        isListening || isRecording ? (
-                          <MicOff size={32} color={Colors.white} />
-                        ) : isConversationActive ? (
-                          <Mic size={32} color={Colors.white} />
-                        ) : (
-                          <Square size={32} color={Colors.white} />
-                        )
-                      )}
-                    </TouchableOpacity>
-                  </Animated.View>
+                      <Square size={32} color={Colors.white} />
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
                 </View>
                 {/* End of micButtonContainer */}
                 
                 <Text style={styles.micLabel}>
-                  {useLiveMode ? (
-                    // Live Mode labels
-                    geminiLive.isConnected ? (
-                      geminiLive.isSpeaking ? 'AI is speaking...' :
-                      geminiLive.isListening ? '👂 Listening...' :
-                      'Tap to end conversation'
-                    ) : (
-                      'Tap to start live conversation'
-                    )
-                  ) : (
-                    // Regular Mode labels
-                    microphoneDisabled || isPlayingAudio
-                      ? 'AI is speaking...'
-                      : isRecording
-                        ? 'Recording... (release to send)'
-                        : isListening
-                          ? 'Speak now...'
-                          : isConversationActive
-                            ? 'Hold to record voice'
-                            : 'Tap to start chat'
-                  )}
+                  {microphoneDisabled || isPlayingAudio
+                    ? 'AI is speaking...'
+                    : isRecording
+                      ? 'Recording... (release to send)'
+                      : isListening
+                        ? 'Speak now...'
+                        : isConversationActive
+                          ? 'Hold to record voice'
+                          : 'Tap to start chat'
+                  }
                 </Text>
-                
-                {/* Transcript display for Live Mode */}
-                {useLiveMode && geminiLive.isConnected && (geminiLive.transcript.user || geminiLive.transcript.ai) && (
-                  <View style={styles.transcriptContainer}>
-                    {geminiLive.transcript.user && (
-                      <Text style={styles.transcriptUser}>
-                        You: {geminiLive.transcript.user}
-                      </Text>
-                    )}
-                    {geminiLive.transcript.ai && (
-                      <Text style={styles.transcriptAI}>
-                        AI: {geminiLive.transcript.ai}
-                      </Text>
-                    )}
-                  </View>
-                )}
-                
                 {!isConversationActive && (
                   <Text style={styles.startHint}>
-                    {useLiveMode 
-                      ? '⚡ Real-time conversation with Gemini'
-                      : 'Start a conversation with your AI stylist'
-                    }
+                    Start a conversation with your AI stylist
                   </Text>
                 )}
               </View>
@@ -1572,31 +1432,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 11,
     fontWeight: '500' as const,
-  },
-  liveModeToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.overlay,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 6,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  liveModeToggleActive: {
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    borderColor: Colors.success,
-  },
-  liveModeToggleText: {
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: '500' as const,
-  },
-  liveModeToggleTextActive: {
-    color: Colors.success,
-    fontWeight: '600' as const,
   },
   quitButtonContainer: {
     flexDirection: 'row',
@@ -1784,26 +1619,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
     ...(Platform.OS === 'web' ? { textShadow: `0px 1px 4px ${Colors.black}` } : {}),
-  },
-  transcriptContainer: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: Colors.overlay,
-    borderRadius: 12,
-    maxWidth: '90%',
-    alignSelf: 'center',
-  },
-  transcriptUser: {
-    fontSize: 14,
-    color: Colors.white,
-    marginBottom: 6,
-    opacity: 0.9,
-  },
-  transcriptAI: {
-    fontSize: 14,
-    color: Colors.success,
-    fontWeight: '500' as const,
   },
   permissionContainer: {
     flex: 1,
