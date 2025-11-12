@@ -372,36 +372,41 @@ export function ProfileScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
         showsVerticalScrollIndicator={false}
       >
-          {/* Header - Back arrow and Logout button */}
+        {/* Modern Header with Gradient Background */}
+        <LinearGradient
+          colors={isDarkMode ? ['#1E293B', '#0F172A'] : [Colors.primary, Colors.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
+        >
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <ChevronLeft size={28} color={isDarkMode ? Colors.white : Colors.text} strokeWidth={2.5} />
+              <View style={[styles.iconButton, isDarkMode && styles.iconButtonDark]}>
+                <ChevronLeft size={24} color={isDarkMode ? Colors.white : Colors.white} strokeWidth={2.5} />
+              </View>
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, isDarkMode && styles.textDark]}>
-              {Strings.profile.title}
-            </Text>
+            <Text style={styles.headerTitle}>My Profile</Text>
             {!isEditing && (
-              <TouchableOpacity
-                style={styles.logoutButtonTop}
-                onPress={handleLogout}
-              >
-                <LogOut size={20} color={Colors.error} strokeWidth={2.5} />
+              <TouchableOpacity style={styles.logoutButtonTop} onPress={handleLogout}>
+                <View style={styles.iconButton}>
+                  <LogOut size={20} color={Colors.white} strokeWidth={2.5} />
+                </View>
               </TouchableOpacity>
             )}
-            {isEditing && <View style={{ width: 44 }} />}
+            {isEditing && <View style={{ width: 48 }} />}
           </View>
 
-
-          {/* Profile Photo with Premium Frame */}
-          <View style={styles.profileHeader}>
+          {/* Profile Photo Section - Inside Header */}
+          <View style={styles.profilePhotoSection}>
             <View style={styles.avatarWrapper}>
               <TouchableOpacity 
                 style={styles.avatarContainer} 
                 onPress={pickImage}
                 disabled={isUploadingImage}
+                activeOpacity={0.8}
               >
                 {/* Pro Users: Golden Premium Frame */}
                 {outfitScorerCredits?.credits_cap === 100 ? (
@@ -413,14 +418,14 @@ export function ProfileScreen() {
                   >
                     <View style={styles.avatarInnerContainer}>
                       {isUploadingImage ? (
-                        <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
+                        <View style={styles.avatarPlaceholder}>
                           <ActivityIndicator size="large" color={Colors.primary} />
                         </View>
                       ) : editedProfile.profileImage ? (
                         <Image source={{ uri: editedProfile.profileImage }} style={styles.avatar} />
                       ) : (
-                        <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
-                          <User size={48} color={isDarkMode ? Colors.white : Colors.primary} />
+                        <View style={styles.avatarPlaceholder}>
+                          <User size={56} color={Colors.white} />
                         </View>
                       )}
                     </View>
@@ -428,222 +433,225 @@ export function ProfileScreen() {
                 ) : (
                   /* Free Users: Regular Gradient Ring */
                   <LinearGradient
-                    colors={[Colors.primary, Colors.secondary, Colors.primary]}
+                    colors={['#FFFFFF', '#F3E8FF', '#FFFFFF']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.glowRing}
                   >
                     <View style={styles.avatarInnerContainer}>
                       {isUploadingImage ? (
-                        <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
+                        <View style={styles.avatarPlaceholder}>
                           <ActivityIndicator size="large" color={Colors.primary} />
                         </View>
                       ) : editedProfile.profileImage ? (
                         <Image source={{ uri: editedProfile.profileImage }} style={styles.avatar} />
                       ) : (
-                        <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
-                          <User size={48} color={isDarkMode ? Colors.white : Colors.primary} />
+                        <View style={styles.avatarPlaceholder}>
+                          <User size={56} color={Colors.white} />
                         </View>
                       )}
                     </View>
                   </LinearGradient>
                 )}
-              </TouchableOpacity>
-            
-            {/* Pro/Upgrade Pill - Bottom RIGHT of avatar */}
-            {outfitScorerCredits && (
-              outfitScorerCredits.credits_cap === 100 ? (
-                <View style={styles.proPillAvatar}>
-                  <LinearGradient
-                    colors={['#FFD700', '#FFA500']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.proPillGradient}
-                  >
-                    <Sparkles size={10} color={Colors.white} strokeWidth={2.5} />
-                    <Text style={styles.proPillText}>PRO</Text>
-                  </LinearGradient>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.upgradePillAvatar} onPress={handleUpgrade} activeOpacity={0.8}>
+
+                {/* Camera Badge */}
+                <View style={styles.cameraIconBadge}>
                   <LinearGradient
                     colors={[Colors.primary, Colors.secondary]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.upgradePillGradient}
+                    style={styles.cameraIconGradient}
                   >
-                    <Text style={styles.upgradePillText}>Upgrade</Text>
+                    <Camera size={18} color={Colors.white} strokeWidth={2.5} />
                   </LinearGradient>
-                </TouchableOpacity>
-              )
-            )}
+                </View>
+              </TouchableOpacity>
             </View>
             
-            {/* Username with inline Edit/Save button */}
+            {/* Username */}
             <View style={styles.nameContainer}>
-              <Text style={[styles.profileName, isDarkMode && styles.textDark]}>
+              <Text style={styles.profileName}>
                 {userProfile.name || 'User'}
               </Text>
-              <TouchableOpacity
-                style={[styles.editButtonInline, isEditing && styles.editButtonInlineActive]}
-                onPress={() => {
-                  if (isEditing) {
-                    handleSave();
-                  } else {
-                    setIsEditing(true);
-                  }
-                }}
-              >
-                <Edit3 size={16} color={isEditing ? Colors.white : Colors.primary} strokeWidth={2.5} />
-                <Text style={[styles.editButtonText, isEditing && styles.editButtonTextActive]}>
-                  {isEditing ? 'Save' : 'Edit'}
-                </Text>
-              </TouchableOpacity>
+            </View>
+            <Text style={styles.profileEmail}>{userProfile.email || ''}</Text>
+          </View>
+        </LinearGradient>
+        {/* Profile Information Section */}
+        <View style={styles.contentSection}>
+          <View style={styles.sectionHeaderContainer}>
+            <View style={styles.sectionTitleRow}>
+              <User size={20} color={isDarkMode ? Colors.white : Colors.text} strokeWidth={2.5} />
+              <Text style={[styles.sectionTitle, isDarkMode && styles.textDark]}>
+                Personal Information
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.editButtonInline, isEditing && styles.editButtonInlineSave]}
+              onPress={() => {
+                if (isEditing) {
+                  handleSave();
+                } else {
+                  setIsEditing(true);
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Edit3 size={14} color={isEditing ? Colors.white : Colors.primary} strokeWidth={2.5} />
+              <Text style={[styles.editButtonText, isEditing && styles.editButtonTextSave]}>
+                {isEditing ? 'Save' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Name & Phone Row */}
+          <View style={styles.fieldRow}>
+            <View style={[styles.fieldCard, isDarkMode && styles.fieldCardDark, { flex: 1 }]}>
+              <View style={styles.fieldIconContainer}>
+                <User size={16} color={Colors.primary} strokeWidth={2.5} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, isDarkMode && styles.fieldLabelDark]}>NAME</Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.fieldInput, isDarkMode && styles.fieldInputDark]}
+                    value={editedProfile.name}
+                    onChangeText={(text) => setEditedProfile({ ...editedProfile, name: text })}
+                    placeholder="Your name"
+                    placeholderTextColor={isDarkMode ? '#64748B' : '#94A3B8'}
+                  />
+                ) : (
+                  <Text style={[styles.fieldValue, isDarkMode && styles.fieldValueDark]}>
+                    {userProfile.name || 'Not set'}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={[styles.fieldCard, isDarkMode && styles.fieldCardDark, { flex: 1 }]}>
+              <View style={styles.fieldIconContainer}>
+                <Phone size={16} color={Colors.primary} strokeWidth={2.5} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, isDarkMode && styles.fieldLabelDark]}>PHONE</Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.fieldInput, isDarkMode && styles.fieldInputDark]}
+                    value={editedProfile.phone}
+                    onChangeText={(text) => setEditedProfile({ ...editedProfile, phone: text })}
+                    placeholder="Phone"
+                    placeholderTextColor={isDarkMode ? '#64748B' : '#94A3B8'}
+                    keyboardType="phone-pad"
+                  />
+                ) : (
+                  <Text style={[styles.fieldValue, isDarkMode && styles.fieldValueDark]}>
+                    {userProfile.phone || 'Not set'}
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
 
-          {/* Clean Profile Info List - Instagram Style */}
-          <View style={styles.profileInfoSection}>
-            {/* Name Field */}
-            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
-              <View style={styles.infoFieldHeader}>
-                <User size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
-                  NAME
-                </Text>
+          {/* Age & Gender Row */}
+          <View style={styles.fieldRow}>
+            <View style={[styles.fieldCard, isDarkMode && styles.fieldCardDark, { flex: 1 }]}>
+              <View style={styles.fieldIconContainer}>
+                <Calendar size={16} color={Colors.primary} strokeWidth={2.5} />
               </View>
-              {isEditing ? (
-                <TextInput
-                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
-                  value={editedProfile.name}
-                  onChangeText={(text) => setEditedProfile({ ...editedProfile, name: text })}
-                  placeholder="Your name"
-                  placeholderTextColor={Colors.textLight}
-                />
-              ) : (
-                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
-                  {userProfile.name || 'Not provided'}
-                </Text>
-              )}
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, isDarkMode && styles.fieldLabelDark]}>AGE</Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.fieldInput, isDarkMode && styles.fieldInputDark]}
+                    value={editedProfile.age}
+                    onChangeText={(text) => setEditedProfile({ ...editedProfile, age: text })}
+                    placeholder="Age"
+                    placeholderTextColor={isDarkMode ? '#64748B' : '#94A3B8'}
+                    keyboardType="number-pad"
+                  />
+                ) : (
+                  <Text style={[styles.fieldValue, isDarkMode && styles.fieldValueDark]}>
+                    {userProfile.age || 'Not set'}
+                  </Text>
+                )}
+              </View>
             </View>
 
-            {/* Email Field */}
-            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
-              <View style={styles.infoFieldHeader}>
-                <Mail size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
-                  EMAIL
-                </Text>
+            <View style={[styles.fieldCard, isDarkMode && styles.fieldCardDark, { flex: 1 }]}>
+              <View style={styles.fieldIconContainer}>
+                <Users size={16} color={Colors.primary} strokeWidth={2.5} />
               </View>
-              <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
-                {userProfile.email || 'Not provided'}
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, isDarkMode && styles.fieldLabelDark]}>GENDER</Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.fieldInput, isDarkMode && styles.fieldInputDark]}
+                    value={editedProfile.gender}
+                    onChangeText={(text) => setEditedProfile({ ...editedProfile, gender: text as '' | 'male' | 'female' | 'other' })}
+                    placeholder="Gender"
+                    placeholderTextColor={isDarkMode ? '#64748B' : '#94A3B8'}
+                  />
+                ) : (
+                  <Text style={[styles.fieldValue, isDarkMode && styles.fieldValueDark]}>
+                    {userProfile.gender || 'Not set'}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Email Field - Full Width */}
+          <View style={[styles.fieldCard, styles.fullWidthCard, isDarkMode && styles.fieldCardDark]}>
+            <View style={styles.fieldIconContainer}>
+              <Mail size={16} color={Colors.primary} strokeWidth={2.5} />
+            </View>
+            <View style={styles.fieldContent}>
+              <Text style={[styles.fieldLabel, isDarkMode && styles.fieldLabelDark]}>EMAIL</Text>
+              <Text style={[styles.fieldValue, isDarkMode && styles.fieldValueDark]}>
+                {userProfile.email || 'Not set'}
               </Text>
             </View>
+          </View>
 
-            {/* Phone Field */}
-            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
-              <View style={styles.infoFieldHeader}>
-                <Phone size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
-                  PHONE
-                </Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
-                  value={editedProfile.phone}
-                  onChangeText={(text) => setEditedProfile({ ...editedProfile, phone: text })}
-                  placeholder="Phone number"
-                  placeholderTextColor={Colors.textLight}
-                  keyboardType="phone-pad"
-                />
-              ) : (
-                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
-                  {userProfile.phone || 'Not provided'}
-                </Text>
-              )}
+          {/* Bio Field - Full Width */}
+          <View style={[styles.fieldCard, styles.fullWidthCard, isDarkMode && styles.fieldCardDark]}>
+            <View style={styles.fieldIconContainer}>
+              <Edit3 size={16} color={Colors.primary} strokeWidth={2.5} />
             </View>
-
-            {/* Age Field */}
-            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
-              <View style={styles.infoFieldHeader}>
-                <Calendar size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
-                  AGE
-                </Text>
-              </View>
+            <View style={styles.fieldContent}>
+              <Text style={[styles.fieldLabel, isDarkMode && styles.fieldLabelDark]}>ABOUT ME</Text>
               {isEditing ? (
                 <TextInput
-                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
-                  value={editedProfile.age}
-                  onChangeText={(text) => setEditedProfile({ ...editedProfile, age: text })}
-                  placeholder="Your age"
-                  placeholderTextColor={Colors.textLight}
-                  keyboardType="number-pad"
-                />
-              ) : (
-                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
-                  {userProfile.age || 'Not provided'}
-                </Text>
-              )}
-            </View>
-
-            {/* Gender Field */}
-            <View style={[styles.infoField, isDarkMode && styles.infoFieldDark]}>
-              <View style={styles.infoFieldHeader}>
-                <Users size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
-                  GENDER
-                </Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={[styles.cleanInput, isDarkMode && styles.cleanInputDark]}
-                  value={editedProfile.gender}
-                  onChangeText={(text) => setEditedProfile({ ...editedProfile, gender: text as '' | 'male' | 'female' | 'other' })}
-                  placeholder="Your gender"
-                  placeholderTextColor={Colors.textLight}
-                />
-              ) : (
-                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
-                  {userProfile.gender || 'Not provided'}
-                </Text>
-              )}
-            </View>
-
-            {/* About Me Field */}
-            <View style={[styles.infoField, styles.lastInfoField, isDarkMode && styles.infoFieldDark]}>
-              <View style={styles.infoFieldHeader}>
-                <Edit3 size={18} color={isDarkMode ? Colors.textLight : Colors.textSecondary} />
-                <Text style={[styles.infoFieldLabel, isDarkMode && styles.infoFieldLabelDark]}>
-                  ABOUT ME
-                </Text>
-              </View>
-              {isEditing ? (
-                <TextInput
-                  style={[styles.cleanInput, styles.cleanInputMultiline, isDarkMode && styles.cleanInputDark]}
+                  style={[styles.fieldInput, styles.fieldInputMultiline, isDarkMode && styles.fieldInputDark]}
                   value={editedProfile.bio}
                   onChangeText={(text) => setEditedProfile({ ...editedProfile, bio: text })}
-                  placeholder="Tell us about yourself"
-                  placeholderTextColor={Colors.textLight}
+                  placeholder="Tell us about yourself..."
+                  placeholderTextColor={isDarkMode ? '#64748B' : '#94A3B8'}
                   multiline
                   numberOfLines={3}
                 />
               ) : (
-                <Text style={[styles.infoFieldValue, isDarkMode && styles.infoFieldValueDark]}>
-                  {userProfile.bio || 'Not provided'}
+                <Text style={[styles.fieldValue, isDarkMode && styles.fieldValueDark]}>
+                  {userProfile.bio || 'Not set'}
                 </Text>
               )}
             </View>
           </View>
+        </View>
 
-          {/* Credits Section */}
-          {!isEditing && (
-            <View style={styles.creditsSection}>
-              <Text style={[styles.sectionTitle, isDarkMode && styles.textDark]}>
-                Usage & Credits
-              </Text>
+        {/* Credits Section */}
+        {!isEditing && (
+          <View style={styles.contentSection}>
+            <View style={styles.sectionHeaderContainer}>
+              <View style={styles.sectionTitleRow}>
+                <Sparkles size={20} color={isDarkMode ? Colors.white : Colors.text} strokeWidth={2.5} />
+                <Text style={[styles.sectionTitle, isDarkMode && styles.textDark]}>
+                  Usage & Credits
+                </Text>
+              </View>
+            </View>
 
+            <View style={styles.creditsGrid}>
               {/* Outfit Scorer Credits */}
               {outfitScorerCredits && (
                 <CreditsCard
@@ -680,92 +688,214 @@ export function ProfileScreen() {
                 />
               )}
             </View>
-          )}
+          </View>
+        )}
 
-          {/* Admin Access Button - Only visible to admin users */}
-          {!isEditing && (
-            <View style={styles.adminButtonContainer}>
+        {/* Admin Access Button - Only visible to admin users */}
+        {!isEditing && (
+          <View style={styles.contentSection}>
+            <View style={styles.creditsGrid}>
               <AdminAccessButton 
                 userEmail={userProfile.email} 
                 isDarkMode={isDarkMode}
               />
             </View>
-          )}
-
-          {/* Cancel Button (Edit Mode) */}
-          {isEditing && (
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>
-                {Strings.profile.cancelButton}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Footer */}
-          <View style={styles.footerContainer}>
-            <Footer showSocialLinks={true} showQuickLinks={true} />
           </View>
-        </ScrollView>
+        )}
 
-        {/* Payment Upload Modal */}
-        <PaymentUploadScreen
-          visible={showPaymentScreen}
-          onClose={handlePaymentClose}
-        />
-      </View>
+        {/* Cancel Button (Edit Mode) */}
+        {isEditing && (
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} activeOpacity={0.8}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Footer */}
+        <View style={styles.footerContainer}>
+          <Footer showSocialLinks={true} showQuickLinks={true} />
+        </View>
+      </ScrollView>
+
+      {/* Payment Upload Modal */}
+      <PaymentUploadScreen
+        visible={showPaymentScreen}
+        onClose={handlePaymentClose}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8F9FA',
   },
   containerDark: {
     backgroundColor: '#0F172A',
+  },
+  // New Modern Header with Gradient
+  headerGradient: {
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   backButton: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconButtonDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
   headerTitle: {
-    fontSize: FontSizes.heading,
-    fontWeight: FontWeights.bold,
-    color: Colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.white,
+    letterSpacing: 0.5,
   },
   textDark: {
     color: Colors.white,
   },
   logoutButtonTop: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 22,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  // Profile Photo Section
+  profilePhotoSection: {
+    alignItems: 'center',
+    paddingTop: 8,
   },
   scrollView: {
     flex: 1,
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingHorizontal: 16,
     flexGrow: 1,
   },
-  profileHeader: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingBottom: 16,
+  // Content Sections
+  contentSection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
   },
+  sectionHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  // Modern Field Cards
+  fieldRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  fieldCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.08)',
+  },
+  fieldCardDark: {
+    backgroundColor: '#1E293B',
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+    shadowOpacity: 0.3,
+  },
+  fullWidthCard: {
+    marginBottom: 12,
+  },
+  fieldIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  fieldContent: {
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  fieldLabelDark: {
+    color: '#94A3B8',
+  },
+  fieldValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    lineHeight: 22,
+  },
+  fieldValueDark: {
+    color: '#F8FAFC',
+  },
+  fieldInput: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    padding: 0,
+    lineHeight: 22,
+  },
+  fieldInputDark: {
+    color: '#F8FAFC',
+  },
+  fieldInputMultiline: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  // Credits Grid
+  creditsGrid: {
+    gap: 12,
+  },
+  adminSection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  // Action Buttons
+  actionButtonsContainer: {
+    marginTop: 24,
+    paddingHorizontal: 20,
+  },
+  // Avatar Styles
   avatarWrapper: {
     position: 'relative',
     marginBottom: 16,
@@ -774,35 +904,35 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   glowRing: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     padding: 4,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
+    shadowColor: Colors.white,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
     elevation: 10,
   },
   premiumFrame: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     padding: 4,
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 25,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
   },
   avatarInnerContainer: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
+    width: 132,
+    height: 132,
+    borderRadius: 66,
     overflow: 'hidden',
-    backgroundColor: Colors.white,
-    borderWidth: 3,
-    borderColor: Colors.white,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderWidth: 4,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   avatar: {
     width: '100%',
@@ -811,184 +941,148 @@ const styles = StyleSheet.create({
   avatarPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarPlaceholderDark: {
-    backgroundColor: 'rgba(139, 92, 246, 0.25)',
-  },
-  cameraIcon: {
+  cameraIconBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: Colors.white,
+    bottom: 4,
+    right: 4,
+    borderRadius: 18,
+    overflow: 'hidden',
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
     elevation: 5,
+  },
+  cameraIconGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    marginBottom: 4,
   },
   profileName: {
-    fontSize: FontSizes.heading,
-    fontWeight: FontWeights.bold,
-    color: Colors.text,
+    fontSize: 26,
+    fontWeight: '800',
+    color: Colors.white,
+    letterSpacing: -0.5,
+  },
+  profileEmail: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
   },
   editButtonInline: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-  },
-  editButtonInlineActive: {
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // More visible white background
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
+  editButtonInlineActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  editButtonInlineSave: {
+    backgroundColor: '#22C55E', // Green color for save button
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   editButtonText: {
     fontSize: 13,
-    fontWeight: FontWeights.semibold,
-    color: Colors.primary,
+    fontWeight: '700',
+    color: Colors.primary, // Purple color for edit mode
   },
-  editButtonTextActive: {
-    color: Colors.white,
+  editButtonTextSave: {
+    color: Colors.white, // White color for save mode
   },
   proPillAvatar: {
     position: 'absolute',
-    bottom: -5,
-    right: -10,
-    borderRadius: 14,
+    bottom: 0,
+    right: -5,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
   upgradePillAvatar: {
     position: 'absolute',
-    bottom: -5,
-    right: -10,
-    borderRadius: 14,
+    bottom: 0,
+    right: -5,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  section: {
-    gap: 10,
-  },
-  glassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  glassCardDark: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  inputRow: {
+  proPillGradient: {
     flexDirection: 'row',
-    padding: 12,
-    gap: 12,
-  },
-  inputIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    gap: 4,
   },
-  inputIconContainerDark: {
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-  },
-  inputContent: {
-    flex: 1,
-  },
-  inputLabel: {
-    fontSize: FontSizes.small,
-    fontWeight: FontWeights.semibold,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  input: {
-    fontSize: FontSizes.body,
-    color: Colors.text,
-    padding: 0,
-  },
-  inputDark: {
+  proPillText: {
+    fontSize: 10,
+    fontWeight: '800',
     color: Colors.white,
+    letterSpacing: 0.5,
   },
-  inputValue: {
-    fontSize: FontSizes.body,
-    color: Colors.text,
-    fontWeight: FontWeights.medium,
-  },
-  textArea: {
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  genderOptions: {
+  upgradePillGradient: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    gap: 4,
   },
-  genderButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  genderButtonActive: {
-    backgroundColor: Colors.primary,
-  },
-  genderButtonText: {
-    fontSize: FontSizes.small,
-    color: Colors.text,
-    fontWeight: FontWeights.medium,
-  },
-  genderButtonTextActive: {
+  upgradePillText: {
+    fontSize: 10,
+    fontWeight: '800',
     color: Colors.white,
+    letterSpacing: 0.5,
   },
   cancelButton: {
-    marginTop: 20,
-    marginHorizontal: 16,
     padding: 16,
     borderRadius: 16,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: 'rgba(239, 68, 68, 0.3)',
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: FontSizes.body,
-    fontWeight: FontWeights.bold,
+    fontSize: 16,
+    fontWeight: '700',
     color: Colors.error,
   },
   footerContainer: {
-    marginTop: 24,
-    marginHorizontal: -16,
+    marginTop: 32,
+    marginHorizontal: -20,
   },
   // Suggestion Cloud Styles
   suggestionOverlay: {
@@ -1099,47 +1193,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.bold,
     color: Colors.white,
   },
-  creditsSection: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.heading,
-    fontWeight: FontWeights.bold,
-    color: Colors.text,
-    marginBottom: 16,
-  },
-  adminButtonContainer: {
-    paddingHorizontal: 20,
-  },
-  proPillGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    gap: 3,
-  },
-  proPillText: {
-    fontSize: 9,
-    fontWeight: FontWeights.bold,
-    color: Colors.white,
-    letterSpacing: 0.5,
-  },
-  upgradePillGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-  },
-  upgradePillText: {
-    fontSize: 10,
-    fontWeight: FontWeights.bold,
-    color: Colors.white,
-    letterSpacing: 0.5,
-  },
-  // Clean Profile Info Section - Instagram Style
+  // Legacy/Old Profile Info Section styles - keep for compatibility
   profileInfoSection: {
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -1201,7 +1255,7 @@ const styles = StyleSheet.create({
     minHeight: 60,
     textAlignVertical: 'top',
   },
-  // Legacy styles (can be removed if not used elsewhere)
+  // Legacy styles
   infoRow: {
     flexDirection: 'row',
     gap: 12,

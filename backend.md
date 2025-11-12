@@ -1,4 +1,4 @@
-# 🖥️ Backend Documentation - AI Cloth Recommendation
+# 🖥️ Backend Documentation - Style GPT
 
 **Last Updated**: November 5, 2025  
 **Framework**: Express.js 4.21.1  
@@ -168,7 +168,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Cloth Recommendation Backend - Payment Server',
+    message: 'Style GPT Backend - Payment Server',
     status: 'running',
     timestamp: new Date().toISOString(),
   });

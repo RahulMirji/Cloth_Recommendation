@@ -1,4 +1,4 @@
-# AI Cloth Recommendation
+# Style GPT
 
 ![CI/CD Pipeline](https://github.com/RahulMirji/Cloth_Recommendation/actions/workflows/ci-cd.yml/badge.svg)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
