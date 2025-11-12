@@ -3,6 +3,7 @@
  */
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 // On-device TTS
 import * as ExpoSpeech from 'expo-speech';
 // Dynamically import native Voice to avoid web bundling issues
@@ -213,8 +214,8 @@ export async function generateSpeakBackAudio(
 }
 
 /**
- * Convert audio to text using speech-to-text service with retry logic
- * This can be integrated with various STT APIs
+ * Convert audio to text using Groq's Whisper API with retry logic
+ * Uses whisper-large-v3-turbo for optimal speed and cost-effectiveness
  * 
  * @param audioUri - URI of the audio file to transcribe
  * @param maxRetries - Maximum number of retry attempts (default: 3)
@@ -227,13 +228,81 @@ export async function convertAudioToText(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🎵 STT Attempt ${attempt}/${maxRetries}`);
+      console.log(`🎵 STT Attempt ${attempt}/${maxRetries} using Groq Whisper-Turbo`);
 
-      // Fast STT via OpenAI Whisper if API key is provided (works on web and native)
-      const apiKey = (process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY) as string | undefined;
+      // Try Groq Whisper API first (faster and cheaper)
+      // Use same pattern as geminiAPI.ts for accessing env variables
+      const groqApiKey = Constants.expoConfig?.extra?.groqApiKey || 
+                         process.env.EXPO_PUBLIC_WISPHERE_API_KEY || 
+                         process.env.EXPO_PUBLIC_GROQ_API_KEY;
+      
+      console.log('🔑 DEBUG: Checking Groq API key...');
+      console.log('🔑 Constants.expoConfig exists:', !!Constants.expoConfig);
+      console.log('🔑 Constants.expoConfig?.extra:', Constants.expoConfig?.extra ? Object.keys(Constants.expoConfig.extra) : 'undefined');
+      console.log('🔑 Constants.expoConfig?.extra?.groqApiKey:', Constants.expoConfig?.extra?.groqApiKey ? `${String(Constants.expoConfig.extra.groqApiKey).substring(0, 10)}...` : 'undefined');
+      console.log('🔑 EXPO_PUBLIC_WISPHERE_API_KEY exists:', !!process.env.EXPO_PUBLIC_WISPHERE_API_KEY);
+      console.log('🔑 EXPO_PUBLIC_GROQ_API_KEY exists:', !!process.env.EXPO_PUBLIC_GROQ_API_KEY);
+      console.log('🔑 groqApiKey value:', groqApiKey ? `${groqApiKey.substring(0, 10)}...` : 'undefined');
 
-      if (apiKey) {
+      if (groqApiKey) {
         // Fetch audio as Blob/File across platforms
+        const response = await fetch(audioUri);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recorded audio: ${response.status}`);
+        }
+        const audioBlob = await response.blob();
+
+        const form = new FormData();
+        const fileName = `speech_${Date.now()}.webm`;
+        form.append('file', (Platform.OS === 'web'
+          ? new File([audioBlob], fileName, { type: audioBlob.type || 'audio/webm' })
+          : ({ uri: audioUri, name: fileName, type: 'audio/webm' } as any)) as any);
+        
+        // Use whisper-large-v3-turbo for optimal speed (216x realtime) and cost ($0.04/hr)
+        // Trade-off: 1.7% accuracy difference (12% vs 10.3% WER) is acceptable for fashion conversations
+        form.append('model', 'whisper-large-v3-turbo');
+        form.append('response_format', 'json');
+        form.append('language', 'en'); // Optimize for English
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000); // Faster timeout for turbo
+        
+        try {
+          const sttResp = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${groqApiKey}`,
+            },
+            body: form,
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+
+          if (!sttResp.ok) {
+            const errText = await sttResp.text().catch(() => '');
+            throw new Error(`Groq STT failed: ${sttResp.status} ${sttResp.statusText} ${errText}`);
+          }
+          
+          const data = await sttResp.json();
+          const text: string = data.text || '';
+          
+          if (text.trim().length === 0) {
+            throw new Error('Empty transcription');
+          }
+          
+          console.log(`✅ Groq Whisper-Turbo STT Success on attempt ${attempt}`);
+          return text;
+        } catch (fetchError) {
+          clearTimeout(timeout);
+          throw fetchError;
+        }
+      }
+
+      // Fallback to OpenAI Whisper if Groq key not available
+      const openaiApiKey = (process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY) as string | undefined;
+      
+      if (openaiApiKey) {
+        console.log(`⚠️ Falling back to OpenAI Whisper...`);
         const response = await fetch(audioUri);
         if (!response.ok) {
           throw new Error(`Failed to fetch recorded audio: ${response.status}`);
@@ -255,7 +324,7 @@ export async function convertAudioToText(
           const sttResp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${apiKey}`,
+              Authorization: `Bearer ${openaiApiKey}`,
             },
             body: form,
             signal: controller.signal,
@@ -264,7 +333,7 @@ export async function convertAudioToText(
 
           if (!sttResp.ok) {
             const errText = await sttResp.text().catch(() => '');
-            throw new Error(`STT failed: ${sttResp.status} ${sttResp.statusText} ${errText}`);
+            throw new Error(`OpenAI STT failed: ${sttResp.status} ${sttResp.statusText} ${errText}`);
           }
           
           const data = await sttResp.json();
@@ -274,7 +343,7 @@ export async function convertAudioToText(
             throw new Error('Empty transcription');
           }
           
-          console.log(`✅ STT Success on attempt ${attempt}`);
+          console.log(`✅ OpenAI Whisper STT Success on attempt ${attempt}`);
           return text;
         } catch (fetchError) {
           clearTimeout(timeout);
@@ -282,15 +351,16 @@ export async function convertAudioToText(
         }
       }
 
-      // Fallback behavior without API key
-      if (Platform.OS === 'web') {
-        // Defer to on-device recognition where available (handled by startListening);
-        // here, for recorded audio on web, return a short prompt fallback.
-        return 'Please analyze my outfit and suggest improvements.';
-      }
-
-      // Native fallback
-      return 'Please describe my outfit and give styling advice.';
+      // Fallback behavior without any API key
+      console.error('❌ CRITICAL: No STT API key configured!');
+      console.error('❌ Please add EXPO_PUBLIC_WISPHERE_API_KEY to your .env file');
+      console.error('❌ Get a free key from: https://console.groq.com/keys');
+      
+      throw new Error(
+        'Speech-to-Text API key not configured. ' +
+        'Please add EXPO_PUBLIC_WISPHERE_API_KEY to your .env file and restart the app. ' +
+        'Get a free API key from: https://console.groq.com/keys'
+      );
 
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));

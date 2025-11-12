@@ -26,17 +26,23 @@ AIStylist/
 ├── types/
 │   └── index.ts                   # TypeScript type definitions
 ├── index.ts                       # Main module exports
-└── README.md                       # This file
+├── README.md                       # This file
+├── GROQ_WHISPER_INTEGRATION.md    # Whisper STT integration guide
+└── STT_QUICK_START.md             # Quick setup guide for speech-to-text
 ```
 
 ## ✨ Features
 
 ### 1. **Voice-Activated Conversational AI**
 
-- Real-time speech-to-text using expo-speech and @react-native-voice/voice
+- **Ultra-fast speech-to-text** using Groq's Whisper API (whisper-large-v3-turbo)
+  - 216x realtime speed for instant transcription
+  - $0.04/hour cost-effective processing
+  - 12% WER (Word Error Rate) - excellent for fashion queries
 - Natural language understanding for fashion queries
 - Text-to-speech responses for hands-free operation
 - Continuous conversation with context awareness
+- Fallback to device speech recognition when offline
 
 ### 2. **Image Analysis**
 
@@ -108,9 +114,17 @@ import type {
 ### Environment Variables
 
 ```env
+# Groq API for Speech-to-Text (Whisper)
+EXPO_PUBLIC_WISPHERE_API_KEY=your_groq_api_key
+
+# Supabase for data storage
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+**Get Groq API Key:** [https://console.groq.com/keys](https://console.groq.com/keys)
+
+See [STT_QUICK_START.md](./STT_QUICK_START.md) for quick setup or [GROQ_WHISPER_INTEGRATION.md](./GROQ_WHISPER_INTEGRATION.md) for full documentation.
 
 ### Dependencies
 
