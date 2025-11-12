@@ -25,6 +25,15 @@ describe('PaymentRequestCard', () => {
   const mockOnPress = jest.fn();
 
   beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 

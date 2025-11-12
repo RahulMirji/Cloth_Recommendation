@@ -64,25 +64,33 @@ const generateSearchUrls = (
 };
 
 /**
- * Generate intelligent product recommendations
+ * Generate product recommendations based on missing items
  * Enhanced with gender detection and context-aware filtering
  * 
  * @param missingItems - Array of missing items detected from outfit analysis
  * @param context - Context/occasion for the outfit
  * @param analysisText - Full AI analysis text for gender detection
  * @param improvements - Improvement suggestions from AI
+ * @param aiGender - Optional gender detected by vision model (preferred over keyword detection)
  */
 export const generateProductRecommendations = async (
   missingItems: MissingItem[],
   context: string = '',
   analysisText: string = '',
-  improvements: string[] = []
+  improvements: string[] = [],
+  aiGender?: 'male' | 'female' | 'unisex'
 ): Promise<Map<string, ProductRecommendation[]>> => {
   const recommendations = new Map<string, ProductRecommendation[]>();
 
   // ===== STEP 1: DETECT GENDER =====
-  const genderDetection = detectGenderFromAnalysis(analysisText, improvements, context);
-  const { gender } = genderDetection;
+  // Prefer vision model gender detection (direct visual analysis)
+  // Fallback to keyword detection if not provided (backward compatibility)
+  const gender = aiGender || detectGenderFromAnalysis(analysisText, improvements, context).gender;
+  
+  console.log('🎯 Gender Detection for Recommendations:');
+  console.log('   Source:', aiGender ? 'Vision Model (Direct)' : 'Keyword Detection (Fallback)');
+  console.log('   Detected Gender:', gender.toUpperCase());
+  console.log('');
 
   // ===== STEP 2: ANALYZE OCCASION =====
   const occasionAnalysis = analyzeOccasion(context);
@@ -475,19 +483,27 @@ export const generateProductRecommendations = async (
  * @param improvements - Array of improvement suggestions from AI
  * @param context - Context/occasion for the outfit
  * @param analysisText - Full AI analysis text for gender detection (optional)
+ * @param aiGender - Optional gender detected by vision model (preferred over keyword detection)
  */
 export const extractMissingItems = (
   improvements: string[],
   context: string = '',
-  analysisText: string = ''
+  analysisText: string = '',
+  aiGender?: 'male' | 'female' | 'unisex'
 ): MissingItem[] => {
   const missingItems: MissingItem[] = [];
   const detectedTypes = new Set<string>(); // Prevent duplicates
   
   // ===== DETECT GENDER FROM ANALYSIS =====
+  // Prefer vision model gender detection (direct visual analysis)
+  // Fallback to keyword detection if not provided (backward compatibility)
   const allAnalysisText = `${analysisText} ${improvements.join(' ')}`;
-  const genderDetection = detectGenderFromAnalysis(allAnalysisText, improvements, context);
-  const { gender } = genderDetection;
+  const gender = aiGender || detectGenderFromAnalysis(allAnalysisText, improvements, context).gender;
+  
+  console.log('🔍 Gender Detection for Item Extraction:');
+  console.log('   Source:', aiGender ? 'Vision Model (Direct)' : 'Keyword Detection (Fallback)');
+  console.log('   Detected Gender:', gender.toUpperCase());
+  console.log('');
   
   // ===== ANALYZE OCCASION =====
   const occasionAnalysis = analyzeOccasion(context);
