@@ -32,9 +32,13 @@ import { getGeminiLiveHTMLSimple } from '@/AIStylist/utils/geminiLiveHTMLSimple'
 export default function GeminiLiveScreen() {
   const insets = useSafeAreaInsets();
 
+  console.log('🎨 GeminiLiveScreen rendered');
+  console.log('📱 Platform:', Platform.OS);
+
   // Use WebView for mobile platforms
   if (Platform.OS !== 'web') {
     const apiKey = Constants.expoConfig?.extra?.geminiApiKey || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+    console.log('🔑 API Key present:', !!apiKey);
     
     if (!apiKey) {
       return (

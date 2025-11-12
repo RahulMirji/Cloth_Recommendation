@@ -1148,7 +1148,16 @@ Keep responses conversational and natural, as if you're talking to them in perso
               {!isConversationActive && (
                 <TouchableOpacity
                   style={styles.geminiLiveButton}
-                  onPress={() => router.push('/gemini-live')}
+                  onPress={() => {
+                    console.log('🚀 Gemini Live button pressed');
+                    try {
+                      router.push('/gemini-live');
+                      console.log('✅ Navigation initiated');
+                    } catch (error) {
+                      console.error('❌ Navigation error:', error);
+                      showCustomAlert('error', 'Navigation Error', 'Failed to open Gemini Live. Please try again.');
+                    }
+                  }}
                 >
                   <Text style={styles.geminiLiveButtonText}>🚀 Try Gemini Live</Text>
                 </TouchableOpacity>
