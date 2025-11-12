@@ -112,6 +112,12 @@ export const generateTryOnImage = async (
             ],
           },
         ],
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 1,
+          maxOutputTokens: 4096,
+        },
       },
       {
         headers: {
@@ -122,6 +128,9 @@ export const generateTryOnImage = async (
     );
 
     console.log('📥 Response received from Gemini API');
+    
+    // Log the full response for debugging
+    console.log('🔍 Full response:', JSON.stringify(response.data, null, 2));
     
     // Extract the generated image from response
     const candidates = response.data.candidates;
