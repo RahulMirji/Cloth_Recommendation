@@ -98,13 +98,13 @@ router.push('/gemini-live');
 
 ## Platform Support
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| Web | ✅ Full Support | All features available |
-| iOS | ⚠️ Not Supported | Gemini Live API requires web |
-| Android | ⚠️ Not Supported | Gemini Live API requires web |
+| Platform | Status | Implementation | Notes |
+|----------|--------|----------------|-------|
+| Web | ✅ Full Support | Direct API | Native integration, lowest latency |
+| iOS | ✅ Full Support | WebView | Embedded browser, seamless experience |
+| Android | ✅ Full Support | WebView | Embedded browser, seamless experience |
 
-Mobile users will see a helpful message directing them to use the web version.
+All platforms now support Gemini Live! Mobile uses an embedded WebView for a native-like experience.
 
 ## Key Features
 
@@ -135,7 +135,7 @@ Mobile users will see a helpful message directing them to use the web version.
 ### Audio Processing
 - **Input**: 16kHz PCM, 4096 sample buffer
 - **Output**: 24kHz PCM with seamless playback
-- **Latency**: ~500ms end-to-end
+- **Latency**: ~500ms (web), ~800ms (mobile)
 
 ### Video Processing
 - **Frame Rate**: 2 FPS
@@ -148,6 +148,14 @@ Mobile users will see a helpful message directing them to use the web version.
 - Proper resource disposal
 - Error recovery
 - Interruption handling
+
+### Mobile Implementation (WebView)
+- **Technology**: react-native-webview
+- **HTML**: Self-contained embedded page
+- **Communication**: Bidirectional messaging
+- **Permissions**: Automatic camera/mic handling
+- **UI**: Native header with embedded web content
+- **Experience**: Seamless, feels like native app
 
 ## Testing Checklist
 
@@ -164,14 +172,14 @@ Mobile users will see a helpful message directing them to use the web version.
 
 ## Comparison: Standard vs Gemini Live
 
-| Feature | Standard Mode | Gemini Live |
-|---------|--------------|-------------|
-| Interaction | Hold-to-speak | Continuous |
-| Video | Single frame | Real-time stream |
-| Audio | Recorded chunks | Live streaming |
-| Latency | ~2-3 seconds | ~500ms |
-| Platform | Mobile + Web | Web only |
-| Best For | Detailed analysis | Quick feedback |
+| Feature | Standard Mode | Gemini Live (Web) | Gemini Live (Mobile) |
+|---------|--------------|-------------------|---------------------|
+| Interaction | Hold-to-speak | Continuous | Continuous |
+| Video | Single frame | Real-time stream | Real-time stream |
+| Audio | Recorded chunks | Live streaming | Live streaming |
+| Latency | ~2-3 seconds | ~500ms | ~800ms |
+| Platform | Mobile + Web | Web | Mobile (WebView) |
+| Best For | Detailed analysis | Quick feedback | Quick feedback |
 
 ## Next Steps
 
@@ -199,10 +207,11 @@ Mobile users will see a helpful message directing them to use the web version.
 - Grant camera/microphone in browser settings
 - Ensure using HTTPS (required for media access)
 
-### "Web only feature" message
-- This is expected on mobile
-- Use web browser instead
-- Or use standard AI Stylist mode on mobile
+### WebView not loading (Mobile)
+- Check internet connection
+- Ensure device has updated WebView
+- Try restarting the app
+- Check API key is configured correctly
 
 ### No video showing
 - Check camera permissions

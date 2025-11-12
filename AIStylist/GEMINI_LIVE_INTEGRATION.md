@@ -111,15 +111,19 @@ export const GEMINI_LIVE_CONFIG = {
 
 ## Platform Support
 
-### Web (Full Support) ✅
-- All features available
+### Web (Native Support) ✅
+- Direct Gemini Live API integration
 - Uses Web Audio API and MediaStream API
 - Requires HTTPS for microphone/camera access
+- Lowest latency and best performance
 
-### Mobile (Not Supported) ⚠️
-- Gemini Live API requires web platform
-- Mobile users should use standard AI Stylist mode
-- Shows helpful message directing to web version
+### Mobile (WebView Support) ✅
+- Embedded browser with full Gemini Live functionality
+- Uses react-native-webview for seamless experience
+- Same features as web version
+- Native-like UI with custom header
+- Automatic permission handling
+- Slightly higher latency due to WebView overhead
 
 ## Technical Details
 
@@ -180,15 +184,15 @@ interface GeminiLiveCallbacks {
 
 2. **Permission Denied**
    - Error: "Camera and microphone access denied"
-   - Solution: Grant permissions in browser settings
+   - Solution: Grant permissions in browser/app settings
 
 3. **Connection Failed**
    - Error: "Failed to connect"
    - Solution: Check internet connection and API key validity
 
-4. **Platform Not Supported**
-   - Error: "Web only feature"
-   - Solution: Use web browser instead of mobile app
+4. **WebView Loading Issues (Mobile)**
+   - Error: "Failed to load Gemini Live"
+   - Solution: Check internet connection, ensure WebView is up to date
 
 ## Performance Optimization
 
@@ -210,15 +214,16 @@ interface GeminiLiveCallbacks {
 
 ## Comparison with Standard Mode
 
-| Feature | Standard Mode | Gemini Live Mode |
-|---------|--------------|------------------|
-| Platform | Mobile + Web | Web Only |
-| Interaction | Hold-to-speak | Continuous conversation |
-| Video | Single frame capture | Real-time streaming |
-| Audio | Recorded chunks | Live streaming |
-| Latency | ~2-3 seconds | ~500ms |
-| Transcription | Post-processing | Real-time |
-| Use Case | Detailed analysis | Quick feedback |
+| Feature | Standard Mode | Gemini Live Mode (Web) | Gemini Live Mode (Mobile) |
+|---------|--------------|----------------------|--------------------------|
+| Platform | Mobile + Web | Web | Mobile (WebView) |
+| Interaction | Hold-to-speak | Continuous conversation | Continuous conversation |
+| Video | Single frame capture | Real-time streaming | Real-time streaming |
+| Audio | Recorded chunks | Live streaming | Live streaming |
+| Latency | ~2-3 seconds | ~500ms | ~800ms |
+| Transcription | Post-processing | Real-time | Real-time |
+| Use Case | Detailed analysis | Quick feedback | Quick feedback |
+| Implementation | Native | Direct API | Embedded browser |
 
 ## Future Enhancements
 
