@@ -116,6 +116,8 @@ jest.mock('lucide-react-native', () => ({
   CheckCircle: 'CheckCircle',
   XCircle: 'XCircle',
   AlertCircle: 'AlertCircle',
+  Scan: 'Scan',
+  ChevronLeft: 'ChevronLeft',
 }));
 
 // Mock modularized components (now in feature modules)
