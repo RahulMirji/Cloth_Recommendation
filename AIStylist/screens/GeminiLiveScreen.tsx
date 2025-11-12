@@ -27,6 +27,31 @@ import Colors from '@/constants/colors';
 import { GeminiLiveManager, GeminiLiveSession } from '@/AIStylist/utils/geminiLiveAPI';
 
 export default function GeminiLiveScreen() {
+  const insets = useSafeAreaInsets();
+
+  // Early return for non-web platforms
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>⚠️ Web Only Feature</Text>
+          <Text style={styles.errorMessage}>
+            Gemini Live mode requires web platform features that are not available on mobile.
+          </Text>
+          <Text style={styles.errorMessage}>
+            Please use the standard AI Stylist mode on mobile, or access this feature from a web browser.
+          </Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   const [facing, setFacing] = useState<CameraType>('front');
   const [permission, requestPermission] = useCameraPermissions();
   const [session, setSession] = useState<GeminiLiveSession>({
@@ -41,7 +66,6 @@ export default function GeminiLiveScreen() {
   const cameraRef = useRef<CameraView>(null);
   const liveManagerRef = useRef<GeminiLiveManager | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const insets = useSafeAreaInsets();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -404,18 +428,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorContainer: {
-    position: 'absolute',
-    top: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
-    padding: 16,
-    borderRadius: 12,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#000',
+  },
+  errorTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fbbf24',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#ccc',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   errorText: {
     color: '#fff',
     fontSize: 14,
     textAlign: 'center',
+  },
+  backButton: {
+    marginTop: 24,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   permissionText: {
     fontSize: 18,
