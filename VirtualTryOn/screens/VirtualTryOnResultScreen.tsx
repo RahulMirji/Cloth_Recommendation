@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
+import { Paths } from 'expo-file-system/next';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { ChevronLeft, Download, Share2, RefreshCw } from 'lucide-react-native';
@@ -39,7 +40,7 @@ export default function VirtualTryOnResultScreen() {
 
       // Download image
       const filename = `tryon_${Date.now()}.png`;
-      const downloadPath = `${FileSystem.documentDirectory}${filename}`;
+      const downloadPath = `${Paths.document?.uri || Paths.cache?.uri}/${filename}`;
       
       const downloadResult = await FileSystem.downloadAsync(imageUrl, downloadPath);
 
@@ -64,7 +65,7 @@ export default function VirtualTryOnResultScreen() {
 
       // Download image first
       const filename = `tryon_${Date.now()}.png`;
-      const downloadPath = `${FileSystem.documentDirectory}${filename}`;
+      const downloadPath = `${Paths.document?.uri || Paths.cache?.uri}/${filename}`;
       
       await FileSystem.downloadAsync(imageUrl, downloadPath);
 
