@@ -90,8 +90,13 @@ export default function GeminiLiveScreen() {
           startInLoadingState={true}
           mixedContentMode="always"
           allowsProtectedMedia={true}
+          injectedJavaScriptBeforeContentLoaded={`
+            console.log('🔥 Injected JavaScript BEFORE content loaded!');
+            window.isReactNativeWebView = true;
+            true;
+          `}
           injectedJavaScript={`
-            console.log('🔥 Injected JavaScript is running!');
+            console.log('🔥 Injected JavaScript AFTER content loaded!');
             window.ReactNativeWebView.postMessage(JSON.stringify({
               type: 'injected',
               message: 'Injected JS executed successfully'

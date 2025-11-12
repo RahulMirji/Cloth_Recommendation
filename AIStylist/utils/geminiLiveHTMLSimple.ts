@@ -108,23 +108,33 @@ export const getGeminiLiveHTMLSimple = (apiKey: string) => `
         </div>
     </div>
     <script>
-        // Immediate logging to verify script is running
-        console.log('🚀 Script started!');
-        console.log('📱 Window loaded');
-        
-        const API_KEY = '${apiKey}';
-        console.log('🔑 API Key loaded:', API_KEY ? 'YES' : 'NO');
+        (function() {
+            // Immediate logging to verify script is running
+            console.log('🚀 Script started!');
+            
+            const API_KEY = '${apiKey}';
+            console.log('🔑 API Key loaded:', API_KEY ? 'YES' : 'NO');
 
-        // Send ready message to React Native
-        if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ 
-                type: 'ready',
-                message: 'WebView JavaScript is running'
-            }));
-            console.log('📨 Sent ready message to React Native');
-        } else {
-            console.log('⚠️ ReactNativeWebView not available');
-        }
+            // Send ready message to React Native
+            function sendReady() {
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                        type: 'ready',
+                        message: 'WebView JavaScript is running'
+                    }));
+                    console.log('📨 Sent ready message to React Native');
+                } else {
+                    console.log('⚠️ ReactNativeWebView not available');
+                }
+            }
+
+            // Try to send immediately
+            sendReady();
+
+            // Also try after DOM loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', sendReady);
+            }
 
         function showError(msg) {
             console.error('Error:', msg);
@@ -239,10 +249,11 @@ export const getGeminiLiveHTMLSimple = (apiKey: string) => `
             }
         }
 
-        // Log environment info
-        console.log('User Agent:', navigator.userAgent);
-        console.log('Platform:', navigator.platform);
-        console.log('API Key present:', !!API_KEY);
+            // Log environment info
+            console.log('User Agent:', navigator.userAgent);
+            console.log('Platform:', navigator.platform);
+            console.log('API Key present:', !!API_KEY);
+        })();
     </script>
 </body>
 </html>
