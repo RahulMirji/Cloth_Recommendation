@@ -27,7 +27,7 @@ import Constants from 'expo-constants';
 
 import Colors from '@/constants/colors';
 import { GeminiLiveManager, GeminiLiveSession } from '@/AIStylist/utils/geminiLiveAPI';
-import { getGeminiLiveHTML } from '@/AIStylist/utils/geminiLiveHTML';
+import { getGeminiLiveHTMLSimple } from '@/AIStylist/utils/geminiLiveHTMLSimple';
 
 export default function GeminiLiveScreen() {
   const insets = useSafeAreaInsets();
@@ -55,7 +55,7 @@ export default function GeminiLiveScreen() {
       );
     }
 
-    const html = getGeminiLiveHTML(apiKey);
+    const html = getGeminiLiveHTMLSimple(apiKey);
 
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -78,6 +78,8 @@ export default function GeminiLiveScreen() {
           javaScriptEnabled={true}
           domStorageEnabled={true}
           startInLoadingState={true}
+          mixedContentMode="always"
+          allowsProtectedMedia={true}
           renderLoading={() => (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={Colors.primary} />
@@ -87,8 +89,11 @@ export default function GeminiLiveScreen() {
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
+              console.log('WebView message:', data);
               if (data.type === 'close') {
                 router.back();
+              } else if (data.type === 'error') {
+                Alert.alert('Error', data.message);
               }
             } catch (e) {
               console.log('WebView message error:', e);
@@ -96,8 +101,11 @@ export default function GeminiLiveScreen() {
           }}
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
-            console.warn('WebView error: ', nativeEvent);
+            console.error('WebView error: ', nativeEvent);
             Alert.alert('Error', 'Failed to load Gemini Live. Please check your internet connection and try again.');
+          }}
+          onConsoleMessage={(event: any) => {
+            console.log('WebView Console:', event.nativeEvent.message);
           }}
         />
       </View>

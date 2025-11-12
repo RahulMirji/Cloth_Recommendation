@@ -205,10 +205,16 @@ export const getGeminiLiveHTML = (apiKey: string) => `
 
         window.startSession = async function() {
             try {
+                console.log('Starting session...');
                 document.getElementById('overlay').innerHTML = '<div class="connecting"><div class="spinner"></div><p>Connecting...</p></div>';
+                
+                // Request permissions first
+                console.log('Requesting media permissions...');
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
+                console.log('Media stream obtained');
                 document.getElementById('camera-view').srcObject = mediaStream;
 
+                console.log('Creating audio contexts...');
                 inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: CONFIG.INPUT_SAMPLE_RATE });
                 outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: CONFIG.OUTPUT_SAMPLE_RATE });
                 const outputNode = outputAudioContext.createGain();
@@ -216,7 +222,21 @@ export const getGeminiLiveHTML = (apiKey: string) => `
 
                 let currentInputTranscription = '', currentOutputTranscription = '';
 
-                const { GoogleGenAI, Modality } = await import('https://esm.run/@google/genai');
+                console.log('Loading Gemini SDK...');
+                // Try multiple CDN sources
+                let GoogleGenAI, Modality;
+                try {
+                    const module = await import('https://esm.run/@google/genai@1.29.0');
+                    GoogleGenAI = module.GoogleGenAI;
+                    Modality = module.Modality;
+                } catch (e) {
+                    console.error('Failed to load from esm.run, trying unpkg...', e);
+                    const module = await import('https://unpkg.com/@google/genai@1.29.0/dist/index.mjs');
+                    GoogleGenAI = module.GoogleGenAI;
+                    Modality = module.Modality;
+                }
+                
+                console.log('Gemini SDK loaded, creating AI instance...');
                 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
                 session = await ai.live.connect({
@@ -256,8 +276,19 @@ export const getGeminiLiveHTML = (apiKey: string) => `
                     },
                 });
             } catch (error) {
-                showError(error.message);
+                console.error('Session start error:', error);
+                const errorMsg = error.message || 'Failed to start session';
+                showError(errorMsg);
                 document.getElementById('overlay').classList.remove('hidden');
+                
+                // Send error to React Native
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                        type: 'error', 
+                        message: errorMsg,
+                        stack: error.stack 
+                    }));
+                }
             }
         };
 
