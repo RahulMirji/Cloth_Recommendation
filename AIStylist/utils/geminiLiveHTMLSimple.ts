@@ -12,16 +12,32 @@ export const getGeminiLiveHTMLSimple = (apiKey: string) => `
     <title>Gemini Live Stylist</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
+            background: #1a1a1a;
             color: #fff;
             overflow: hidden;
-            height: 100vh;
-            width: 100vw;
         }
-        #app { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
-        #video-container { flex: 1; position: relative; background: #000; }
+        #app { 
+            width: 100%; 
+            height: 100%; 
+            min-height: 100vh;
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+        }
+        #video-container { 
+            flex: 1; 
+            position: relative; 
+            background: #000;
+            min-height: 400px;
+        }
         #camera-view { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         #overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -68,6 +84,9 @@ export const getGeminiLiveHTMLSimple = (apiKey: string) => `
         <div id="video-container">
             <video id="camera-view" autoplay playsinline muted></video>
             <div id="overlay">
+                <div style="background: red; padding: 10px; margin-bottom: 20px; border-radius: 8px;">
+                    <p style="color: white; font-weight: bold;">🔴 TEST: If you see this, HTML is rendering!</p>
+                </div>
                 <h1 class="title">🎨 AI Stylist Live</h1>
                 <p class="subtitle">
                     This feature requires the Gemini Live API which works best on web browsers.
@@ -89,7 +108,23 @@ export const getGeminiLiveHTMLSimple = (apiKey: string) => `
         </div>
     </div>
     <script>
+        // Immediate logging to verify script is running
+        console.log('🚀 Script started!');
+        console.log('📱 Window loaded');
+        
         const API_KEY = '${apiKey}';
+        console.log('🔑 API Key loaded:', API_KEY ? 'YES' : 'NO');
+
+        // Send ready message to React Native
+        if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                type: 'ready',
+                message: 'WebView JavaScript is running'
+            }));
+            console.log('📨 Sent ready message to React Native');
+        } else {
+            console.log('⚠️ ReactNativeWebView not available');
+        }
 
         function showError(msg) {
             console.error('Error:', msg);

@@ -105,7 +105,9 @@ export default function GeminiLiveScreen() {
             try {
               const data = JSON.parse(event.nativeEvent.data);
               console.log('📨 WebView message:', data);
-              if (data.type === 'close') {
+              if (data.type === 'ready') {
+                console.log('✅ WebView JavaScript is ready!');
+              } else if (data.type === 'close') {
                 console.log('🚪 Closing WebView');
                 router.back();
               } else if (data.type === 'error') {
@@ -114,6 +116,7 @@ export default function GeminiLiveScreen() {
               }
             } catch (e) {
               console.log('⚠️ WebView message parse error:', e);
+              console.log('Raw message:', event.nativeEvent.data);
             }
           }}
           onError={(syntheticEvent) => {
