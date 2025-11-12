@@ -7,7 +7,7 @@
 // Gemini API Configuration
 export const GEMINI_API_CONFIG = {
   ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent',
-  API_KEY: 'AIzaSyCKoT-NcXhlNskt86_8YV4s_Vf1sJV-Mxs',
+  API_KEY: 'AIzaSyBn95JdMkr42nZlXPsCEFwT8pXQEpzZop4',
   TIMEOUT: 60000, // 60 seconds timeout
 } as const;
 
