@@ -79,8 +79,9 @@ export default function GeminiLiveScreen() {
           <View style={{ width: 44 }} />
         </View>
         <WebView
-          source={{ html }}
+          source={{ html, baseUrl: 'about:blank' }}
           style={styles.webView}
+          originWhitelist={['*']}
           mediaPlaybackRequiresUserAction={false}
           allowsInlineMediaPlayback={true}
           mediaCapturePermissionGrantType="grant"
@@ -89,6 +90,14 @@ export default function GeminiLiveScreen() {
           startInLoadingState={true}
           mixedContentMode="always"
           allowsProtectedMedia={true}
+          injectedJavaScript={`
+            console.log('🔥 Injected JavaScript is running!');
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'injected',
+              message: 'Injected JS executed successfully'
+            }));
+            true;
+          `}
           renderLoading={() => {
             console.log('⏳ WebView loading...');
             return (
@@ -104,8 +113,10 @@ export default function GeminiLiveScreen() {
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
-              console.log('📨 WebView message:', data);
-              if (data.type === 'ready') {
+              console.log('📨 WebView message:', JSON.stringify(data));
+              if (data.type === 'injected') {
+                console.log('🔥 Injected JavaScript confirmed working!');
+              } else if (data.type === 'ready') {
                 console.log('✅ WebView JavaScript is ready!');
               } else if (data.type === 'close') {
                 console.log('🚪 Closing WebView');
@@ -116,7 +127,7 @@ export default function GeminiLiveScreen() {
               }
             } catch (e) {
               console.log('⚠️ WebView message parse error:', e);
-              console.log('Raw message:', event.nativeEvent.data);
+              console.log('📄 Raw message:', event.nativeEvent.data);
             }
           }}
           onError={(syntheticEvent) => {
