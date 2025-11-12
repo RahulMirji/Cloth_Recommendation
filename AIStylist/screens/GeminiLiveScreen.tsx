@@ -93,7 +93,18 @@ export default function GeminiLiveScreen() {
           startInLoadingState={true}
           mixedContentMode="always"
           allowsProtectedMedia={true}
-          injectedJavaScript={script}
+          injectedJavaScript={`
+            console.log('🔥 TEST: Injected JS is running!');
+            try {
+              ${script}
+            } catch (error) {
+              console.error('❌ Script error:', error);
+              window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'error',
+                message: 'Script execution error: ' + error.message
+              }));
+            }
+          `}
           renderLoading={() => {
             console.log('⏳ WebView loading...');
             return (
