@@ -60,13 +60,18 @@ export default function GeminiLiveScreen() {
     }
 
     const html = getGeminiLiveHTMLSimple(apiKey);
+    console.log('📄 HTML length:', html.length);
+    console.log('📄 HTML preview:', html.substring(0, 100));
 
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.webViewHeader}>
           <TouchableOpacity
             style={styles.closeButtonMobile}
-            onPress={() => router.back()}
+            onPress={() => {
+              console.log('❌ Close button pressed');
+              router.back();
+            }}
           >
             <X size={24} color="#fff" />
           </TouchableOpacity>
@@ -84,32 +89,40 @@ export default function GeminiLiveScreen() {
           startInLoadingState={true}
           mixedContentMode="always"
           allowsProtectedMedia={true}
-          renderLoading={() => (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={styles.loadingText}>Loading Gemini Live...</Text>
-            </View>
-          )}
+          renderLoading={() => {
+            console.log('⏳ WebView loading...');
+            return (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={styles.loadingText}>Loading Gemini Live...</Text>
+              </View>
+            );
+          }}
+          onLoadStart={() => console.log('🔄 WebView load started')}
+          onLoadEnd={() => console.log('✅ WebView load ended')}
+          onLoad={() => console.log('📱 WebView loaded')}
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
-              console.log('WebView message:', data);
+              console.log('📨 WebView message:', data);
               if (data.type === 'close') {
+                console.log('🚪 Closing WebView');
                 router.back();
               } else if (data.type === 'error') {
+                console.log('❌ WebView error:', data.message);
                 Alert.alert('Error', data.message);
               }
             } catch (e) {
-              console.log('WebView message error:', e);
+              console.log('⚠️ WebView message parse error:', e);
             }
           }}
           onError={(syntheticEvent) => {
             const { nativeEvent } = syntheticEvent;
-            console.error('WebView error: ', nativeEvent);
+            console.error('❌ WebView error:', nativeEvent);
             Alert.alert('Error', 'Failed to load Gemini Live. Please check your internet connection and try again.');
           }}
           onConsoleMessage={(event: any) => {
-            console.log('WebView Console:', event.nativeEvent.message);
+            console.log('🌐 WebView Console:', event.nativeEvent.message);
           }}
         />
       </View>
