@@ -1,29 +1,3 @@
-
-allprojects {
-    configurations.all {
-        resolutionStrategy {
-            // Force AndroidX libraries
-            force 'androidx.core:core:1.16.0'
-            force 'androidx.versionedparcelable:versionedparcelable:1.1.1'
-            
-            // Exclude old Android Support libraries completely
-            eachDependency { details ->
-                if (details.requested.group == 'com.android.support') {
-                    // Replace old support library with AndroidX equivalent
-                    if (details.requested.name == 'support-compat') {
-                        details.useTarget 'androidx.core:core:1.16.0'
-                    } else if (details.requested.name == 'versionedparcelable') {
-                        details.useTarget 'androidx.versionedparcelable:versionedparcelable:1.1.1'
-                    } else {
-                        // Exclude other support libraries
-                        details.useVersion('excluded')
-                    }
-                }
-            }
-        }
-    }
-}
-
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
