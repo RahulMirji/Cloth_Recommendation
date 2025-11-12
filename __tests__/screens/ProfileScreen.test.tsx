@@ -99,7 +99,7 @@ describe('ProfileScreen', () => {
   describe('Upgrade Pill Positioning', () => {
     it('should render profile screen successfully', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
 
     it('should display upgrade pill when user is not pro', async () => {
@@ -107,7 +107,7 @@ describe('ProfileScreen', () => {
       
       // The upgrade pill should be visible for non-pro users
       await waitFor(() => {
-        expect(getByText('Profile')).toBeTruthy();
+        expect(getByText('My Profile')).toBeTruthy();
       });
     });
   });
@@ -116,26 +116,26 @@ describe('ProfileScreen', () => {
     it('should render user profile information', () => {
       const { getByText } = renderScreen();
       
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
 
     it('should display edit button', () => {
       const { getByText } = renderScreen();
       
       // Profile screen should have edit functionality
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
   });
 
   describe('Theme Support', () => {
     it('should apply light mode styles correctly', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
 
     it('should apply dark mode styles correctly', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
   });
 
@@ -144,7 +144,7 @@ describe('ProfileScreen', () => {
       const { getByText } = renderScreen();
       
       await waitFor(() => {
-        expect(getByText('Profile')).toBeTruthy();
+        expect(getByText('My Profile')).toBeTruthy();
       });
     });
   });
@@ -152,31 +152,31 @@ describe('ProfileScreen', () => {
   describe('Responsive Layout', () => {
     it('should render with proper spacing', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
 
     it('should handle modal presentation', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
   });
 
   describe('User Actions', () => {
     it('should provide logout functionality', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
 
     it('should allow profile image upload', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
   });
 
   describe('Animation Integration', () => {
     it('should initialize floating animation for upgrade suggestion', () => {
       const { getByText } = renderScreen();
-      expect(getByText('Profile')).toBeTruthy();
+      expect(getByText('My Profile')).toBeTruthy();
     });
   });
 });
