@@ -1145,7 +1145,7 @@ Keep responses conversational and natural, as if you're talking to them in perso
                   <Text style={styles.statusText}>Live Chat</Text>
                 </View>
               )}
-              {!isConversationActive && Platform.OS === 'web' && (
+              {!isConversationActive && (
                 <TouchableOpacity
                   style={styles.geminiLiveButton}
                   onPress={() => router.push('/gemini-live')}
