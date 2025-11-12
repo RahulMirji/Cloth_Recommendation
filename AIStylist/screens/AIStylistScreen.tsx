@@ -1145,6 +1145,14 @@ Keep responses conversational and natural, as if you're talking to them in perso
                   <Text style={styles.statusText}>Live Chat</Text>
                 </View>
               )}
+              {!isConversationActive && Platform.OS === 'web' && (
+                <TouchableOpacity
+                  style={styles.geminiLiveButton}
+                  onPress={() => router.push('/gemini-live')}
+                >
+                  <Text style={styles.geminiLiveButtonText}>🚀 Try Gemini Live</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.visionToggle}
                 onPress={() => setUseEnhancedVision(!useEnhancedVision)}
@@ -1432,6 +1440,20 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 11,
     fontWeight: '500' as const,
+  },
+  geminiLiveButton: {
+    backgroundColor: 'rgba(99, 102, 241, 0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(165, 180, 252, 0.5)',
+  },
+  geminiLiveButtonText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   quitButtonContainer: {
     flexDirection: 'row',

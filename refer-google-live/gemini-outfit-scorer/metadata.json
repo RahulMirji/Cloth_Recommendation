@@ -1,0 +1,9 @@
+
+{
+  "name": "Gemini Outfit Scorer",
+  "description": "A live video call application that uses Gemini to get real-time feedback on your outfit. The AI acts as a friendly, professional outfit scorer to help improve your dressing sense.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
