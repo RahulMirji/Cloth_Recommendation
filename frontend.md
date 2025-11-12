@@ -1,4 +1,4 @@
-# 📱 Frontend Documentation - AI Cloth Recommendation
+# 📱 Frontend Documentation - Style GPT
 
 **Last Updated**: November 5, 2025  
 **Framework**: React Native 0.81.4 + Expo SDK 54  
@@ -143,7 +143,7 @@
 3. **Settings** (`settings.tsx`) - App preferences, profile, dark mode
 
 **Custom Header**:
-- Logo with gradient icon (Shirt icon + "AI DressUp")
+- Logo with gradient icon (Shirt icon + "Style GPT")
 - Profile button (top-right) - Opens `/profile` modal
 - Dynamic theme (light/dark mode)
 
@@ -810,11 +810,11 @@ eas submit --platform android
 ```json
 {
   "expo": {
-    "name": "AI DressUp",
+    "name": "Style GPT",
     "slug": "ai-cloth-recommendation",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "ai-dressup",
     "platforms": ["ios", "android", "web"],
     "plugins": [

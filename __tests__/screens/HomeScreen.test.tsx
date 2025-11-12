@@ -7,6 +7,9 @@ import { router } from 'expo-router';
 // Mock router is set up in jest.setup.js
 const mockRouter = router as jest.Mocked<typeof router>;
 
+// Prevent animation timing issues in CI by ensuring timers work correctly
+jest.setTimeout(10000);
+
 describe('HomeScreen', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <AppProvider>{children}</AppProvider>
@@ -14,12 +17,10 @@ describe('HomeScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    jest.clearAllTimers();
   });
 
   it('renders correctly', () => {

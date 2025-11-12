@@ -69,7 +69,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Cloth Recommendation Backend - Payment Server',
+    message: 'Style GPT Backend - Payment Server',
     status: 'running',
     timestamp: new Date().toISOString(),
     environment: NODE_ENV,

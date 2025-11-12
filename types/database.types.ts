@@ -5,7 +5,7 @@
  * These types ensure type-safety when interacting with the database.
  * 
  * Generated: October 4, 2025
- * Project: AI Cloth Recommendation
+ * Project: Style GPT
  */
 
 export type Json =

@@ -14,7 +14,7 @@
 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Sparkles, Shirt, User, Wand2, X } from 'lucide-react-native';
+import { Camera, Sparkles, Shirt, User, Wand2, X, Scan } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -149,7 +149,7 @@ export function HomeScreen() {
             </View>
             
             <Text style={[styles.guidanceTitle, isDarkMode && styles.textDark]}>
-              Welcome to AI DressUp! 👋
+              Welcome to Style GPT! 👋
             </Text>
             
             <Text style={[styles.guidanceText, isDarkMode && styles.guidanceTextDark]}>
@@ -216,21 +216,16 @@ export function HomeScreen() {
         {/* Custom Scrollable Header */}
         <View style={[styles.customHeader, isDarkMode && styles.customHeaderDark]}>
           <View style={styles.logoContainer}>
-            {/* Clothing Icon with Gradient Background and Glow */}
-            <View style={styles.logoIconContainer}>
-              <LinearGradient
-                colors={[Colors.gradient.start, Colors.gradient.end]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoIconGradient}
-              >
-                <Shirt size={22} color={Colors.white} strokeWidth={2.5} />
-              </LinearGradient>
-            </View>
+            {/* Logo Image */}
+            <Image 
+              source={require('@/assets/images/logo.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             
             {/* Plain Text without gradient background */}
             <Text style={[styles.logoText, { color: isDarkMode ? Colors.white : Colors.text }]}>
-              AI DressUp
+              Style GPT
             </Text>
           </View>
           
@@ -333,6 +328,35 @@ export function HomeScreen() {
               </Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Virtual Try-On Card - Fourth (New) */}
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => router.push('/virtual-try-on')}
+          >
+            <LinearGradient
+              colors={['#8B5CF6', '#EC4899']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardGradient}
+            >
+              {/* New Tag */}
+              <View style={styles.betaTag}>
+                <Text style={styles.betaText}>NEW</Text>
+              </View>
+              
+              <View style={styles.cardIcon}>
+                <Scan size={32} color={Colors.white} strokeWidth={2.5} />
+              </View>
+              <Text style={styles.cardTitle}>
+                Virtual Try-On
+              </Text>
+              <Text style={styles.cardDescription}>
+                See how outfits look on you with AI-powered virtual try-on
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         {/* How It Works Section */}
@@ -408,6 +432,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
+    marginRight: 12,
+    borderRadius: 8,
   },
   logoIconContainer: {
     marginRight: 12,
