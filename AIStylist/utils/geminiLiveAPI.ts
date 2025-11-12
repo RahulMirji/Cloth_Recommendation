@@ -153,6 +153,10 @@ export class GeminiLiveManager {
         sampleRate: GEMINI_LIVE_CONFIG.OUTPUT_SAMPLE_RATE,
       });
 
+      if (!this.outputAudioContext) {
+        throw new Error('Failed to create output audio context');
+      }
+
       const outputNode = this.outputAudioContext.createGain();
       outputNode.connect(this.outputAudioContext.destination);
 
