@@ -1,0 +1,3 @@
+# Protect environment files from being overwritten during merges
+.env merge=ours
+.env.local merge=ours
