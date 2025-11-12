@@ -22,32 +22,84 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Mic, MicOff, X, PhoneOff, RotateCw } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { WebView } from 'react-native-webview';
+import Constants from 'expo-constants';
 
 import Colors from '@/constants/colors';
 import { GeminiLiveManager, GeminiLiveSession } from '@/AIStylist/utils/geminiLiveAPI';
+import { getGeminiLiveHTML } from '@/AIStylist/utils/geminiLiveHTML';
 
 export default function GeminiLiveScreen() {
   const insets = useSafeAreaInsets();
 
-  // Early return for non-web platforms
+  // Use WebView for mobile platforms
   if (Platform.OS !== 'web') {
+    const apiKey = Constants.expoConfig?.extra?.geminiApiKey || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      return (
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>⚠️ Configuration Required</Text>
+            <Text style={styles.errorMessage}>
+              Gemini API key not found. Please set EXPO_PUBLIC_GEMINI_API_KEY in your .env file.
+            </Text>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backButtonText}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    const html = getGeminiLiveHTML(apiKey);
+
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>⚠️ Web Only Feature</Text>
-          <Text style={styles.errorMessage}>
-            Gemini Live mode requires web platform features that are not available on mobile.
-          </Text>
-          <Text style={styles.errorMessage}>
-            Please use the standard AI Stylist mode on mobile, or access this feature from a web browser.
-          </Text>
+        <View style={styles.webViewHeader}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={styles.closeButtonMobile}
             onPress={() => router.back()}
           >
-            <Text style={styles.backButtonText}>Go Back</Text>
+            <X size={24} color="#fff" />
           </TouchableOpacity>
+          <Text style={styles.webViewTitle}>Gemini Live Stylist</Text>
+          <View style={{ width: 44 }} />
         </View>
+        <WebView
+          source={{ html }}
+          style={styles.webView}
+          mediaPlaybackRequiresUserAction={false}
+          allowsInlineMediaPlayback={true}
+          mediaCapturePermissionGrantType="grant"
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loadingText}>Loading Gemini Live...</Text>
+            </View>
+          )}
+          onMessage={(event) => {
+            try {
+              const data = JSON.parse(event.nativeEvent.data);
+              if (data.type === 'close') {
+                router.back();
+              }
+            } catch (e) {
+              console.log('WebView message error:', e);
+            }
+          }}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView error: ', nativeEvent);
+            Alert.alert('Error', 'Failed to load Gemini Live. Please check your internet connection and try again.');
+          }}
+        />
       </View>
     );
   }
@@ -298,6 +350,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  webViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  webViewTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  closeButtonMobile: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  loadingText: {
+    marginTop: 16,
+    color: '#fff',
+    fontSize: 16,
   },
   cameraContainer: {
     flex: 1,
