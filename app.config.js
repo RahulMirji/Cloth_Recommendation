@@ -15,15 +15,15 @@ console.log('');
 
 module.exports = {
   "expo": {
-    "name": "AI Cloth Recommendation",
+    "name": "Style GPT",
     "slug": "ai-cloth-recommendation-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "aidryer",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -42,7 +42,7 @@ module.exports = {
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.rahulmirji.aiclothrecommendationapp",
@@ -55,7 +55,7 @@ module.exports = {
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
       "./plugins/withAndroidXResolution",
@@ -89,7 +89,7 @@ module.exports = {
     "experiments": {
       "typedRoutes": true
     },
-  "extra": {
+    "extra": {
       "router": {
         "origin": "https://rork.com/"
       },

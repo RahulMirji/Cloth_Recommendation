@@ -116,6 +116,8 @@ jest.mock('lucide-react-native', () => ({
   CheckCircle: 'CheckCircle',
   XCircle: 'XCircle',
   AlertCircle: 'AlertCircle',
+  Scan: 'Scan',
+  ChevronLeft: 'ChevronLeft',
 }));
 
 // Mock modularized components (now in feature modules)
@@ -328,6 +330,51 @@ jest.mock('./lib/supabase', () => ({
     })),
   },
 }));
+
+// Mock expo-file-system
+jest.mock('expo-file-system', () => {
+  class MockFile {
+    constructor(...uris) {
+      this.uri = uris.join('/');
+    }
+    
+    async arrayBuffer() {
+      // Return a mock ArrayBuffer
+      const buffer = new ArrayBuffer(8);
+      return buffer;
+    }
+    
+    writableStream() {
+      return {
+        getWriter: () => ({
+          write: jest.fn().mockResolvedValue(undefined),
+          close: jest.fn().mockResolvedValue(undefined),
+        }),
+      };
+    }
+  }
+  
+  return {
+    File: MockFile,
+    Paths: {
+      cache: { uri: 'file:///cache' },
+      document: { uri: 'file:///document' },
+      bundle: { uri: 'file:///bundle' },
+    },
+  };
+});
+
+// Mock axios
+jest.mock('axios');
+
+// Polyfill btoa and atob for base64 encoding/decoding
+if (typeof global.btoa === 'undefined') {
+  global.btoa = (str) => Buffer.from(str, 'binary').toString('base64');
+}
+
+if (typeof global.atob === 'undefined') {
+  global.atob = (str) => Buffer.from(str, 'base64').toString('binary');
+}
 
 // Reset mocks before each test
 beforeEach(() => {
