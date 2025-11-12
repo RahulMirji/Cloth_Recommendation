@@ -118,8 +118,8 @@ export default function GeminiLiveScreen() {
                 console.log('🚪 Closing WebView');
                 router.back();
               } else if (data.type === 'error') {
-                console.log('❌ WebView error:', data.message);
-                Alert.alert('Error', data.message);
+                console.log('⚠️ WebView compatibility issue:', data.message);
+                // Don't show Alert - the WebView UI will handle it
               }
             } catch (e) {
               console.log('⚠️ WebView message parse error:', e);

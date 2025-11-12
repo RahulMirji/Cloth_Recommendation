@@ -67,23 +67,10 @@ export const getGeminiLiveHTMLBasic = () => `
         <div id="video-container">
             <video id="camera-view" autoplay playsinline muted></video>
             <div id="overlay">
-                <div style="background: #10b981; padding: 10px; margin-bottom: 20px; border-radius: 8px;">
-                    <p style="color: white; font-weight: bold;">✅ HTML Loaded Successfully!</p>
+                <div class="connecting">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 12px;">Checking compatibility...</p>
                 </div>
-                <h1 class="title">🎨 AI Stylist Live</h1>
-                <p class="subtitle">
-                    This feature requires the Gemini Live API which works best on web browsers.
-                </p>
-                <button class="start-button" onclick="window.checkCompatibility && window.checkCompatibility()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-                        <path d="M19 13a1 1 0 0 0-1 1v1a6 6 0 0 1-12 0v-1a1 1 0 1 0-2 0v1a8 8 0 0 0 7 7.93V24h2v-2.07A8 8 0 0 0 20 15v-1a1 1 0 0 0-1-1z"/>
-                    </svg>
-                    Check Compatibility
-                </button>
-                <p class="info-text">
-                    For the best experience, please use this feature in a web browser like Chrome or Safari.
-                </p>
             </div>
         </div>
         <div id="error-container" class="hidden">

@@ -37,8 +37,61 @@ export const getGeminiLiveScript = (apiKey: string) => `
         }
     }
 
+    // Auto-check compatibility on load
+    function autoCheckCompatibility() {
+        console.log('🔍 Auto-checking compatibility...');
+        
+        // Check for required APIs
+        const checks = {
+            'MediaDevices API': !!navigator.mediaDevices,
+            'getUserMedia': !!navigator.mediaDevices?.getUserMedia,
+            'AudioContext': !!(window.AudioContext || window.webkitAudioContext),
+        };
+
+        console.log('📋 Compatibility checks:', checks);
+
+        const missing = Object.entries(checks)
+            .filter(([_, supported]) => !supported)
+            .map(([name]) => name);
+
+        if (missing.length > 0) {
+            console.log('⚠️ Missing features:', missing);
+            showWebViewLimitation();
+            return false;
+        }
+        
+        return true;
+    }
+
+    function showWebViewLimitation() {
+        const overlay = document.getElementById('overlay');
+        if (overlay) {
+            overlay.innerHTML = \`
+                <div style="text-align: center; max-width: 320px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">🌐</div>
+                    <h2 style="font-size: 24px; margin-bottom: 16px; color: #fff;">Web Browser Required</h2>
+                    <p style="font-size: 15px; color: #ccc; margin-bottom: 20px; line-height: 1.6;">
+                        Gemini Live uses real-time audio and video streaming that requires a full web browser environment.
+                    </p>
+                    <p style="font-size: 14px; color: #fbbf24; margin-bottom: 24px; line-height: 1.5;">
+                        Please use Chrome, Safari, or Firefox on your computer for the complete experience.
+                    </p>
+                    <button class="start-button" onclick="window.goBack()" style="background: #10b981; width: 100%; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
+                        Use Standard AI Stylist
+                    </button>
+                    <p style="font-size: 12px; color: #888; margin-top: 16px; line-height: 1.4;">
+                        The standard mode works perfectly on mobile with all the same AI intelligence!
+                    </p>
+                </div>
+            \`;
+        }
+    }
+
     async function checkCompatibility() {
-        console.log('🔍 Checking compatibility...');
+        console.log('🔍 Manual compatibility check...');
         const overlay = document.getElementById('overlay');
         if (overlay) {
             overlay.innerHTML = '<div class="connecting"><div class="spinner"></div><p>Checking compatibility...</p></div>';
@@ -59,8 +112,7 @@ export const getGeminiLiveScript = (apiKey: string) => `
                 .map(([name]) => name);
 
             if (missing.length > 0) {
-                throw new Error(\`Missing required features: \${missing.join(', ')}. Please use a modern web browser.\`);
-            }
+                showWebViewLimitation();
 
             // Try to get camera/mic access
             console.log('📷 Requesting camera and microphone access...');
@@ -149,6 +201,15 @@ export const getGeminiLiveScript = (apiKey: string) => `
     // Log environment info
     console.log('📱 User Agent:', navigator.userAgent);
     console.log('🌐 Platform:', navigator.platform);
+    
+    // Auto-check compatibility on load
+    setTimeout(() => {
+        if (!autoCheckCompatibility()) {
+            console.log('⚠️ WebView environment detected - showing limitation message');
+        } else {
+            console.log('✅ Full browser environment detected');
+        }
+    }, 500);
     
     console.log('✅ Gemini Live script initialization complete');
 })();
