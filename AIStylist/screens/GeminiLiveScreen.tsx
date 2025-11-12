@@ -27,7 +27,8 @@ import Constants from 'expo-constants';
 
 import Colors from '@/constants/colors';
 import { GeminiLiveManager, GeminiLiveSession } from '@/AIStylist/utils/geminiLiveAPI';
-import { getGeminiLiveHTMLSimple } from '@/AIStylist/utils/geminiLiveHTMLSimple';
+import { getGeminiLiveHTMLBasic } from '@/AIStylist/utils/geminiLiveHTMLBasic';
+import { getGeminiLiveScript } from '@/AIStylist/utils/geminiLiveScript';
 
 export default function GeminiLiveScreen() {
   const insets = useSafeAreaInsets();
@@ -59,8 +60,10 @@ export default function GeminiLiveScreen() {
       );
     }
 
-    const html = getGeminiLiveHTMLSimple(apiKey);
+    const html = getGeminiLiveHTMLBasic();
+    const script = getGeminiLiveScript(apiKey);
     console.log('📄 HTML length:', html.length);
+    console.log('📜 Script length:', script.length);
     console.log('📄 HTML preview:', html.substring(0, 100));
 
     return (
@@ -90,19 +93,7 @@ export default function GeminiLiveScreen() {
           startInLoadingState={true}
           mixedContentMode="always"
           allowsProtectedMedia={true}
-          injectedJavaScriptBeforeContentLoaded={`
-            console.log('🔥 Injected JavaScript BEFORE content loaded!');
-            window.isReactNativeWebView = true;
-            true;
-          `}
-          injectedJavaScript={`
-            console.log('🔥 Injected JavaScript AFTER content loaded!');
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'injected',
-              message: 'Injected JS executed successfully'
-            }));
-            true;
-          `}
+          injectedJavaScript={script}
           renderLoading={() => {
             console.log('⏳ WebView loading...');
             return (

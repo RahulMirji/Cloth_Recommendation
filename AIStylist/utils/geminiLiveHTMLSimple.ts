@@ -107,7 +107,8 @@ export const getGeminiLiveHTMLSimple = (apiKey: string) => `
             <p class="error-text" id="error-text"></p>
         </div>
     </div>
-    <script>
+    <!-- JavaScript will be injected by React Native WebView -->
+    <script type="text/placeholder">
         (function() {
             // Immediate logging to verify script is running
             console.log('🚀 Script started!');
