@@ -8,7 +8,7 @@
 export interface VirtualTryOnModel {
   id: string;
   name: string;
-  provider: 'gemini' | 'huggingface' | 'custom';
+  provider: 'gemini' | 'huggingface' | 'custom' | 'vertex';
   description: string;
   quality: 1 | 2 | 3 | 4 | 5; // 5 stars rating
   speed: 'slow' | 'medium' | 'fast' | 'very-fast';
@@ -31,6 +31,19 @@ export const VIRTUAL_TRYON_MODELS: VirtualTryOnModel[] = [
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent',
     isRecommended: true,
     tier: 1,
+  },
+  // SECONDARY: Vertex AI (New alternative model)
+  {
+    id: 'vertex-ai-imagen',
+    name: 'Vertex AI',
+    provider: 'vertex',
+    description: 'Google\'s Vertex AI Imagen model. High-quality image generation with advanced virtual try-on capabilities.',
+    quality: 5,
+    speed: 'medium',
+    modelName: 'vertex-ai-imagen',
+    endpoint: '', // Will be configured through backend API endpoint
+    isRecommended: false,
+    tier: 2,
   },
 ];
 
