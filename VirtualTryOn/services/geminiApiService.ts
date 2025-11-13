@@ -86,7 +86,13 @@ export const generateTryOnImage = async (
     const outfitMimeType = getMimeType(outfitImageUri);
     
     console.log('✅ Images converted successfully');
-    console.log('📤 Sending request to Gemini API...');
+    console.log('� Image sizes:', {
+      userImageSize: `${(userImageBase64.length / 1024).toFixed(2)} KB`,
+      outfitImageSize: `${(outfitImageBase64.length / 1024).toFixed(2)} KB`,
+      totalPayload: `${((userImageBase64.length + outfitImageBase64.length) / 1024).toFixed(2)} KB`
+    });
+    console.log('�📤 Sending request to Gemini API...');
+    console.log('🔗 Endpoint:', `${GEMINI_API_CONFIG.ENDPOINT}?key=***`);
     
     const response = await axios.post(
       `${GEMINI_API_CONFIG.ENDPOINT}?key=${GEMINI_API_CONFIG.API_KEY}`,
@@ -116,7 +122,7 @@ export const generateTryOnImage = async (
           temperature: 0.4,
           topK: 32,
           topP: 1,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192, // Increased for image generation
         },
       },
       {
@@ -124,6 +130,8 @@ export const generateTryOnImage = async (
           'Content-Type': 'application/json',
         },
         timeout: GEMINI_API_CONFIG.TIMEOUT,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       }
     );
 
@@ -180,7 +188,61 @@ export const generateTryOnImage = async (
     };
   } catch (error: any) {
     console.error('❌ Gemini API Error:', error);
-    console.error('❌ Error response:', error.response?.data);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error response status:', error.response?.status);
+    console.error('❌ Error response data:', error.response?.data);
+    
+    // Specific error handling
+    if (error.code === 'ECONNABORTED') {
+      return {
+        success: false,
+        error: 'Request timeout. The model is taking too long to respond. Please try with smaller images or try again.',
+      };
+    }
+    
+    if (error.message === 'Network Error') {
+      return {
+        success: false,
+        error: 'Network error. Please check your internet connection and try again. If the problem persists, the image files might be too large.',
+      };
+    }
+    
+    if (error.response?.status === 400) {
+      return {
+        success: false,
+        error: `Invalid request: ${error.response?.data?.error?.message || 'Please check your images and try again'}`,
+      };
+    }
+    
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      return {
+        success: false,
+        error: 'Invalid API key. Please check your Gemini API configuration.',
+      };
+    }
+    
+    if (error.response?.status === 404) {
+      return {
+        success: false,
+        error: 'Model not found. The gemini-2.5-flash-image model might not be available in your region or API key.',
+      };
+    }
+    
+    if (error.response?.status === 429) {
+      return {
+        success: false,
+        error: 'Rate limit exceeded. Please wait a few minutes and try again.',
+      };
+    }
+    
+    if (error.response?.status === 500) {
+      return {
+        success: false,
+        error: 'Server error. Please try again in a few moments.',
+      };
+    }
+    
     return {
       success: false,
       error: error.response?.data?.error?.message || error.message || 'Failed to generate image',
