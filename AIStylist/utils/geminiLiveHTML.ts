@@ -1,10 +1,11 @@
 /**
  * Gemini Live HTML for WebView
- * Embedded HTML page for mobile platforms
+ * This is the EXACT same HTML that works on web platform
  */
 
-export const getGeminiLiveHTML = (apiKey: string) => `
-<!DOCTYPE html>
+export const getGeminiLiveHTML = (apiKey: string) => {
+  // Read the working HTML from public/gemini-live.html and inject API key
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13,53 +14,48 @@ export const getGeminiLiveHTML = (apiKey: string) => `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            color: #fff;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000; color: #fff; overflow: hidden; height: 100vh; width: 100vw;
         }
         #app { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
         #video-container { flex: 1; position: relative; background: #000; }
         #camera-view { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         #overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px;
+            background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 20px;
         }
         #overlay.hidden { display: none; }
-        .title { font-size: 28px; font-weight: bold; margin-bottom: 8px; text-align: center; }
-        .subtitle { font-size: 14px; color: #ccc; margin-bottom: 24px; text-align: center; }
+        .title { font-size: 32px; font-weight: bold; margin-bottom: 8px; text-align: center; }
+        .subtitle { font-size: 16px; color: #ccc; margin-bottom: 32px; text-align: center; }
         .start-button {
-            display: flex; align-items: center; gap: 12px;
-            background: #6366f1; padding: 14px 28px; border-radius: 30px;
-            border: none; color: white; font-size: 16px; font-weight: 600;
-            cursor: pointer; transition: transform 0.2s;
+            display: flex; align-items: center; gap: 12px; background: #6366f1;
+            padding: 16px 32px; border-radius: 30px; border: none; color: white;
+            font-size: 18px; font-weight: 600; cursor: pointer; transition: transform 0.2s;
         }
         .start-button:active { transform: scale(0.95); }
         #transcription-container {
-            position: absolute; bottom: 80px; left: 0; right: 0;
-            padding: 12px; max-height: 35%; overflow-y: auto;
+            position: absolute; bottom: 0; left: 0; right: 0; padding: 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            max-height: 40%; overflow-y: auto;
         }
         .transcription-box {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px; border-radius: 10px; margin-bottom: 6px;
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.6); padding: 12px; border-radius: 12px;
+            margin-bottom: 8px; backdrop-filter: blur(10px);
         }
-        .transcription-box.model { background: rgba(99, 102, 241, 0.4); }
-        .transcription-label { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+        .transcription-box.model { background: rgba(99, 102, 241, 0.3); }
+        .transcription-label { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
         .transcription-label.user { color: #60a5fa; }
         .transcription-label.model { color: #a78bfa; }
-        .transcription-text { font-size: 14px; line-height: 20px; }
+        .transcription-text { font-size: 16px; line-height: 22px; }
+
         #controls {
-            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-            display: flex; align-items: center; gap: 20px; z-index: 10;
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 24px; z-index: 10;
         }
         #controls.hidden { display: none; }
         .control-button {
-            width: 56px; height: 56px; border-radius: 28px;
+            width: 64px; height: 64px; border-radius: 32px;
             background: rgba(107, 114, 128, 0.8); border: none;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: transform 0.2s;
@@ -67,24 +63,21 @@ export const getGeminiLiveHTML = (apiKey: string) => `
         .control-button:active { transform: scale(0.9); }
         .control-button.muted { background: rgba(251, 191, 36, 0.8); }
         .end-call-button {
-            width: 70px; height: 70px; border-radius: 35px;
-            background: #ef4444; border: none;
-            display: flex; align-items: center; justify-content: center;
+            width: 80px; height: 80px; border-radius: 40px; background: #ef4444;
+            border: none; display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: transform 0.2s;
         }
         .end-call-button:active { transform: scale(0.9); }
         #error-container {
-            position: absolute; top: 15px; left: 15px; right: 15px;
-            background: rgba(239, 68, 68, 0.9); padding: 12px; border-radius: 10px; z-index: 20;
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            background: rgba(239, 68, 68, 0.9); padding: 16px; border-radius: 12px; z-index: 20;
         }
         #error-container.hidden { display: none; }
-        .error-text { font-size: 13px; text-align: center; }
-        .connecting { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .error-text { font-size: 14px; text-align: center; }
+        .connecting { display: flex; flex-direction: column; align-items: center; gap: 16px; }
         .spinner {
-            width: 35px; height: 35px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #fff; border-radius: 50%;
-            animation: spin 1s linear infinite;
+            width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         canvas { display: none; }
@@ -96,29 +89,26 @@ export const getGeminiLiveHTML = (apiKey: string) => `
             <video id="camera-view" autoplay playsinline muted></video>
             <canvas id="canvas"></canvas>
             <div id="overlay">
-                <h1 class="title">🎨 AI Stylist Live</h1>
-                <p class="subtitle">Real-time outfit analysis & styling advice</p>
+                <h1 class="title">Gemini Live Stylist</h1>
+                <p class="subtitle">Real-time outfit scoring & styling advice</p>
                 <button class="start-button" onclick="startSession()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-                        <path d="M19 13a1 1 0 0 0-1 1v1a6 6 0 0 1-12 0v-1a1 1 0 1 0-2 0v1a8 8 0 0 0 7 7.93V24h2v-2.07A8 8 0 0 0 20 15v-1a1 1 0 0 0-1-1z"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 13a1 1 0 0 0-1 1v1a6 6 0 0 1-12 0v-1a1 1 0 1 0-2 0v1a8 8 0 0 0 7 7.93V24h2v-2.07A8 8 0 0 0 20 15v-1a1 1 0 0 0-1-1z"/>
                     </svg>
-                    Start Session
+                    Start Live Session
                 </button>
             </div>
             <div id="transcription-container" class="hidden"></div>
         </div>
         <div id="controls" class="hidden">
             <button class="control-button" id="mute-button" onclick="toggleMute()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-                    <path d="M19 13a1 1 0 0 0-1 1v1a6 6 0 0 1-12 0v-1a1 1 0 1 0-2 0v1a8 8 0 0 0 7 7.93V24h2v-2.07A8 8 0 0 0 20 15v-1a1 1 0 0 0-1-1z"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 2a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 13a1 1 0 0 0-1 1v1a6 6 0 0 1-12 0v-1a1 1 0 1 0-2 0v1a8 8 0 0 0 7 7.93V24h2v-2.07A8 8 0 0 0 20 15v-1a1 1 0 0 0-1-1z"/>
                 </svg>
             </button>
             <button class="end-call-button" onclick="endSession()">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 9c-1.6 0-3.1.4-4.5 1.1L6.1 8.7a10 10 0 0 1 11.8 0l-1.4 1.4C15.1 9.4 13.6 9 12 9z"/>
-                    <path d="M19.7 14.1l-2.8 2.8c-4.4 2.2-9.6.5-11.8-3.9s-.5-9.6 3.9-11.8l2.8-2.8L14.1 3l-2.8 2.8-1.4-1.4L8.5 5.8l1.4 1.4L7.1 10l1.4 1.4 2.8-2.8 1.4 1.4-2.8 2.8 1.4 1.4 2.8-2.8 1.4 1.4-2.8 2.8L17 21l1.4-1.4-2.8-2.8 1.4-1.4 2.8 2.8z"/>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 9c-1.63 0-3.14.4-4.5 1.12L6.11 8.73a10 10 0 0 1 11.78 0l-1.39 1.39C15.14 9.4 13.63 9 12 9zm7.7 5.07l-2.82 2.82c-4.4 2.2-9.62.47-11.82-3.93-2.2-4.4-.47-9.62 3.93-11.82l2.82-2.82L14.12 3l-2.83 2.83-1.41-1.41L8.47 5.83l1.41 1.41L7.05 10.07l1.41 1.41 2.83-2.83 1.41 1.41-2.83 2.83 1.41 1.41 2.83-2.83 1.41 1.41-2.83 2.83L17 21l1.41-1.41-2.83-2.83 1.41-1.41 2.83 2.83z"/>
                 </svg>
             </button>
         </div>
@@ -128,6 +118,7 @@ export const getGeminiLiveHTML = (apiKey: string) => `
     </div>
     <script type="module">
         const API_KEY = '${apiKey}';
+
         let session, mediaStream, inputAudioContext, outputAudioContext;
         let scriptProcessor, mediaStreamSource, frameInterval;
         let isMuted = false;
@@ -135,26 +126,38 @@ export const getGeminiLiveHTML = (apiKey: string) => `
 
         const CONFIG = {
             MODEL: 'gemini-2.5-flash-native-audio-preview-09-2025',
-            SYSTEM_INSTRUCTION: \`You are a professional AI stylist. Analyze outfits in real-time, ask about occasions, give friendly fashion advice, and score outfits 1-10. Be conversational and encouraging.\`,
-            FRAME_RATE: 2, JPEG_QUALITY: 0.7,
-            INPUT_SAMPLE_RATE: 16000, OUTPUT_SAMPLE_RATE: 24000,
+            SYSTEM_INSTRUCTION: \`You are a professional AI stylist and outfit scorer. Help users improve their fashion sense by:
+- Analyzing their outfit in real-time through video
+- Asking contextual questions about where they're going and the occasion
+- Providing friendly, natural feedback like a fashion-savvy buddy
+- Using emotions and enthusiasm in your responses
+- Giving practical styling tips and suggestions
+- Scoring outfits on a scale of 1-10 with detailed reasoning
+
+Be conversational, supportive, and encouraging. Keep responses concise but helpful.\`,
+            FRAME_RATE: 2,
+            JPEG_QUALITY: 0.7,
+            INPUT_SAMPLE_RATE: 16000,
+            OUTPUT_SAMPLE_RATE: 24000,
             VOICE_NAME: 'Zephyr',
         };
 
-        function showError(msg) {
-            document.getElementById('error-text').textContent = msg;
-            document.getElementById('error-container').classList.remove('hidden');
-            setTimeout(() => document.getElementById('error-container').classList.add('hidden'), 5000);
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            const errorText = document.getElementById('error-text');
+            errorText.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => errorContainer.classList.add('hidden'), 5000);
         }
 
         function updateTranscription(type, text) {
             const container = document.getElementById('transcription-container');
             container.classList.remove('hidden');
-            let box = container.querySelector(\`.transcription-box.\${type}:last-child\`);
-            if (box) {
-                box.querySelector('.transcription-text').textContent = text;
+            const existingBox = container.querySelector(\`.transcription-box.\${type}:last-child\`);
+            if (existingBox) {
+                existingBox.querySelector('.transcription-text').textContent = text;
             } else {
-                box = document.createElement('div');
+                const box = document.createElement('div');
                 box.className = \`transcription-box \${type}\`;
                 box.innerHTML = \`<div class="transcription-label \${type}">\${type === 'user' ? 'You' : 'Gemini'}:</div><div class="transcription-text">\${text}</div>\`;
                 container.appendChild(box);
@@ -203,92 +206,62 @@ export const getGeminiLiveHTML = (apiKey: string) => `
             });
         }
 
+
         window.startSession = async function() {
             try {
                 console.log('Starting session...');
-                document.getElementById('overlay').innerHTML = '<div class="connecting"><div class="spinner"></div><p>Connecting...</p></div>';
-                
-                // Request permissions first
-                console.log('Requesting media permissions...');
+                document.getElementById('overlay').innerHTML = '<div class="connecting"><div class="spinner"></div><p>Connecting to Gemini...</p></div>';
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
-                console.log('Media stream obtained');
                 document.getElementById('camera-view').srcObject = mediaStream;
-
-                console.log('Creating audio contexts...');
                 inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: CONFIG.INPUT_SAMPLE_RATE });
                 outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: CONFIG.OUTPUT_SAMPLE_RATE });
                 const outputNode = outputAudioContext.createGain();
                 outputNode.connect(outputAudioContext.destination);
-
                 let currentInputTranscription = '', currentOutputTranscription = '';
-
-                console.log('Loading Gemini SDK...');
-                // Try multiple CDN sources
-                let GoogleGenAI, Modality;
-                try {
-                    const module = await import('https://esm.run/@google/genai@1.29.0');
-                    GoogleGenAI = module.GoogleGenAI;
-                    Modality = module.Modality;
-                } catch (e) {
-                    console.error('Failed to load from esm.run, trying unpkg...', e);
-                    const module = await import('https://unpkg.com/@google/genai@1.29.0/dist/index.mjs');
-                    GoogleGenAI = module.GoogleGenAI;
-                    Modality = module.Modality;
-                }
-                
-                console.log('Gemini SDK loaded, creating AI instance...');
+                const { GoogleGenAI, Modality } = await import('https://esm.run/@google/genai');
                 const ai = new GoogleGenAI({ apiKey: API_KEY });
-
                 session = await ai.live.connect({
                     model: CONFIG.MODEL,
                     config: {
                         systemInstruction: CONFIG.SYSTEM_INSTRUCTION,
                         responseModalities: [Modality.AUDIO],
                         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: CONFIG.VOICE_NAME } } },
-                        inputAudioTranscription: {}, outputAudioTranscription: {},
+                        inputAudioTranscription: {},
+                        outputAudioTranscription: {},
                     },
                     callbacks: {
                         onopen: () => {
+                            console.log('Session opened');
                             document.getElementById('overlay').classList.add('hidden');
                             document.getElementById('controls').classList.remove('hidden');
                             startAudioStreaming();
                             startVideoStreaming();
                         },
-                        onmessage: async (msg) => {
-                            if (msg.serverContent?.inputTranscription) {
-                                currentInputTranscription += msg.serverContent.inputTranscription.text;
+                        onmessage: async (message) => {
+                            console.log('Message received:', message);
+                            if (message.serverContent?.inputTranscription) {
+                                currentInputTranscription += message.serverContent.inputTranscription.text;
                                 updateTranscription('user', currentInputTranscription);
                             }
-                            if (msg.serverContent?.outputTranscription) {
-                                currentOutputTranscription += msg.serverContent.outputTranscription.text;
+                            if (message.serverContent?.outputTranscription) {
+                                currentOutputTranscription += message.serverContent.outputTranscription.text;
                                 updateTranscription('model', currentOutputTranscription);
                             }
-                            if (msg.serverContent?.turnComplete) {
+                            if (message.serverContent?.turnComplete) {
                                 currentInputTranscription = '';
                                 currentOutputTranscription = '';
                             }
-                            const base64Audio = msg.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+                            const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                             if (base64Audio) await playAudioResponse(base64Audio, outputNode);
-                            if (msg.serverContent?.interrupted) stopAllAudioSources();
+                            if (message.serverContent?.interrupted) stopAllAudioSources();
                         },
-                        onerror: (e) => { showError(\`Error: \${e.error?.message || e.message}\`); endSession(); },
+                        onerror: (e) => { showError(\`API Error: \${e.error?.message || e.message || 'Unknown error'}\`); endSession(); },
                         onclose: () => endSession(),
                     },
                 });
             } catch (error) {
-                console.error('Session start error:', error);
-                const errorMsg = error.message || 'Failed to start session';
-                showError(errorMsg);
+                showError(error.message);
                 document.getElementById('overlay').classList.remove('hidden');
-                
-                // Send error to React Native
-                if (window.ReactNativeWebView) {
-                    window.ReactNativeWebView.postMessage(JSON.stringify({ 
-                        type: 'error', 
-                        message: errorMsg,
-                        stack: error.stack 
-                    }));
-                }
             }
         };
 
@@ -299,7 +272,8 @@ export const getGeminiLiveHTML = (apiKey: string) => `
             scriptProcessor.onaudioprocess = (event) => {
                 if (isMuted) return;
                 const inputData = event.inputBuffer.getChannelData(0);
-                session?.sendRealtimeInput({ media: createAudioBlob(inputData) });
+                const pcmBlob = createAudioBlob(inputData);
+                session?.sendRealtimeInput({ media: pcmBlob });
             };
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputAudioContext.destination);
@@ -325,6 +299,7 @@ export const getGeminiLiveHTML = (apiKey: string) => `
         }
 
         async function playAudioResponse(base64Audio, outputNode) {
+            console.log('Playing audio...');
             audioPlayback.nextStartTime = Math.max(audioPlayback.nextStartTime, outputAudioContext.currentTime);
             const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContext, CONFIG.OUTPUT_SAMPLE_RATE, 1);
             const source = outputAudioContext.createBufferSource();
@@ -368,5 +343,5 @@ export const getGeminiLiveHTML = (apiKey: string) => `
         };
     </script>
 </body>
-</html>
-`;
+</html>`;
+};

@@ -122,6 +122,7 @@ export class GeminiLiveManager {
   private mediaStream: MediaStream | null = null;
   private callbacks: GeminiLiveCallbacks | null = null;
   private isMuted: boolean = false;
+  private videoEnabled: boolean = true; // Enable video streaming by default
   
   private audioPlayback = {
     nextStartTime: 0,
@@ -132,8 +133,10 @@ export class GeminiLiveManager {
 
   async startSession(
     mediaStream: MediaStream,
-    callbacks: GeminiLiveCallbacks
+    callbacks: GeminiLiveCallbacks,
+    options?: { videoEnabled?: boolean }
   ): Promise<void> {
+    this.videoEnabled = options?.videoEnabled !== false; // Default to true
     if (Platform.OS !== 'web') {
       throw new Error('Gemini Live API is only supported on web platform');
     }
@@ -186,7 +189,12 @@ export class GeminiLiveManager {
             console.log('✅ Gemini Live session opened');
             callbacks.onSessionUpdate({ isConnecting: false, isActive: true });
             this.startAudioStreaming();
-            this.startVideoStreaming();
+            if (this.videoEnabled) {
+              this.startVideoStreaming();
+              console.log('📹 Video streaming enabled');
+            } else {
+              console.log('🎤 Audio-only mode');
+            }
           },
           onmessage: async (message: any) => {
             // Handle transcriptions
@@ -263,10 +271,31 @@ export class GeminiLiveManager {
   }
 
   private startVideoStreaming(): void {
+    if (!this.videoEnabled) {
+      console.log('📹 Video streaming disabled');
+      return;
+    }
+    
     // Start streaming video frames at configured frame rate
+    console.log(`📹 Starting video stream at ${GEMINI_LIVE_CONFIG.FRAME_RATE} fps`);
     this.frameInterval = window.setInterval(() => {
       this.captureAndSendFrame();
     }, 1000 / GEMINI_LIVE_CONFIG.FRAME_RATE);
+  }
+
+  /**
+   * Toggle video streaming on/off
+   */
+  setVideoEnabled(enabled: boolean): void {
+    this.videoEnabled = enabled;
+    
+    if (enabled && !this.frameInterval) {
+      this.startVideoStreaming();
+    } else if (!enabled && this.frameInterval) {
+      clearInterval(this.frameInterval);
+      this.frameInterval = null;
+      console.log('📹 Video streaming paused');
+    }
   }
 
   private async captureAndSendFrame(): Promise<void> {
