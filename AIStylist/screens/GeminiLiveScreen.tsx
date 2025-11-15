@@ -54,15 +54,17 @@ export default function GeminiLiveScreen() {
   console.log('✅ Full HTML with embedded @google/genai SDK loaded');
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.webViewHeader}>
+    <View style={styles.container}>
+      <View style={[styles.webViewHeader, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => router.back()}
         >
           <X size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.webViewTitle}>🎨 AI Stylist Live</Text>
+        <View style={styles.titlePill}>
+          <Text style={styles.webViewTitle}>🎨 AI Stylist Live</Text>
+        </View>
         <View style={{ width: 44 }} />
       </View>
       
@@ -168,32 +170,42 @@ export default function GeminiLiveScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
   },
   webView: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
   },
   webViewHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'transparent',
+    zIndex: 10,
+  },
+  titlePill: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backdropFilter: 'blur(10px)',
   },
   webViewTitle: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
   },

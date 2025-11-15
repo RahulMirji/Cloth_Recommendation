@@ -1147,34 +1147,28 @@ Keep responses conversational and natural, as if you're talking to them in perso
               )}
               {!isConversationActive && (
                 <TouchableOpacity
-                  style={styles.geminiLiveButton}
+                  style={styles.visionToggle}
                   onPress={() => {
-                    console.log('🚀 Gemini Live button pressed');
+                    console.log('🎨 Vision toggle pressed - navigating to Gemini Live');
                     try {
                       router.push('/gemini-live');
-                      console.log('✅ Navigation initiated');
+                      console.log('✅ Navigation to Gemini Live initiated');
                     } catch (error) {
                       console.error('❌ Navigation error:', error);
                       showCustomAlert('error', 'Navigation Error', 'Failed to open Gemini Live. Please try again.');
                     }
                   }}
                 >
-                  <Text style={styles.geminiLiveButtonText}>🚀 Try Gemini Live</Text>
+                  {useEnhancedVision ? (
+                    <Eye size={16} color={Colors.white} />
+                  ) : (
+                    <EyeOff size={16} color={Colors.white} />
+                  )}
+                  <Text style={styles.visionToggleText}>
+                    {useEnhancedVision ? 'Enhanced Vision' : 'Basic Vision'}
+                  </Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                style={styles.visionToggle}
-                onPress={() => setUseEnhancedVision(!useEnhancedVision)}
-              >
-                {useEnhancedVision ? (
-                  <Eye size={16} color={Colors.white} />
-                ) : (
-                  <EyeOff size={16} color={Colors.white} />
-                )}
-                <Text style={styles.visionToggleText}>
-                  {useEnhancedVision ? 'Enhanced Vision' : 'Basic Vision'}
-                </Text>
-              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
