@@ -19,11 +19,11 @@ module.exports = {
     "slug": "ai-cloth-recommendation-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "aidryer",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/logo.png",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -42,7 +42,7 @@ module.exports = {
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.rahulmirji.aiclothrecommendationapp",
@@ -55,7 +55,7 @@ module.exports = {
       ]
     },
     "web": {
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "./plugins/withAndroidXResolution",

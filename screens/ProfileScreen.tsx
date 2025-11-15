@@ -77,6 +77,8 @@ export function ProfileScreen() {
 
   // Check if user needs photo upload suggestion (no profile photo)
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const checkPhotoSuggestion = async () => {
       try {
         const hasProfileImage = userProfile?.profileImage && 
@@ -84,7 +86,7 @@ export function ProfileScreen() {
         
         // Show suggestion if user doesn't have a profile image
         if (!hasProfileImage) {
-          setTimeout(() => {
+          timeoutId = setTimeout(() => {
             setShowPhotoSuggestion(true);
             startFloatingAnimation();
           }, 800);
@@ -95,6 +97,13 @@ export function ProfileScreen() {
     };
 
     checkPhotoSuggestion();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [userProfile?.profileImage]);
 
   // Load credits for all features

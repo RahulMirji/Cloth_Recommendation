@@ -17,7 +17,9 @@
     "test:imagegen": "jest ImageGen",
     "env:backup": "./scripts/protect-env.sh backup",
     "env:restore": "./scripts/protect-env.sh restore",
-    "postinstall": "npx jetifier"
+    "postinstall": "npx jetifier",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

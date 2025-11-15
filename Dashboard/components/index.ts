@@ -15,3 +15,4 @@ export { DemographicsModal } from './DemographicsModal';
 export { AgeDistributionChart } from './AgeDistributionChart';
 export { AgeGroupCard } from './AgeGroupCard';
 export { UserMiniCard } from './UserMiniCard';
+export { VirtualTryOnModelCard } from './VirtualTryOnModelCard';

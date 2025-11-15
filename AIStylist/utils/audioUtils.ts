@@ -173,7 +173,6 @@ export class SpeechToTextService {
 
 /**
  * Generate audio response using Pollinations AI curl endpoint
- * Equivalent to: curl -o output_audio.mp3 "https://text.pollinations.ai/$(echo -n 'text' | jq -sRr @uri)?model=openai-audio&voice=nova&token=-GCuD_ey-sBxfDW7"
  * 
  * @param text - The text to convert to speech
  * @param voice - Voice model to use: alloy, echo, fable, onyx, nova (default), shimmer
@@ -186,9 +185,12 @@ export async function generateSpeakBackAudio(
   localPath: string;
 }> {
   try {
+    const endpoint = process.env.EXPO_PUBLIC_POLLINATIONS_API_ENDPOINT || 'https://text.pollinations.ai';
+    const token = process.env.EXPO_PUBLIC_POLLINATIONS_API_TOKEN || '';
+    
     // Encode text directly without system prompt for more natural TTS
     const encodedText = encodeURIComponent(text);
-    const url = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${voice}&token=-GCuD_ey-sBxfDW7`;
+    const url = `${endpoint}/${encodedText}?model=openai-audio&voice=${voice}&token=${token}`;
 
     // Low-latency: return the remote URL directly so the player can stream it.
     // Perform a lightweight HEAD request with timeout to fail fast if unreachable.

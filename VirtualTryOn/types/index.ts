@@ -8,6 +8,8 @@ export interface GenerateTryOnResponse {
   success: boolean;
   data?: any;
   imageUrl?: string | null;
+  fileName?: string;
+  filePath?: string;
   error?: string;
 }
 
