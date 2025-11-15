@@ -21,7 +21,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_USE_METRO_WORKSPACE_ROOT": "1"
+        "EXPO_USE_METRO_WORKSPACE_ROOT": "1",
+        "EXPO_PUBLIC_API_URL": "https://unrimed-makayla-desultorily.ngrok-free.dev"
       }
     },
     "production": {

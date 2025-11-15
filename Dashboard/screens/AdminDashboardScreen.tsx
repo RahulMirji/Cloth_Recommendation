@@ -30,6 +30,7 @@ import { PaymentStatsCard } from '../components/PaymentStatsCard';
 import { ModelManagementCard } from '../components/ModelManagementCard';
 import { AIStylistModelCard } from '../components/AIStylistModelCard';
 import { ImageGenModelCard } from '../components/ImageGenModelCard';
+import { VirtualTryOnModelCard } from '../components/VirtualTryOnModelCard';
 import type { DashboardUser } from '../types';
 import { PaymentSubmission, PaymentStats, STATUS_COLORS, STATUS_LABELS } from '../types/payment.types';
 import { getPaymentSubmissions, getPaymentStats, searchPayments, approvePayment, rejectPayment, deletePayment, formatCurrency, formatDate } from '../services/paymentAdminService';
@@ -529,6 +530,20 @@ export default function AdminDashboardScreen() {
           Image Generator
         </Text>
         <ImageGenModelCard />
+
+        {/* Virtual Try-On Models */}
+        <Text
+          style={[
+            styles.subsectionTitle,
+            { 
+              color: isDarkMode ? colors.textDark : colors.text,
+              fontSize: 22,
+            },
+          ]}
+        >
+          Virtual Try-On
+        </Text>
+        <VirtualTryOnModelCard />
       </View>
     );
   };

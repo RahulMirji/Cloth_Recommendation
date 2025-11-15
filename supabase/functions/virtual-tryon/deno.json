@@ -1,0 +1,32 @@
+76{
+  "tasks": {
+    "test": "deno test --allow-net --allow-env --allow-read",
+    "test:watch": "deno test --allow-net --allow-env --allow-read --watch",
+    "test:coverage": "deno test --allow-net --allow-env --allow-read --coverage=coverage",
+    "coverage": "deno coverage coverage --lcov --output=coverage/lcov.info"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.unstable"],
+    "strict": true
+  },
+  "fmt": {
+    "files": {
+      "include": ["__tests__/", "index.ts"]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "singleQuote": true,
+      "proseWrap": "preserve"
+    }
+  },
+  "lint": {
+    "files": {
+      "include": ["__tests__/", "index.ts"]
+    },
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}

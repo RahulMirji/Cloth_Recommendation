@@ -29,9 +29,9 @@ describe('Gemini API Service', () => {
     });
 
     it('should have reasonable timeout', () => {
-      expect(GEMINI_API_CONFIG.TIMEOUT).toBe(60000); // 60 seconds
+      expect(GEMINI_API_CONFIG.TIMEOUT).toBe(120000); // 120 seconds (updated for image generation)
       expect(GEMINI_API_CONFIG.TIMEOUT).toBeGreaterThanOrEqual(30000);
-      expect(GEMINI_API_CONFIG.TIMEOUT).toBeLessThanOrEqual(120000);
+      expect(GEMINI_API_CONFIG.TIMEOUT).toBeLessThanOrEqual(180000); // Max 3 minutes for heavy operations
     });
   });
 

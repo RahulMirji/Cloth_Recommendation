@@ -29,7 +29,10 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
       }
     };
 
-    const initialUrl = 'https://text.pollinations.ai/openai';
+    const endpoint = process.env.EXPO_PUBLIC_POLLINATIONS_API_ENDPOINT || 'https://text.pollinations.ai/openai';
+    const token = process.env.EXPO_PUBLIC_POLLINATIONS_API_TOKEN || '';
+    
+    const initialUrl = endpoint;
     const initialBody = {
       model: 'gemini',
       messages: options.messages,
@@ -45,7 +48,7 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer -GCuD_ey-sBxfDW7',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(initialBody),
       signal: controller.signal,
@@ -57,8 +60,7 @@ export async function generateText(options: TextGenerationOptions): Promise<stri
 
       // Try a safe retry: use token query param and simplify message shapes to plain text
       try {
-        const token = '-GCuD_ey-sBxfDW7';
-        const retryUrl = `https://text.pollinations.ai/openai?token=${encodeURIComponent(token)}`;
+        const retryUrl = `${endpoint}?token=${encodeURIComponent(token)}`;
 
         // Simplify message shapes: convert any array/object content into a readable text
         const simplifyMessages = (msgs: TextGenerationMessage[]) => {

@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { generateTryOnImage } from '../services/geminiApiService'; // Using Gemini API
+import { generateTryOnImage } from '../services/virtualTryOnRouter'; // Smart router: Gemini or Vertex AI
 import { preprocessForVirtualTryOn } from '../utils/imagePreprocessor';
 import { useRouter } from 'expo-router';
 import { useImageUpload } from '@/OutfitScorer/hooks/useImageUpload';

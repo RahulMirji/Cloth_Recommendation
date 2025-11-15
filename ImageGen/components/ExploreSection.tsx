@@ -59,9 +59,13 @@ export function ExploreSection() {
     setGeneratedImageUrl(null);
 
     try {
+      // Get Pollinations image endpoint from env or use default
+      const pollinationsImageEndpoint = process.env.EXPO_PUBLIC_POLLINATIONS_IMAGE_ENDPOINT || 
+                                       'https://image.pollinations.ai/prompt';
+      
       // Encode prompt for URL
       const encodedPrompt = encodeURIComponent(prompt.trim());
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true`;
+      const imageUrl = `${pollinationsImageEndpoint}/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true`;
       
       // Set the image URL
       setGeneratedImageUrl(imageUrl);
