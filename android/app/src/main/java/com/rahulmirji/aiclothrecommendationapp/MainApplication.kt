@@ -1,4 +1,4 @@
-package com.stylegpt
+package com.rahulmirji.aiclothrecommendationapp
 
 import android.app.Application
 import android.content.res.Configuration

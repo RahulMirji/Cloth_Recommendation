@@ -4,7 +4,13 @@ module.exports = {
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|lucide-react-native|zustand|@nkzw/create-context-hook)',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/', '/.expo/'],
+  testPathIgnorePatterns: [
+    '/node_modules/', 
+    '/android/', 
+    '/ios/', 
+    '/.expo/',
+    '/supabase/functions/', // Exclude Deno edge function tests
+  ],
   
   // ⭐ Co-located tests: Find tests ANYWHERE in the codebase
   testMatch: [

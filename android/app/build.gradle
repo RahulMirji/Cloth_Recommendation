@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.stylegpt"
+    namespace "com.rahulmirji.aiclothrecommendationapp"
     defaultConfig {
-        applicationId "com.stylegpt"
+        applicationId "com.rahulmirji.aiclothrecommendationapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
