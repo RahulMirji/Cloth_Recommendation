@@ -7,7 +7,8 @@ import '../utils/geminiPolyfills';
 import { Platform } from 'react-native';
 import { Audio } from 'expo-av';
 import { CameraView } from 'expo-camera';
-import * as FileSystem from 'expo-file-system';
+import * as LegacyFileSystem from 'expo-file-system/legacy';
+import { Paths } from 'expo-file-system';
 import { Buffer } from 'buffer';
 
 // Import expo-audio-stream for real-time PCM
@@ -389,10 +390,10 @@ export class GeminiLiveNativeFixed {
       // Convert PCM to WAV
       const wavBase64 = this.pcmToWav(audioBase64, 24000, 1, 16);
       
-      // Save to file
-      const filename = `${FileSystem.cacheDirectory}audio_${Date.now()}.wav`;
-      await FileSystem.writeAsStringAsync(filename, wavBase64, {
-        encoding: FileSystem.EncodingType.Base64,
+      // Save to file using legacy API for compatibility
+      const filename = `${Paths.cache.uri}/audio_${Date.now()}.wav`;
+      await LegacyFileSystem.writeAsStringAsync(filename, wavBase64, {
+        encoding: 'base64' as const,
       });
 
       // Play audio
@@ -406,7 +407,7 @@ export class GeminiLiveNativeFixed {
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) {
           sound.unloadAsync();
-          FileSystem.deleteAsync(filename, { idempotent: true });
+          LegacyFileSystem.deleteAsync(filename, { idempotent: true });
           this.playNextAudio(); // Play next in queue
         }
       });

@@ -51,7 +51,7 @@ export class GeminiLiveSDK {
 
     try {
       // Try to import the SDK
-      const { GoogleGenAI } = await import('@google/genai');
+      const { GoogleGenAI, Modality } = await import('@google/genai');
       console.log('✅ @google/genai SDK loaded successfully!');
 
       const ai = new GoogleGenAI({ apiKey: this.apiKey });
@@ -69,7 +69,7 @@ export class GeminiLiveSDK {
         model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
           systemInstruction: 'You are a professional AI stylist.',
-          responseModalities: ['AUDIO'],
+          responseModalities: [Modality.AUDIO],
         },
         callbacks: {
           onopen: () => {
