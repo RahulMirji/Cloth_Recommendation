@@ -101,7 +101,7 @@ export const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         throw new Error(orderResponse.message || 'Failed to create order');
       }
 
-      const { orderId, amount, currency } = orderResponse.data;
+      const { orderId, amount, currency, keyId } = orderResponse.data;
       orderData = { orderId, amount, currency };
 
       console.log('✅ Order created:', orderId);
@@ -109,11 +109,14 @@ export const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       // Step 2: Open Razorpay checkout
       console.log('💳 Step 2: Opening Razorpay checkout...');
 
+      // Use keyId from backend if available, otherwise fallback to env variable
+      const razorpayKey = keyId || RAZORPAY_KEY_ID;
+
       const options = {
         description: `${credits} Credits Purchase`,
         image: 'https://your-app-logo-url.com/logo.png',
         currency: currency,
-        key: RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: amount * 100, // Amount in paise
         name: 'Style GPT',
         order_id: orderId,

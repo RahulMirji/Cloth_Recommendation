@@ -1,13 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, ActivityIndicator } from 'react-native';
 
 import { AppProvider, useApp } from '@/contexts/AppContext';
 import { AlertProvider } from '@/contexts/AlertContext';
 import Colors from '@/constants/colors';
+import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -136,12 +137,24 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+  const [appReady, setAppReady] = useState(false);
+
   useEffect(() => {
+    // Hide native splash screen immediately to show our animated one
+    SplashScreen.hideAsync();
+    
+    // Simulate minimum loading time for splash animation
     const timer = setTimeout(() => {
-      SplashScreen.hideAsync();
-    }, 1000);
+      setAppReady(true);
+    }, 2500); // Show animated splash for at least 2.5 seconds
+    
     return () => clearTimeout(timer);
   }, []);
+
+  const handleAnimationEnd = () => {
+    setShowAnimatedSplash(false);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -149,6 +162,12 @@ export default function RootLayout() {
         <AlertProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <RootLayoutNav />
+            {showAnimatedSplash && (
+              <AnimatedSplashScreen 
+                isLoading={!appReady} 
+                onAnimationEnd={handleAnimationEnd} 
+              />
+            )}
           </GestureHandlerRootView>
         </AlertProvider>
       </AppProvider>

@@ -28,6 +28,7 @@ export interface CreateOrderResponse {
     currency: string;
     credits: number;
     paymentRecordId: string;
+    keyId?: string; // Razorpay key ID from backend
   };
   error?: string;
 }
