@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backdropFilter: 'blur(10px)',
   },
   webViewTitle: {
     color: '#fff',
