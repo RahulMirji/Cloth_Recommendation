@@ -19,7 +19,13 @@ export const getGeminiLiveHTML = (apiKey: string) => {
         }
         #app { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
         #video-container { flex: 1; position: relative; background: #000; }
-        #camera-view { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #camera-view { 
+            width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);
+            /* Prevent video freezing */
+            -webkit-transform: scaleX(-1);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
         #overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column;
@@ -125,6 +131,7 @@ export const getGeminiLiveHTML = (apiKey: string) => {
         let audioPlayback = { nextStartTime: 0, sources: new Set() };
 
         const CONFIG = {
+            // Native audio model for real-time voice conversation
             MODEL: 'gemini-2.5-flash-native-audio-preview-09-2025',
             SYSTEM_INSTRUCTION: \`You are a professional AI stylist and outfit scorer. Help users improve their fashion sense by:
 - Analyzing their outfit in real-time through video
@@ -134,9 +141,10 @@ export const getGeminiLiveHTML = (apiKey: string) => {
 - Giving practical styling tips and suggestions
 - Scoring outfits on a scale of 1-10 with detailed reasoning
 
-Be conversational, supportive, and encouraging. Keep responses concise but helpful.\`,
-            FRAME_RATE: 2,
-            JPEG_QUALITY: 0.7,
+Be conversational, supportive, and encouraging. Keep responses concise but helpful.
+Start by greeting the user and asking them to show you their outfit.\`,
+            FRAME_RATE: 1, // 1 fps for video frames
+            JPEG_QUALITY: 0.6,
             INPUT_SAMPLE_RATE: 16000,
             OUTPUT_SAMPLE_RATE: 24000,
             VOICE_NAME: 'Zephyr',
@@ -211,16 +219,68 @@ Be conversational, supportive, and encouraging. Keep responses concise but helpf
             try {
                 console.log('Starting session...');
                 document.getElementById('overlay').innerHTML = '<div class="connecting"><div class="spinner"></div><p>Connecting to Gemini...</p></div>';
-                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
-                document.getElementById('camera-view').srcObject = mediaStream;
+                
+                // Check if we're in a WebView that might not support getUserMedia
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera/microphone not available. WebView may not support media capture. Please use a web browser for full Gemini Live experience.');
+                }
+                
+                // Request camera/mic with timeout
+                console.log('Requesting camera and microphone...');
+                let mediaStream_local;
+                try {
+                    const mediaPromise = navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
+                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Camera/mic request timed out after 15 seconds')), 15000));
+                    mediaStream_local = await Promise.race([mediaPromise, timeoutPromise]);
+                } catch (mediaError) {
+                    const errorMsg = mediaError.name === 'NotAllowedError' 
+                        ? 'Camera/microphone permission denied. Please allow access and try again.'
+                        : mediaError.name === 'NotFoundError'
+                        ? 'No camera or microphone found on this device.'
+                        : mediaError.name === 'NotSupportedError'
+                        ? 'Camera/microphone not supported in this WebView. Please use a web browser.'
+                        : \`Media error: \${mediaError.name || 'Unknown'} - \${mediaError.message || 'No details'}\`;
+                    throw new Error(errorMsg);
+                }
+                mediaStream = mediaStream_local;
+                console.log('Camera and microphone acquired');
+                
+                const videoElement = document.getElementById('camera-view');
+                videoElement.srcObject = mediaStream;
+                
+                // Ensure video keeps playing and doesn't freeze
+                videoElement.onloadedmetadata = () => {
+                    videoElement.play().catch(e => console.warn('Video play error:', e));
+                };
+                
+                // Workaround for video freezing - periodically check and restart if needed
+                setInterval(() => {
+                    if (videoElement.paused || videoElement.ended) {
+                        console.log('Video paused/ended, restarting...');
+                        videoElement.play().catch(e => console.warn('Video restart error:', e));
+                    }
+                }, 1000);
                 inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: CONFIG.INPUT_SAMPLE_RATE });
                 outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: CONFIG.OUTPUT_SAMPLE_RATE });
                 const outputNode = outputAudioContext.createGain();
                 outputNode.connect(outputAudioContext.destination);
                 let currentInputTranscription = '', currentOutputTranscription = '';
-                const { GoogleGenAI, Modality } = await import('https://esm.run/@google/genai');
+                
+                // Load SDK with timeout
+                console.log('Loading Gemini SDK...');
+                document.getElementById('overlay').innerHTML = '<div class="connecting"><div class="spinner"></div><p>Loading AI model...</p></div>';
+                const sdkPromise = import('https://esm.run/@google/genai');
+                const sdkTimeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('SDK loading timed out. Please check your internet connection.')), 30000));
+                const { GoogleGenAI, Modality } = await Promise.race([sdkPromise, sdkTimeoutPromise]);
+                console.log('Gemini SDK loaded');
+                
+                // Connect to Gemini Live
+                console.log('Connecting to Gemini Live...');
+                document.getElementById('overlay').innerHTML = '<div class="connecting"><div class="spinner"></div><p>Establishing live connection...</p></div>';
                 const ai = new GoogleGenAI({ apiKey: API_KEY });
-                session = await ai.live.connect({
+                
+                const connectTimeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Connection to Gemini timed out. The model may be unavailable.')), 30000));
+                const connectPromise = ai.live.connect({
                     model: CONFIG.MODEL,
                     config: {
                         systemInstruction: CONFIG.SYSTEM_INSTRUCTION,
@@ -255,13 +315,39 @@ Be conversational, supportive, and encouraging. Keep responses concise but helpf
                             if (base64Audio) await playAudioResponse(base64Audio, outputNode);
                             if (message.serverContent?.interrupted) stopAllAudioSources();
                         },
-                        onerror: (e) => { showError(\`API Error: \${e.error?.message || e.message || 'Unknown error'}\`); endSession(); },
+                        onerror: (e) => { 
+                            console.error('Gemini API error:', e);
+                            showError(\`API Error: \${e.error?.message || e.message || 'Unknown error'}\`); 
+                            endSession(); 
+                        },
                         onclose: () => endSession(),
                     },
                 });
+                
+                session = await Promise.race([connectPromise, connectTimeoutPromise]);
+                console.log('Gemini Live session established!');
             } catch (error) {
-                showError(error.message);
-                document.getElementById('overlay').classList.remove('hidden');
+                // Better error serialization for debugging
+                const errorDetails = {
+                    message: error.message || 'No message',
+                    name: error.name || 'Unknown',
+                    stack: error.stack || 'No stack',
+                    toString: String(error)
+                };
+                console.error('Session error:', JSON.stringify(errorDetails));
+                
+                const displayMessage = error.message || error.name || 'Failed to start session. Please try using a web browser for full Gemini Live experience.';
+                showError(displayMessage);
+                document.getElementById('overlay').innerHTML = \`
+                    <h1 class="title">Connection Failed</h1>
+                    <p class="subtitle">\${displayMessage}</p>
+                    <button class="start-button" onclick="startSession()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        Retry
+                    </button>
+                \`;
             }
         };
 
@@ -282,16 +368,31 @@ Be conversational, supportive, and encouraging. Keep responses concise but helpf
         function startVideoStreaming() {
             const video = document.getElementById('camera-view');
             const canvas = document.getElementById('canvas');
+            
+            // Use a separate offscreen canvas to avoid affecting the video display
+            const offscreenCanvas = document.createElement('canvas');
+            const offscreenCtx = offscreenCanvas.getContext('2d');
+            
             frameInterval = setInterval(() => {
-                if (video.readyState >= 2) {
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0);
-                    canvas.toBlob(async (blob) => {
-                        if (blob) {
-                            const base64Data = await blobToBase64(blob);
-                            session?.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
+                if (video.readyState >= 2 && !video.paused) {
+                    // Set canvas size only once or when video dimensions change
+                    if (offscreenCanvas.width !== video.videoWidth || offscreenCanvas.height !== video.videoHeight) {
+                        offscreenCanvas.width = video.videoWidth;
+                        offscreenCanvas.height = video.videoHeight;
+                    }
+                    
+                    // Draw to offscreen canvas (doesn't affect video display)
+                    offscreenCtx.drawImage(video, 0, 0);
+                    
+                    // Convert to blob asynchronously
+                    offscreenCanvas.toBlob(async (blob) => {
+                        if (blob && session) {
+                            try {
+                                const base64Data = await blobToBase64(blob);
+                                session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
+                            } catch (e) {
+                                console.warn('Frame send error:', e);
+                            }
                         }
                     }, 'image/jpeg', CONFIG.JPEG_QUALITY);
                 }

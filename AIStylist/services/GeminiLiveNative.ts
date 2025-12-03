@@ -11,7 +11,10 @@ import { CameraView } from 'expo-camera';
 
 // Gemini Live API Configuration
 export const GEMINI_LIVE_CONFIG = {
-  MODEL: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+  // Native audio model for real-time voice conversation
+  // Falls back to gemini-2.0-flash-exp for text-only mode
+  MODEL_NATIVE_AUDIO: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+  MODEL_TEXT: 'models/gemini-2.0-flash-exp',
   WS_URL: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent',
   SYSTEM_INSTRUCTION: `You are a professional AI stylist and outfit scorer. Help users improve their fashion sense by:
 - Analyzing their outfit in real-time through video
@@ -22,12 +25,15 @@ export const GEMINI_LIVE_CONFIG = {
 - Scoring outfits on a scale of 1-10 with detailed reasoning
 
 Be conversational, supportive, and encouraging. Keep responses concise but helpful.`,
-  FRAME_RATE: 2, // 2 fps for balanced performance
-  JPEG_QUALITY: 0.7,
+  FRAME_RATE: 1, // 1 fps to avoid overwhelming the API
+  JPEG_QUALITY: 0.5,
   AUDIO_SAMPLE_RATE: 16000,
+  OUTPUT_SAMPLE_RATE: 24000,
   AUDIO_CHANNELS: 1,
   AUDIO_BIT_DEPTH: 16,
-  VOICE_NAME: 'Zephyr', // Same as web implementation
+  VOICE_NAME: 'Zephyr',
+  // Enable audio mode for real-time voice conversation
+  USE_AUDIO_MODE: true,
 };
 
 export interface GeminiLiveNativeSession {
@@ -68,6 +74,7 @@ export class GeminiLiveNative {
   
   private currentUserTranscription: string = '';
   private currentModelTranscription: string = '';
+  private setupComplete: boolean = false;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -104,10 +111,11 @@ export class GeminiLiveNative {
       // 4. Start audio streaming
       await this.startAudioStreaming();
 
-      // 5. Start video streaming (if enabled)
-      if (this.videoEnabled) {
-        this.startVideoStreaming();
-      }
+      // 5. Video streaming is disabled for gemini-2.0-flash-exp
+      // The realtime_input format causes connection errors with this model
+      // Video streaming requires a model that supports real-time media input
+      console.log('📹 Video streaming disabled (not supported by current model)');
+      this.videoEnabled = false;
 
       this.isActive = true;
       callbacks.onSessionUpdate({
@@ -117,12 +125,7 @@ export class GeminiLiveNative {
       });
 
       console.log('✅ Native Gemini Live session started successfully');
-
-      // 6. Send initial text prompt to trigger response (since we don't have audio yet)
-      setTimeout(() => {
-        console.log('📤 Sending initial text prompt to test...');
-        this.sendTextMessage('Hi! Can you see me? Please describe what you see in the camera.');
-      }, 2000);
+      console.log('💡 Speak or send a text message to start the conversation');
     } catch (error) {
       console.error('❌ Failed to start native session:', error);
       const message = error instanceof Error ? error.message : 'Failed to start session';
@@ -178,20 +181,41 @@ export class GeminiLiveNative {
         reject(new Error('WebSocket connection failed'));
       };
 
-      this.ws.onmessage = (event) => {
-        console.log('📨 Raw WebSocket event data type:', typeof event.data);
-        console.log('📨 Raw WebSocket event data:', event.data);
-        
-        // Handle different data types
-        if (typeof event.data === 'string') {
-          console.log('📨 String data:', event.data.substring(0, 200));
-          this.handleWebSocketMessage(event.data);
-        } else if (typeof event.data === 'object') {
-          console.log('📨 Object data keys:', Object.keys(event.data));
-          console.log('📨 Object data:', JSON.stringify(event.data));
-          this.handleWebSocketMessage(event.data);
-        } else {
-          console.warn('⚠️ Unknown data type:', typeof event.data);
+      this.ws.onmessage = async (event) => {
+        try {
+          let messageText: string;
+          
+          // Handle different data types from WebSocket
+          if (typeof event.data === 'string') {
+            messageText = event.data;
+          } else if (event.data instanceof Blob) {
+            // Convert Blob to text
+            messageText = await event.data.text();
+          } else if (event.data instanceof ArrayBuffer) {
+            // Convert ArrayBuffer to text
+            const decoder = new TextDecoder('utf-8');
+            messageText = decoder.decode(event.data);
+          } else if (typeof event.data === 'object' && event.data !== null) {
+            // Try to read as array buffer or blob
+            if (event.data.arrayBuffer) {
+              const buffer = await event.data.arrayBuffer();
+              const decoder = new TextDecoder('utf-8');
+              messageText = decoder.decode(buffer);
+            } else {
+              messageText = JSON.stringify(event.data);
+            }
+          } else {
+            console.warn('⚠️ Unknown WebSocket data type:', typeof event.data);
+            return;
+          }
+          
+          // Only log non-empty messages
+          if (messageText && messageText.trim().length > 0) {
+            console.log('📨 WebSocket message:', messageText.substring(0, 200));
+            this.handleWebSocketMessage(messageText);
+          }
+        } catch (error) {
+          console.error('❌ Error processing WebSocket message:', error);
         }
       };
 
@@ -210,20 +234,48 @@ export class GeminiLiveNative {
    * Based on the official Gemini Multimodal Live API protocol
    */
   private async sendSetupMessage(): Promise<void> {
-    // Official Gemini Live API setup format
-    const setupMessage = {
+    const useAudio = GEMINI_LIVE_CONFIG.USE_AUDIO_MODE;
+    const model = useAudio ? GEMINI_LIVE_CONFIG.MODEL_NATIVE_AUDIO : GEMINI_LIVE_CONFIG.MODEL_TEXT;
+    
+    const setupMessage = useAudio ? {
+      // Native audio model setup with voice
       setup: {
-        model: GEMINI_LIVE_CONFIG.MODEL,
-        generationConfig: {
-          responseModalities: 'audio', // String, not array for WebSocket API
+        model: model,
+        generation_config: {
+          response_modalities: ['AUDIO', 'TEXT'],
+          speech_config: {
+            voice_config: {
+              prebuilt_voice_config: {
+                voice_name: GEMINI_LIVE_CONFIG.VOICE_NAME,
+              },
+            },
+          },
+        },
+        system_instruction: {
+          parts: [{ text: GEMINI_LIVE_CONFIG.SYSTEM_INSTRUCTION }],
+        },
+      },
+    } : {
+      // Text-only model setup
+      setup: {
+        model: model,
+        generation_config: {
+          response_modalities: ['TEXT'],
+        },
+        system_instruction: {
+          parts: [{ text: GEMINI_LIVE_CONFIG.SYSTEM_INSTRUCTION }],
         },
       },
     };
 
     console.log('📤 Sending setup message');
-    console.log('📤 Model:', GEMINI_LIVE_CONFIG.MODEL);
-    console.log('📤 Setup:', JSON.stringify(setupMessage));
+    console.log('📤 Model:', model);
+    console.log('📤 Mode:', useAudio ? 'AUDIO + TEXT' : 'TEXT only');
+    console.log('📤 Setup:', JSON.stringify(setupMessage).substring(0, 300) + '...');
     this.sendMessage(setupMessage);
+    
+    // Wait a bit for setup to complete before sending data
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   /**
@@ -333,6 +385,8 @@ export class GeminiLiveNative {
 
   /**
    * Start video streaming
+   * Note: We use a slower frame rate (1 fps) to avoid overwhelming the API
+   * and to prevent camera shutter sounds on some devices
    */
   private startVideoStreaming(): void {
     if (!this.videoEnabled || !this.cameraRef) {
@@ -340,30 +394,41 @@ export class GeminiLiveNative {
       return;
     }
 
-    console.log(`📹 Starting video streaming at ${GEMINI_LIVE_CONFIG.FRAME_RATE} fps`);
+    // Use 1 fps to reduce load and avoid rapid shutter sounds
+    const fps = 1;
+    console.log(`📹 Starting video streaming at ${fps} fps (silent mode)`);
 
-    const intervalMs = 1000 / GEMINI_LIVE_CONFIG.FRAME_RATE;
+    const intervalMs = 1000 / fps;
     this.frameInterval = setInterval(() => {
-      this.captureAndSendFrame();
+      if (this.setupComplete) {
+        this.captureAndSendFrame();
+      }
     }, intervalMs);
   }
 
   /**
    * Capture and send video frame
+   * Uses skipProcessing and shutterSound: false to minimize disruption
    */
   private async captureAndSendFrame(): Promise<void> {
-    if (!this.cameraRef || !this.videoEnabled) return;
+    if (!this.cameraRef || !this.videoEnabled || !this.setupComplete) return;
 
     try {
-      // Capture photo from camera
+      // Capture photo from camera with minimal processing
+      // Note: shutterSound option may not work on all devices
       const photo = await this.cameraRef.takePictureAsync({
-        quality: GEMINI_LIVE_CONFIG.JPEG_QUALITY,
+        quality: 0.5, // Lower quality for faster capture
         base64: true,
         skipProcessing: true,
+        // @ts-ignore - shutterSound might not be in types but works on some devices
+        shutterSound: false,
       });
 
-      if (photo.base64) {
-        console.log('📸 Captured frame, size:', Math.round(photo.base64.length / 1024) + 'KB');
+      if (photo?.base64) {
+        // Only log occasionally to reduce console spam
+        if (Math.random() < 0.2) {
+          console.log('📸 Frame captured, size:', Math.round(photo.base64.length / 1024) + 'KB');
+        }
         
         // Send frame to Gemini - use snake_case for WebSocket API
         const videoMessage = {
@@ -380,7 +445,8 @@ export class GeminiLiveNative {
         this.sendMessage(videoMessage);
       }
     } catch (error) {
-      console.warn('⚠️ Failed to capture frame:', error);
+      // Silently ignore frame capture errors to avoid spam
+      // console.warn('⚠️ Failed to capture frame:', error);
     }
   }
 
@@ -403,7 +469,7 @@ export class GeminiLiveNative {
       return;
     }
 
-    console.log('📨 Received WebSocket message:', dataStr.substring(0, 200) + '...');
+    console.log('📨 Received WebSocket message:', dataStr.substring(0, 500) + '...');
 
     try {
       const message = typeof data === 'string' ? JSON.parse(data) : data;
@@ -416,49 +482,71 @@ export class GeminiLiveNative {
         return;
       }
 
-      // Handle setup complete
-      if (message.setupComplete) {
-        console.log('✅ Setup complete:', JSON.stringify(message.setupComplete));
+      // Handle setup complete (check both camelCase and snake_case)
+      if (message.setupComplete !== undefined || message.setup_complete !== undefined) {
+        console.log('✅ Setup complete! Ready to stream.');
+        this.setupComplete = true;
+        // Send initial greeting after setup
+        setTimeout(() => {
+          console.log('📤 Sending initial greeting...');
+          this.sendTextMessage("Hello! I'm your AI stylist. Show me your outfit and I'll give you feedback!");
+        }, 500);
         return;
       }
 
-      // Handle server content
-      if (message.serverContent) {
-        const content = message.serverContent;
+      // Handle server content (check both camelCase and snake_case)
+      const serverContent = message.serverContent || message.server_content;
+      if (serverContent) {
+        const content = serverContent;
         console.log('📥 Server content keys:', Object.keys(content));
 
         // Handle user transcription
-        if (content.inputTranscription) {
-          this.currentUserTranscription += content.inputTranscription.text || '';
+        const inputTranscription = content.inputTranscription || content.input_transcription;
+        if (inputTranscription) {
+          this.currentUserTranscription += inputTranscription.text || '';
           console.log('🎤 User transcription:', this.currentUserTranscription);
           this.callbacks?.onTranscription('user', this.currentUserTranscription);
         }
 
         // Handle model transcription
-        if (content.outputTranscription) {
-          this.currentModelTranscription += content.outputTranscription.text || '';
+        const outputTranscription = content.outputTranscription || content.output_transcription;
+        if (outputTranscription) {
+          this.currentModelTranscription += outputTranscription.text || '';
           console.log('🤖 Model transcription:', this.currentModelTranscription);
           this.callbacks?.onTranscription('model', this.currentModelTranscription);
         }
 
-        // Handle audio response
-        if (content.modelTurn?.parts) {
-          console.log('🔊 Model turn parts:', content.modelTurn.parts.length);
-          for (const part of content.modelTurn.parts) {
+        // Handle model response (text or audio)
+        const modelTurn = content.modelTurn || content.model_turn;
+        if (modelTurn?.parts) {
+          console.log('🤖 Model turn parts:', modelTurn.parts.length);
+          for (const part of modelTurn.parts) {
             console.log('📦 Part keys:', Object.keys(part));
-            if (part.inlineData) {
-              console.log('🎵 Inline data mime type:', part.inlineData.mimeType);
-              console.log('🎵 Inline data size:', part.inlineData.data?.length || 0);
+            
+            // Handle text response
+            if (part.text) {
+              console.log('💬 Model text response:', part.text);
+              this.currentModelTranscription += part.text;
+              this.callbacks?.onTranscription('model', this.currentModelTranscription);
             }
-            if (part.inlineData?.mimeType === 'audio/pcm' && part.inlineData?.data) {
-              console.log('🔊 Playing audio response, size:', part.inlineData.data.length);
-              this.playAudioResponse(part.inlineData.data);
+            
+            // Handle audio response
+            const inlineData = part.inlineData || part.inline_data;
+            if (inlineData) {
+              const mimeType = inlineData.mimeType || inlineData.mime_type;
+              console.log('🎵 Inline data mime type:', mimeType);
+              console.log('🎵 Inline data size:', inlineData.data?.length || 0);
+              if (mimeType === 'audio/pcm' && inlineData.data) {
+                console.log('🔊 Playing audio response, size:', inlineData.data.length);
+                this.playAudioResponse(inlineData.data);
+              }
             }
           }
         }
 
         // Handle turn complete
-        if (content.turnComplete) {
+        const turnComplete = content.turnComplete || content.turn_complete;
+        if (turnComplete) {
           console.log('✅ Turn complete');
           this.currentUserTranscription = '';
           this.currentModelTranscription = '';
@@ -470,28 +558,62 @@ export class GeminiLiveNative {
           this.stopAudioPlayback();
         }
       }
+
+      // Handle error messages
+      if (message.error) {
+        console.error('❌ API Error:', JSON.stringify(message.error));
+        this.callbacks?.onError(message.error.message || 'API error');
+      }
     } catch (error) {
       // Log parse errors but don't crash
       console.error('❌ Failed to parse WebSocket message:', error);
-      console.error('❌ Message data:', dataStr.substring(0, 200));
+      console.error('❌ Message data:', dataStr.substring(0, 500));
     }
   }
+
+  // Audio queue for sequential playback
+  private audioQueue: string[] = [];
+  private isPlayingAudio: boolean = false;
 
   /**
    * Play audio response from Gemini
    */
   private async playAudioResponse(audioBase64: string): Promise<void> {
+    // Queue the audio
+    this.audioQueue.push(audioBase64);
+    
+    // If not already playing, start processing queue
+    if (!this.isPlayingAudio) {
+      this.processAudioQueue();
+    }
+  }
+
+  /**
+   * Process audio queue sequentially
+   */
+  private async processAudioQueue(): Promise<void> {
+    if (this.audioQueue.length === 0) {
+      this.isPlayingAudio = false;
+      return;
+    }
+
+    this.isPlayingAudio = true;
+    const audioBase64 = this.audioQueue.shift()!;
+
     try {
       console.log('🔊 Playing AI audio response...');
       
       // Stop current playback
       if (this.sound) {
         await this.sound.unloadAsync();
+        this.sound = null;
       }
 
-      // Gemini returns PCM audio, we need to convert it to a playable format
-      // For now, we'll use a data URI approach
-      const audioUri = `data:audio/pcm;rate=24000;base64,${audioBase64}`;
+      // Convert PCM to WAV format
+      const wavBase64 = this.pcmToWav(audioBase64);
+      
+      // Create data URI with WAV format
+      const audioUri = `data:audio/wav;base64,${wavBase64}`;
 
       try {
         // Try to create and play sound
@@ -506,40 +628,101 @@ export class GeminiLiveNative {
           if (status.isLoaded && status.didJustFinish) {
             sound.unloadAsync();
             console.log('✅ Audio playback finished');
+            // Process next in queue
+            this.processAudioQueue();
           }
         });
       } catch (playError) {
-        console.warn('⚠️ PCM audio playback not yet implemented');
-        console.warn('💡 Audio playback will be added in next update');
-        // TODO: Implement PCM to WAV conversion and playback
+        console.warn('⚠️ Audio playback failed:', playError);
+        // Continue with next audio
+        this.processAudioQueue();
       }
     } catch (error) {
       console.error('❌ Failed to play audio response:', error);
-      this.callbacks?.onError('Failed to play audio response');
+      // Continue with next audio
+      this.processAudioQueue();
     }
   }
 
   /**
-   * Convert base64 PCM audio to playable format
+   * Convert PCM to WAV format
    */
-  private async base64ToAudioFile(base64: string): Promise<string | null> {
-    try {
-      // For now, we'll use expo-av's built-in audio playback
-      // which can handle base64 data directly
-      
-      // Create a data URI for the audio
-      const dataUri = `data:audio/pcm;base64,${base64}`;
-      return dataUri;
-    } catch (error) {
-      console.error('❌ Failed to convert base64 to audio:', error);
-      return null;
+  private pcmToWav(pcmBase64: string): string {
+    // Decode base64 to bytes
+    const pcmData = this.base64ToBytes(pcmBase64);
+    
+    // WAV header parameters
+    const sampleRate = GEMINI_LIVE_CONFIG.OUTPUT_SAMPLE_RATE;
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataSize = pcmData.length;
+    const fileSize = 36 + dataSize;
+
+    // Create WAV header (44 bytes)
+    const header = new ArrayBuffer(44);
+    const view = new DataView(header);
+
+    // RIFF chunk
+    this.writeString(view, 0, 'RIFF');
+    view.setUint32(4, fileSize, true);
+    this.writeString(view, 8, 'WAVE');
+
+    // fmt chunk
+    this.writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // chunk size
+    view.setUint16(20, 1, true); // audio format (PCM)
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+
+    // data chunk
+    this.writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Combine header and PCM data
+    const wavData = new Uint8Array(44 + pcmData.length);
+    wavData.set(new Uint8Array(header), 0);
+    wavData.set(pcmData, 44);
+
+    // Convert to base64
+    return this.bytesToBase64(wavData);
+  }
+
+  private writeString(view: DataView, offset: number, str: string): void {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
     }
+  }
+
+  private base64ToBytes(base64: string): Uint8Array {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  private bytesToBase64(bytes: Uint8Array): string {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   }
 
   /**
    * Stop audio playback
    */
   private async stopAudioPlayback(): Promise<void> {
+    // Clear the queue
+    this.audioQueue = [];
+    this.isPlayingAudio = false;
+    
     if (this.sound) {
       try {
         await this.sound.stopAsync();
@@ -598,6 +781,7 @@ export class GeminiLiveNative {
     console.log('🛑 Stopping native Gemini Live session...');
 
     this.isActive = false;
+    this.setupComplete = false;
 
     // Stop video streaming
     if (this.frameInterval) {
