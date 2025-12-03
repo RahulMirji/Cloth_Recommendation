@@ -45,7 +45,7 @@ describe('Razorpay Service', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/razorpay/create-order'),
+        expect.stringContaining('/razorpay-create-order'),
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -151,7 +151,7 @@ describe('Razorpay Service', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/razorpay/verify-payment'),
+        expect.stringContaining('/razorpay-verify-payment'),
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -248,7 +248,7 @@ describe('Razorpay Service', () => {
       const result = await getPaymentStatus('order_123');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/razorpay/payment-status/order_123'),
+        expect.stringContaining('/razorpay-payment-status?orderId=order_123'),
         expect.objectContaining({
           method: 'GET',
           headers: {

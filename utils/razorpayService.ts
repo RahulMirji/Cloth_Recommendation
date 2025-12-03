@@ -2,13 +2,16 @@
  * Razorpay Payment Service
  * 
  * Utility functions for handling Razorpay payments in the frontend.
- * Communicates with backend API for order creation and payment verification.
+ * Communicates with Supabase Edge Functions for order creation and payment verification.
  * 
  * File: utils/razorpayService.ts
  * Created: November 1, 2025
+ * Updated: December 3, 2025 - Migrated to Supabase Edge Functions
  */
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+// Supabase Edge Functions URL - no ngrok needed!
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wmhiwieooqfwkrdcvqvb.supabase.co';
+const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 
 export interface CreateOrderRequest {
   credits: number;
@@ -58,7 +61,7 @@ export const createRazorpayOrder = async (
   try {
     console.log('📝 Creating Razorpay order:', request);
 
-    const response = await fetch(`${API_URL}/api/razorpay/create-order`, {
+    const response = await fetch(`${EDGE_FUNCTIONS_URL}/razorpay-create-order`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -97,7 +100,7 @@ export const verifyRazorpayPayment = async (
       paymentId: request.razorpay_payment_id,
     });
 
-    const response = await fetch(`${API_URL}/api/razorpay/verify-payment`, {
+    const response = await fetch(`${EDGE_FUNCTIONS_URL}/razorpay-verify-payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,8 +131,10 @@ export const verifyRazorpayPayment = async (
  */
 export const getPaymentStatus = async (orderId: string) => {
   try {
+    // For now, we'll check directly from the database via Supabase
+    // The webhook handles status updates, so we can query the payment_submissions table
     const response = await fetch(
-      `${API_URL}/api/razorpay/payment-status/${orderId}`,
+      `${EDGE_FUNCTIONS_URL}/razorpay-payment-status?orderId=${orderId}`,
       {
         method: 'GET',
         headers: {

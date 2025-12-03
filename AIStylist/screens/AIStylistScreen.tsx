@@ -1145,19 +1145,30 @@ Keep responses conversational and natural, as if you're talking to them in perso
                   <Text style={styles.statusText}>Live Chat</Text>
                 </View>
               )}
-              <TouchableOpacity
-                style={styles.visionToggle}
-                onPress={() => setUseEnhancedVision(!useEnhancedVision)}
-              >
-                {useEnhancedVision ? (
-                  <Eye size={16} color={Colors.white} />
-                ) : (
-                  <EyeOff size={16} color={Colors.white} />
-                )}
-                <Text style={styles.visionToggleText}>
-                  {useEnhancedVision ? 'Enhanced Vision' : 'Basic Vision'}
-                </Text>
-              </TouchableOpacity>
+              {!isConversationActive && (
+                <TouchableOpacity
+                  style={styles.visionToggle}
+                  onPress={() => {
+                    console.log('🎨 Vision toggle pressed - navigating to Gemini Live');
+                    try {
+                      router.push('/gemini-live');
+                      console.log('✅ Navigation to Gemini Live initiated');
+                    } catch (error) {
+                      console.error('❌ Navigation error:', error);
+                      showCustomAlert('error', 'Navigation Error', 'Failed to open Gemini Live. Please try again.');
+                    }
+                  }}
+                >
+                  {useEnhancedVision ? (
+                    <Eye size={16} color={Colors.white} />
+                  ) : (
+                    <EyeOff size={16} color={Colors.white} />
+                  )}
+                  <Text style={styles.visionToggleText}>
+                    {useEnhancedVision ? 'Enhanced Vision' : 'Basic Vision'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <TouchableOpacity
@@ -1432,6 +1443,20 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 11,
     fontWeight: '500' as const,
+  },
+  geminiLiveButton: {
+    backgroundColor: 'rgba(99, 102, 241, 0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(165, 180, 252, 0.5)',
+  },
+  geminiLiveButtonText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   quitButtonContainer: {
     flexDirection: 'row',
