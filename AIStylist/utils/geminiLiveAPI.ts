@@ -74,6 +74,7 @@ export async function blobToBase64(blob: Blob): Promise<string> {
 
 // Gemini Live API Configuration
 export const GEMINI_LIVE_CONFIG = {
+  // Native audio model for real-time voice conversation
   MODEL: 'gemini-2.5-flash-native-audio-preview-09-2025',
   SYSTEM_INSTRUCTION: `You are a professional AI stylist and outfit scorer. Help users improve their fashion sense by:
 - Analyzing their outfit in real-time through video
@@ -83,9 +84,10 @@ export const GEMINI_LIVE_CONFIG = {
 - Giving practical styling tips and suggestions
 - Scoring outfits on a scale of 1-10 with detailed reasoning
 
-Be conversational, supportive, and encouraging. Keep responses concise but helpful.`,
-  FRAME_RATE: 2, // Send 2 frames per second
-  JPEG_QUALITY: 0.7,
+Be conversational, supportive, and encouraging. Keep responses concise but helpful.
+Start by greeting the user and asking them to show you their outfit.`,
+  FRAME_RATE: 1, // 1 fps for video frames
+  JPEG_QUALITY: 0.6,
   INPUT_SAMPLE_RATE: 16000,
   OUTPUT_SAMPLE_RATE: 24000,
   VOICE_NAME: 'Zephyr',
